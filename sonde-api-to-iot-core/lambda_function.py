@@ -97,7 +97,7 @@ def lambda_handler(event, context):
             (msg, x) = mqtt_connection.publish(
             topic=f'sondes/{payload["serial"]}',
             payload=json.dumps(payload),
-            qos=mqtt.QoS.AT_MOST_ONCE)
+            qos=mqtt.QoS.AT_LEAST_ONCE)
             msg.result()
     
 
