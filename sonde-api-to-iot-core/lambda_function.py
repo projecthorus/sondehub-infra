@@ -73,7 +73,10 @@ def lambda_handler(event, context):
             event["time_server"] = datetime.datetime.now().isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
-    
+        if "uploader_position" in payload:
+            if not payload["uploader_position"]:
+                payload.pop("uploader_position")
+            (payload["uploader_alt"], payload["uploader_position"]) = payload["uploader_position"][2], f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}"
         (msg, x) = mqtt_connection.publish(
             topic=f'sondes/{payload["serial"]}',
             payload=json.dumps(payload),

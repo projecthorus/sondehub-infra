@@ -11,4 +11,6 @@ todo
  - we don't have rate limiting ? do we need it
  - cognito needs to be setup to allow private access
  - replace profile defination with env variables since not all admins will have that profile
- - 
+ - add in DLQ for ingest, and for elk
+ - add a way to process DLQ
+ - monitor on stuff going into DLQ

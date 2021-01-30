@@ -1,3 +1,4 @@
+# add sns / sqs
 terraform {
   backend "s3" {
     bucket = "sondehub-terraform"
