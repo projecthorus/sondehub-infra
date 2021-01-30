@@ -492,7 +492,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
         dedicated_master_enabled = true
         dedicated_master_type = "t3.small.elasticsearch"
         instance_count = 2
-        instance_type = "t3.small.elasticsearch"
+        instance_type = "m5.large.elasticsearch"
         zone_awareness_enabled = true
     }
     cognito_options {

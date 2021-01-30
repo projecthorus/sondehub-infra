@@ -7,6 +7,7 @@ import functools
 from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.core import patch_all
 from awscrt import io, mqtt, auth, http
+from awscrt.exceptions import AwsCrtError
 from awsiot import mqtt_connection_builder
 import uuid
 import threading
@@ -79,7 +80,7 @@ def lambda_handler(event, context):
             qos=mqtt.QoS.AT_MOST_ONCE)
         try:
             msg.result()
-        except RuntimeError:
+        except (RuntimeError, AwsCrtError):
             mqtt_connection = mqtt_connection_builder.websockets_with_default_aws_signing(
             endpoint="a2sgq5szfqum7p-ats.iot.us-east-1.amazonaws.com",
             client_bootstrap=client_bootstrap,
