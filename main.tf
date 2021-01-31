@@ -202,12 +202,15 @@ resource "aws_iam_role_policy" "IAMPolicy" {
 {
     "Version": "2012-10-17",
     "Statement": [
-       
-        {
-            "Sid": "VisualEditor1",
+               {
             "Effect": "Allow",
-            "Action": "es:ESHttp*",
-            "Resource": "*"
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:143841941773:domain/sondes-v2"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:143841941773:domain/sondes-v2/*"
         }
     ]
 }
@@ -510,7 +513,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/OrganizationAccountAccessRole"
+                "AWS": "*"
             },
             "Action": "es:*",
             "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
@@ -540,12 +543,14 @@ data "aws_kms_key" "es" {
 
 resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
     identity_pool_name = "sondes"
-    allow_unauthenticated_identities = false
-
+    allow_unauthenticated_identities = true
+    supported_login_providers = {
+        "accounts.google.com" = "575970424139-vkk7scicbdd1igj04riqjh2bbs0oa6vj.apps.googleusercontent.com"
+    }
     cognito_identity_providers {
         client_id = aws_cognito_user_pool_client.CognitoUserPoolClient.id
         provider_name = aws_cognito_user_pool.CognitoUserPool.endpoint
-        server_side_token_check = true
+        server_side_token_check = false
     }
 }
 
@@ -554,6 +559,11 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
     roles = {
         authenticated = aws_iam_role.IAMRole.arn
         unauthenticated = aws_iam_role.IAMRole2.arn
+    }
+    role_mapping {
+        ambiguous_role_resolution = "AuthenticatedRole"
+        identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:5sngha3l291nb4784iid5hli48"
+        type = "Token"
     }
 }
 
@@ -603,7 +613,7 @@ resource "aws_cognito_user_pool" "CognitoUserPool" {
         
     }
     admin_create_user_config {
-        allow_admin_create_user_only = true
+        allow_admin_create_user_only = false
         invite_message_template {
             email_message = "Your username is {username} and temporary password is {####}. "
             email_subject = "Your temporary password"
@@ -612,7 +622,7 @@ resource "aws_cognito_user_pool" "CognitoUserPool" {
     }
     account_recovery_setting {
         recovery_mechanism {
-            name     = "admin_only"
+            name     = "verified_email"
             priority = 1
         }
     }
@@ -627,5 +637,6 @@ resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
     allowed_oauth_scopes = ["email", "openid", "phone", "profile"]
     callback_urls = ["https://es.${local.domain_name}/_plugin/kibana/app/kibana"]
     logout_urls = ["https://es.${local.domain_name}/_plugin/kibana/app/kibana"]
-    supported_identity_providers = ["COGNITO"]
+    supported_identity_providers = ["COGNITO", "Google"]
+    explicit_auth_flows = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
 }
