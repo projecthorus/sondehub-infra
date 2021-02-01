@@ -493,7 +493,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     elasticsearch_version = "7.9"
     cluster_config {
         dedicated_master_count = 3
-        dedicated_master_enabled = true
+        dedicated_master_enabled = false
         dedicated_master_type = "t3.small.elasticsearch"
         instance_count = 2
         instance_type = "m5.large.elasticsearch"
