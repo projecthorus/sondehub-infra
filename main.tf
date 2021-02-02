@@ -1,4 +1,5 @@
-# add sns / sqs
+# TODO
+# add sns / sqs, AWS IoT actions
 terraform {
   backend "s3" {
     bucket  = "sondehub-terraform"
@@ -400,6 +401,13 @@ data "archive_file" "api_to_iot" {
   output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
 }
 
+data "archive_file" "query" {
+  type        = "zip"
+  source_file = "query/lambda_function.py"
+  output_path = "${path.module}/build/query.zip"
+}
+
+
 data "archive_file" "sign_socket" {
   type        = "zip"
   source_file = "sign-websocket/lambda_function.py"
@@ -422,6 +430,30 @@ resource "aws_lambda_function" "LambdaFunction" {
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
+    }
+  }
+  layers = [
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
+  ]
+}
+
+resource "aws_lambda_function" "get_sondes" {
+  function_name    = "query"
+  handler          = "lambda_function.get_sondes"
+  filename         = "${path.module}/build/query.zip"
+  source_code_hash = data.archive_file.query.output_base64sha256
+  publish          = true
+  memory_size      = 256
+  role             = aws_iam_role.IAMRole5.arn
+  runtime          = "python3.7"
+  timeout          = 10
+  tracing_config {
+    mode = "Active"
+  }
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
     }
   }
   layers = [
@@ -459,6 +491,13 @@ resource "aws_lambda_permission" "sign_socket" {
   function_name = aws_lambda_function.sign_socket.arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes/websocket"
+}
+
+resource "aws_lambda_permission" "get_sondes" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_sondes.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes"
 }
 
 resource "aws_lambda_permission" "LambdaPermission2" {
@@ -513,7 +552,7 @@ resource "aws_apigatewayv2_stage" "ApiGatewayV2Stage" {
   }
   auto_deploy = true
   lifecycle {
-    ignore_changes = ["deployment_id"]
+    ignore_changes = [deployment_id]
   }
 }
 
@@ -550,12 +589,30 @@ resource "aws_apigatewayv2_route" "sign_socket" {
   target             = "integrations/${aws_apigatewayv2_integration.sign_socket.id}"
 }
 
+resource "aws_apigatewayv2_route" "get_sondes" {
+  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /sondes"
+  target             = "integrations/${aws_apigatewayv2_integration.get_sondes.id}"
+}
+
 resource "aws_apigatewayv2_integration" "sign_socket" {
   api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.sign_socket.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "get_sondes" {
+  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.get_sondes.arn
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }
