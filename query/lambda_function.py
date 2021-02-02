@@ -85,7 +85,7 @@ def get_telem(event, context):
         "3d": (259200, 1200),  # 3d, 20m
         "1d": (86400, 600),  # 1d, 10m
         "6h": (21600, 60),  # 6h, 1m
-        "3h": (10800, 1),  # 3h, 1s
+        "3h": (10800, 10),  # 3h, 10s
     }
     duration_query = "3h"
 
@@ -120,12 +120,12 @@ def get_telem(event, context):
                         "aggs": {
                             "1": {
                                 "top_hits": {
-                                    "docvalue_fields": [
-                                        {"field": "position"},
-                                        {"field": "alt"},
-                                        {"field": "datetime"},
-                                    ],
-                                    "_source": "position",
+                                    # "docvalue_fields": [
+                                    #     {"field": "position"},
+                                    #     {"field": "alt"},
+                                    #     {"field": "datetime"},
+                                    # ],
+                                    # "_source": "position",
                                     "size": 1,
                                     "sort": [{"datetime": {"order": "desc"}}],
                                 }
@@ -143,7 +143,7 @@ def get_telem(event, context):
                         "range": {
                             "datetime": {"gte": f"now-{str(duration)}s", "lt": "now"}
                         }
-                    }
+                    },
                 ]
             }
         },
@@ -162,10 +162,7 @@ def get_telem(event, context):
     results = es_request(payload, path, "POST")
     output = {
         sonde["key"]: {
-            data["key_as_string"]: {
-                field: data["1"]["hits"]["hits"][0]["fields"][field][0]
-                for field in data["1"]["hits"]["hits"][0]["fields"]
-            }
+            data["key_as_string"]: data["1"]["hits"]["hits"][0]["_source"]
             for data in sonde["3"]["buckets"]
         }
         for sonde in results["aggregations"]["2"]["buckets"]
@@ -191,4 +188,8 @@ def es_request(payload, path, method):
 
 if __name__ == "__main__":
     # print(get_sondes({"queryStringParameters":{"lat":"-28.22717","lon":"153.82996","distance":"50000"}}, {}))
-    print(get_telem({"queryStringParameters":{"serial": "R4450388", "duration": "3h"}}, {}))
+    print(
+        get_telem(
+            {"queryStringParameters": {"serial": "R4450388", "duration": "3h"}}, {}
+        )
+    )
