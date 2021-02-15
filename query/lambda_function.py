@@ -5,6 +5,7 @@ from botocore.endpoint import URLLib3Session
 from botocore.auth import SigV4Auth
 import json
 import os
+from datetime import datetime, timedelta
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
@@ -88,6 +89,8 @@ def get_telem(event, context):
         "3h": (10800, 10),  # 3h, 10s
     }
     duration_query = "3h"
+    requested_time = datetime.now()
+
 
     if (
         "queryStringParameters" in event
@@ -98,7 +101,19 @@ def get_telem(event, context):
         else:
             return f"Duration must be either {', '.join(durations.keys())}"
 
+    if (
+        "queryStringParameters" in event
+        and "datetime" in event["queryStringParameters"]
+    ):
+        requested_time = datetime.fromisoformat(event["queryStringParameters"]["datetime"].replace("Z", "+00:00"))
+
     (duration, interval) = durations[duration_query]
+   
+    
+    
+    lt = requested_time
+    gte = requested_time - timedelta(0,duration)
+
 
     path = "telm-*/_search"
     payload = {
@@ -141,7 +156,10 @@ def get_telem(event, context):
                     {"match_all": {}},
                     {
                         "range": {
-                            "datetime": {"gte": f"now-{str(duration)}s", "lt": "now"}
+                            "datetime": {
+                                "gte": gte.isoformat(),
+                                 "lt": lt.isoformat()
+                            }
                         }
                     },
                 ]
@@ -150,7 +168,6 @@ def get_telem(event, context):
     }
     if "queryStringParameters" in event:
         if "serial" in event["queryStringParameters"]:
-            print("test")
             payload["query"]["bool"]["filter"].append(
                 {
                     "match_phrase": {
@@ -158,7 +175,6 @@ def get_telem(event, context):
                     }
                 }
             )
-    print(payload)
     results = es_request(payload, path, "POST")
     output = {
         sonde["key"]: {
@@ -190,6 +206,6 @@ if __name__ == "__main__":
     # print(get_sondes({"queryStringParameters":{"lat":"-28.22717","lon":"153.82996","distance":"50000"}}, {}))
     print(
         get_telem(
-            {"queryStringParameters": {"serial": "R4450388", "duration": "3h"}}, {}
+            {"queryStringParameters": {"duration": "6h", "datetime": "2021-01-31T00:10:40.001000Z"}}, {}
         )
     )
