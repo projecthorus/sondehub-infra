@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import threading
 from queue import Queue
 import queue
+from botocore import UNSIGNED
+from botocore.config import Config
 
 S3_BUCKET = "sondehub-open-data"
 
@@ -18,7 +20,7 @@ class Downloader(threading.Thread): # Stolen from the SDK, if I wasn't lazy I'd 
         super().__init__(*args, **kwargs)
 
     def run(self):
-        s3 = boto3.client("s3")
+        s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
         while True:
             try:
                 task = self.tasks_to_accomplish.get_nowait()
@@ -35,7 +37,7 @@ class Downloader(threading.Thread): # Stolen from the SDK, if I wasn't lazy I'd 
 def download(serial):
     prefix_filter = f"serial-hashed/{serial}/"
 
-    s3 = boto3.resource("s3")
+    s3 = boto3.resource("s3", config=Config(signature_version=UNSIGNED))
     bucket = s3.Bucket(S3_BUCKET)
     data = []
 

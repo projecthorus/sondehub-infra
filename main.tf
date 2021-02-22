@@ -476,6 +476,12 @@ data "archive_file" "sign_socket" {
   output_path = "${path.module}/build/sign_socket.zip"
 }
 
+data "archive_file" "predictions" {
+  type        = "zip"
+  source_file = "predict/lambda_function.py"
+  output_path = "${path.module}/build/predictions.zip"
+}
+
 resource "aws_lambda_function" "LambdaFunction" {
   function_name    = "sonde-api-to-iot-core"
   handler          = "lambda_function.lambda_handler"
@@ -524,6 +530,78 @@ resource "aws_lambda_function" "get_sondes" {
   ]
 }
 
+resource "aws_lambda_function" "listeners" {
+  function_name    = "listeners"
+  handler          = "lambda_function.get_listeners"
+  filename         = "${path.module}/build/query.zip"
+  source_code_hash = data.archive_file.query.output_base64sha256
+  publish          = true
+  memory_size      = 256
+  role             = aws_iam_role.IAMRole5.arn
+  runtime          = "python3.7"
+  timeout          = 10
+  tracing_config {
+    mode = "Active"
+  }
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
+  layers = [
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
+  ]
+}
+
+
+resource "aws_lambda_function" "datanew" {
+  function_name    = "datanew"
+  handler          = "lambda_function.datanew"
+  filename         = "${path.module}/build/query.zip"
+  source_code_hash = data.archive_file.query.output_base64sha256
+  publish          = true
+  memory_size      = 256
+  role             = aws_iam_role.IAMRole5.arn
+  runtime          = "python3.7"
+  timeout          = 10
+  tracing_config {
+    mode = "Active"
+  }
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
+  layers = [
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
+  ]
+}
+
+resource "aws_lambda_function" "predictions" {
+  function_name    = "predictions"
+  handler          = "lambda_function.predict"
+  filename         = "${path.module}/build/predictions.zip"
+  source_code_hash = data.archive_file.predictions.output_base64sha256
+  publish          = true
+  memory_size      = 256
+  role             = aws_iam_role.IAMRole5.arn
+  runtime          = "python3.7"
+  timeout          = 10
+  tracing_config {
+    mode = "Active"
+  }
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
+  layers = [
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
+  ]
+}
 
 resource "aws_lambda_function" "get_telem" {
   function_name    = "get_telem"
@@ -596,35 +674,57 @@ resource "aws_lambda_permission" "sign_socket" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.sign_socket.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes/websocket"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/websocket"
 }
 
 resource "aws_lambda_permission" "history" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.history.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sonde/{serial}"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sonde/{serial}"
 }
 
 resource "aws_lambda_permission" "get_sondes" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_sondes.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes"
 }
+
+resource "aws_lambda_permission" "listeners" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.listeners.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners"
+}
+
+resource "aws_lambda_permission" "datanew" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.datanew.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/datanew"
+}
+
+resource "aws_lambda_permission" "predictions" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.predictions.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/predictions"
+}
+
 
 resource "aws_lambda_permission" "get_telem" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_telem.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes/telemetry"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/telemetry"
 }
 
 resource "aws_lambda_permission" "LambdaPermission2" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.LambdaFunction.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:r03szwwq41/*/*/sondes/telemetry"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/telemetry"
 }
 
 resource "aws_lambda_layer_version" "LambdaLayerVersion2" {
@@ -662,11 +762,27 @@ resource "aws_apigatewayv2_api" "ApiGatewayV2Api" {
   api_key_selection_expression = "$request.header.x-api-key"
   protocol_type                = "HTTP"
   route_selection_expression   = "$request.method $request.path"
+
+  cors_configuration {
+    allow_credentials = false
+    allow_headers = [
+      "*",
+    ]
+    allow_methods = [
+      "*",
+    ]
+    allow_origins = [
+      "*",
+    ]
+    expose_headers = []
+    max_age        = 0
+  }
+
 }
 
 resource "aws_apigatewayv2_stage" "ApiGatewayV2Stage" {
-  name          = "$default"
-  api_id        = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  name   = "$default"
+  api_id = aws_apigatewayv2_api.ApiGatewayV2Api.id
   default_route_settings {
     detailed_metrics_enabled = false
   }
@@ -724,6 +840,30 @@ resource "aws_apigatewayv2_route" "get_sondes" {
   target             = "integrations/${aws_apigatewayv2_integration.get_sondes.id}"
 }
 
+resource "aws_apigatewayv2_route" "listeners" {
+  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /listeners"
+  target             = "integrations/${aws_apigatewayv2_integration.listeners.id}"
+}
+
+resource "aws_apigatewayv2_route" "datanew" {
+  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /datanew"
+  target             = "integrations/${aws_apigatewayv2_integration.datanew.id}"
+}
+
+resource "aws_apigatewayv2_route" "predictions" {
+  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /predictions"
+  target             = "integrations/${aws_apigatewayv2_integration.predictions.id}"
+}
+
 resource "aws_apigatewayv2_route" "get_telem" {
   api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
   api_key_required   = false
@@ -758,6 +898,36 @@ resource "aws_apigatewayv2_integration" "get_sondes" {
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.get_sondes.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "listeners" {
+  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.listeners.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "datanew" {
+  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.datanew.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "predictions" {
+  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.predictions.arn
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }
