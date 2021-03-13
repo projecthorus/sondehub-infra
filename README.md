@@ -14,3 +14,4 @@ todo
  - add in DLQ for ingest, and for elk
  - add a way to process DLQ
  - monitor on stuff going into DLQ
+ - cloudfront distribution and route53 enteries to map

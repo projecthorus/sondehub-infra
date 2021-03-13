@@ -192,7 +192,7 @@ def datanew(event, context):
         "12hours": (43200, 120),  # 12h, 2m
         "6hours": (21600, 60),  # 6h, 1m
         "3hours": (10800, 10),  # 3h, 10s
-        "1hour": (3600, 1),  # 1h, 1s
+        "1hour": (3600, 5),  # 1h, 5s
     }
     duration_query = "1hour"
     requested_time = datetime.now()
@@ -295,7 +295,7 @@ def datanew(event, context):
                 batt = f'{frame_data["batt"]}V' if "batt" in frame_data else ""
                 subtype = frame_data["subtype"] if "subtype" in frame_data else ""
                 data = {
-                     "comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}",
+                     "comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}"
                 }
                 if "temp" in frame_data:
                     data["temperature_external"] = frame_data["temp"]
@@ -305,7 +305,7 @@ def datanew(event, context):
                     data["pressure"] = frame_data["pressure"]
                 if "sats" in frame_data:
                     data["sats"] = frame_data["sats"]
-                if "batt" in frame_dta:
+                if "batt" in frame_data:
                     data["batt"] = frame_data["batt"]
                 output["positions"]["position"].append({
                     "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
@@ -325,7 +325,7 @@ def datanew(event, context):
                     "sequence": "0"
                 })
             except:
-                 pass
+                pass
     output["positions"]["position"] = sorted(output["positions"]["position"], key=lambda k: k['position_id']) 
     return json.dumps(output)
 
@@ -476,7 +476,7 @@ if __name__ == "__main__":
                 "format": "json",
                 "max_positions": "0",
                 "position_id": "0",
-                "vehicles": "S2720104"
+                "vehicles": ""
            }},{}
         )
     )

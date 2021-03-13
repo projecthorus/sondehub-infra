@@ -414,15 +414,15 @@ resource "aws_acm_certificate_validation" "CertificateManagerCertificate" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-resource "aws_route53_record" "Route53RecordSet5" {
-  name = "api"
-  type = "CNAME"
-  ttl  = 60
-  records = [
-    "${aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.domain_name_configuration.0.target_domain_name}."
-  ]
-  zone_id = aws_route53_zone.Route53HostedZone.zone_id
-}
+# resource "aws_route53_record" "Route53RecordSet5" {
+#   name = "api"
+#   type = "CNAME"
+#   ttl  = 60
+#   records = [
+#     "${aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.domain_name_configuration.0.target_domain_name}."
+#   ]
+#   zone_id = aws_route53_zone.Route53HostedZone.zone_id
+# }
 
 resource "aws_cognito_user_pool_domain" "main" {
   domain          = "auth.${local.domain_name}"
