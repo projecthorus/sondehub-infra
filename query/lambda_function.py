@@ -294,6 +294,19 @@ def datanew(event, context):
                 bt = f'BT {frame_data["burst_timer"]}' if "burst_timer" in frame_data else ""
                 batt = f'{frame_data["batt"]}V' if "batt" in frame_data else ""
                 subtype = frame_data["subtype"] if "subtype" in frame_data else ""
+                data = {
+                     "comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}",
+                }
+                if "temp" in frame_data:
+                    data["temperature_external"] = frame_data["temp"]
+                if  "humidity" in frame_data:
+                    data["humidity"] = frame_data["humidity"]
+                if "pressure" in frame_data:
+                    data["pressure"] = frame_data["pressure"]
+                if "sats" in frame_data:
+                    data["sats"] = frame_data["sats"]
+                if "batt" in frame_dta:
+                    data["batt"] = frame_data["batt"]
                 output["positions"]["position"].append({
                     "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
                     "mission_id": "0",
@@ -303,15 +316,11 @@ def datanew(event, context):
                     "gps_lat": frame_data["lat"],
                     "gps_lon": frame_data["lon"],
                     "gps_alt": frame_data["alt"],
-                    "gps_heading": "",
+                    "gps_heading": frame_data["heading"] if "heading" in frame_data else "",
                     "gps_speed": frame_data["vel_h"],
                     "picture": "",
                     "temp_inside": "",
-                    "data": {
-                        "comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}",
-                        "temperature_external": "-34.2",
-                        "humidity": "17.9"
-                    },
+                    "data": data,
                     "callsign": frame_data["uploader_callsign"],
                     "sequence": "0"
                 })
