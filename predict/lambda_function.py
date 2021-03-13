@@ -140,7 +140,7 @@ def predict(event, context):
                 }
             }
     if "queryStringParameters" in event:
-        if "vehicles" in event["queryStringParameters"] and event["queryStringParameters"]["vehicles"] != "RS_*;*chase":
+        if "vehicles" in event["queryStringParameters"] and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"  and event["queryStringParameters"]["vehicles"] != "":
             payload["query"]["bool"]["filter"].append(
                 {
                     "match_phrase": {
@@ -192,7 +192,7 @@ def predict(event, context):
             else:
                 for item in stage['trajectory']:
                     data.append({
-                        "time": item['datetime'],
+                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] -180,
                         "alt": item['altitude'],

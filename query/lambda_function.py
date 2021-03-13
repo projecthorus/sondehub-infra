@@ -209,7 +209,7 @@ def datanew(event, context):
         return f"Duration must be either {', '.join(durations.keys())}"
 
     (duration, interval) = durations[duration_query]
-    if "vehicles" in event["queryStringParameters"] and (event["queryStringParameters"]['vehicles'] != "RS_*;*chase" or event["queryStringParameters"]['vehicles'] != ""):
+    if "vehicles" in event["queryStringParameters"] and (event["queryStringParameters"]['vehicles'] != "RS_*;*chase" and event["queryStringParameters"]['vehicles'] != ""):
         interval = 5
 
     if event["queryStringParameters"]["position_id"] != "0":

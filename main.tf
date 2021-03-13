@@ -383,15 +383,15 @@ resource "aws_route53_zone" "Route53HostedZone" {
   name = "${local.domain_name}."
 }
 
-resource "aws_route53_record" "Route53RecordSet" {
-  name = ""
-  type = "A"
-  ttl  = 300
-  records = [
-    "127.0.0.1"
-  ]
-  zone_id = aws_route53_zone.Route53HostedZone.zone_id
-}
+# resource "aws_route53_record" "Route53RecordSet" {
+#   name = ""
+#   type = "A"
+#   ttl  = 300
+#   records = [
+#     "127.0.0.1"
+#   ]
+#   zone_id = aws_route53_zone.Route53HostedZone.zone_id
+# }
 
 resource "aws_route53_record" "cert_validation" {
   for_each = {
