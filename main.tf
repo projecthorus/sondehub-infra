@@ -960,7 +960,7 @@ resource "aws_apigatewayv2_api_mapping" "ApiGatewayV2ApiMapping" {
 }
 
 resource "aws_apigatewayv2_domain_name" "ApiGatewayV2DomainName" {
-  domain_name = "api.${local.domain_name}"
+  domain_name = "api-raw.${local.domain_name}"
   domain_name_configuration {
     certificate_arn = aws_acm_certificate_validation.CertificateManagerCertificate.certificate_arn
     endpoint_type   = "REGIONAL"

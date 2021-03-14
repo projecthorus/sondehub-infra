@@ -192,7 +192,7 @@ def datanew(event, context):
         "12hours": (43200, 120),  # 12h, 2m
         "6hours": (21600, 60),  # 6h, 1m
         "3hours": (10800, 10),  # 3h, 10s
-        "1hour": (3600, 5),  # 1h, 5s
+        "1hour": (3600, 10),  # 1h, 5s
     }
     duration_query = "1hour"
     requested_time = datetime.now()
