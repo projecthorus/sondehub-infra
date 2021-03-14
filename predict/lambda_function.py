@@ -170,7 +170,10 @@ def predict(event, context):
         value = serials[serial]
         ascent_rate=value['rate'] if value['rate'] > 0 else 5 # this shouldn't really be used but it makes the API happy
         descent_rate=abs(value['rate'] if value['rate'] < 0 else 6) 
-        burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
+        if value['rate'] < 0:
+            burst_altitude = value['alt']+0.05
+        else:
+            burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
 
         conn.request("GET", 
             f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
