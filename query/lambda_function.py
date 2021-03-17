@@ -191,8 +191,8 @@ def datanew(event, context):
         "1day": (86400, 600),  # 1d, 10m
         "12hours": (43200, 120),  # 12h, 2m
         "6hours": (21600, 60),  # 6h, 1m
-        "3hours": (10800, 10),  # 3h, 10s
-        "1hour": (3600, 10),  # 1h, 5s
+        "3hours": (10800, 30),  # 3h, 10s
+        "1hour": (3600, 15),  # 1h, 5s
     }
     duration_query = "1hour"
     requested_time = datetime.now()
@@ -210,7 +210,7 @@ def datanew(event, context):
 
     (duration, interval) = durations[duration_query]
     if "vehicles" in event["queryStringParameters"] and (event["queryStringParameters"]['vehicles'] != "RS_*;*chase" and event["queryStringParameters"]['vehicles'] != ""):
-        interval = 5
+        interval = 1
 
     if event["queryStringParameters"]["position_id"] != "0":
         requested_time = datetime.fromisoformat(event["queryStringParameters"]["position_id"].replace("Z", "+00:00"))
