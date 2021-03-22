@@ -264,7 +264,14 @@ def datanew(event, context):
                                  "lt": lt.isoformat()
                             }
                         }
-                    },
+                    }
+                ],
+                "must_not": [
+                    {
+                        "match_phrase": {
+                            "software_name": "SondehubV1"
+                        }
+                    }
                 ]
             }
         },

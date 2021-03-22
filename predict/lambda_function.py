@@ -29,7 +29,7 @@ def predict(event, context):
                         "3": {
                         "date_histogram": {
                             "field": "datetime",
-                            "fixed_interval": "30s"
+                            "fixed_interval": "5s"
                         },
                         "aggs": {
                             "1": {
@@ -52,7 +52,9 @@ def predict(event, context):
                             },
                             "4": {
                             "serial_diff": {
-                                "buckets_path": "4-metric"
+                                "buckets_path": "4-metric",
+                                "gap_policy": "skip",
+                                "lag": 5
                             }
                             },
                             "5": {
@@ -135,7 +137,13 @@ def predict(event, context):
                         }
                     ],
                     "should": [],
-                    "must_not": []
+                    "must_not": [
+                    {
+                        "match_phrase": {
+                            "software_name": "SondehubV1"
+                        }
+                    }
+                ]
                     }
                 }
             }
@@ -158,7 +166,7 @@ def predict(event, context):
             serials[x['key']] = {
                 "alt": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['1']['hits']['hits'][0]['fields']['alt'][0],
                 "position": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]['fields']['position'][0].split(","),
-                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/30, # as we bucket for every 30 seconds at the moment,
+                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/25, # as we bucket for every 5 seconds with a lag of 5
                 "time": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['key_as_string']
             }
         except:
@@ -176,7 +184,7 @@ def predict(event, context):
             burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
 
         conn.request("GET", 
-            f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
+            f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
         )
         res = conn.getresponse()
         data = res.read()
@@ -197,7 +205,7 @@ def predict(event, context):
                     data.append({
                         "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
                         "lat": item['latitude'],
-                        "lon": item['longitude'] -180,
+                        "lon": item['longitude']-180,
                         "alt": item['altitude'],
                     })
 
@@ -205,7 +213,7 @@ def predict(event, context):
             "vehicle": serial,
             "time": value['request']['launch_datetime'],
             "latitude": value['request']['launch_latitude'],
-            "longitude": value['request']['launch_longitude']-180,
+            "longitude": value['request']['launch_longitude'],
             "altitude": value['request']['launch_altitude'],
             "ascent_rate":value['request']['ascent_rate'],
             "descent_rate":value['request']['descent_rate'],
@@ -241,8 +249,10 @@ if __name__ == "__main__":
 # position_id: 0
 # vehicles: RS_*;*chase
     print(
-        get_sondes_in_air_rates(
-          {},{}
+        predict(
+          {"queryStringParameters" : {
+"vehicles": ""
+}},{}
         )
     )
 
