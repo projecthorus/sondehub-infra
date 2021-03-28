@@ -257,9 +257,10 @@ def predict(event, context):
             burst_altitude = value['alt']+0.05
         else:
             burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
-
-        conn.request("GET", 
-            f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
+        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
+        print(url)
+        conn.request("GET", url
+            
         )
         res = conn.getresponse()
         data = res.read()
@@ -326,7 +327,7 @@ if __name__ == "__main__":
     print(
         predict(
           {"queryStringParameters" : {
-"vehicles": ""
+"vehicles": "P4930339"
 }},{}
         )
     )
