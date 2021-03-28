@@ -288,29 +288,35 @@ def datanew(event, context):
         for frame in sonde["3"]["buckets"]:
             try:
                 frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-                frequency = (
-                    f'{frame_data["frequency"]} MHz'
-                    if "frequency" in frame_data
-                    else ""
-                )
-                pressure = (
-                    f'{frame_data["pressure"]}hPa' if "pressure" in frame_data else ""
-                )
-                bt = (
-                    f'BT {frame_data["burst_timer"]}'
-                    if "burst_timer" in frame_data
-                    else ""
-                )
-                batt = f'{frame_data["batt"]}V' if "batt" in frame_data else ""
-                subtype = frame_data["subtype"] if "subtype" in frame_data else ""
-                data = {
-                    "comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}"
-                }
+
+                # Commented out until im sure we dont need it.
+                # frequency = (
+                #     f'{frame_data["frequency"]} MHz'
+                #     if "frequency" in frame_data
+                #     else ""
+                # )
+                # pressure = (
+                #     f'{frame_data["pressure"]}hPa' if "pressure" in frame_data else ""
+                # )
+                # bt = (
+                #     f'BT {frame_data["burst_timer"]}'
+                #     if "burst_timer" in frame_data
+                #     else ""
+                # )
+                # batt = f'{frame_data["batt"]}V' if "batt" in frame_data else ""
+                # subtype = frame_data["subtype"] if "subtype" in frame_data else ""
+
                 # Use subtype if it exists, else just use the basic type.
                 if "subtype" in frame_data:
                     _type = frame_data["subtype"]
                 else:
                     _type = frame_data["type"]
+
+                data = {
+                    #"comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}"
+                    "manufacturer": frame_data['manufacturer'],
+                    "type": _type
+                }
 
                 if "temp" in frame_data:
                     data["temperature_external"] = frame_data["temp"]
@@ -333,6 +339,10 @@ def datanew(event, context):
                 if "frequency" in frame_data:
                     data["frequency"] = frame_data["frequency"]
 
+                # May need to revisit this, if the resultant strings are too long.
+                if "xdata" in frame_data:
+                    data["xdata"] = frame_data["xdata"]
+
                 output["positions"]["position"].append(
                     {
                         "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
@@ -348,7 +358,6 @@ def datanew(event, context):
                         else "",
                         "gps_speed": frame_data["vel_h"],
                         "type": _type,
-                        "manufacturer": frame_data["manufacturer"],
                         "picture": "",
                         "temp_inside": "",
                         "data": data,
