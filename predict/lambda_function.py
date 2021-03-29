@@ -252,20 +252,25 @@ def predict(event, context):
     conn = http.client.HTTPSConnection("predict.cusf.co.uk")
     serial_data={}
     for serial in serials:
+
+        print(serial)
         value = serials[serial]
-        ascent_rate=value['rate'] if value['rate'] > 0 else 5 # this shouldn't really be used but it makes the API happy
+        ascent_rate=value['rate'] if value['rate'] > 0.5 else 5 # this shouldn't really be used but it makes the API happy
         descent_rate= seaLevelDescentRate(abs(value['rate']),value['alt']) if value['rate'] < 0 else 6
+        if descent_rate < 0.5:
+            continue
         if value['rate'] < 0:
             burst_altitude = value['alt']+0.05
         else:
             burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
-        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180}&launch_datetime={value['time']}&launch_altitude={value['alt']}&ascent_rate={ascent_rate}&burst_altitude={burst_altitude}&descent_rate={descent_rate}"
+        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180:.2f}&launch_datetime={value['time']}&launch_altitude={value['alt']:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
         print(url)
         conn.request("GET", url
             
         )
         res = conn.getresponse()
         data = res.read()
+        print(data)
         serial_data[serial] = json.loads(data.decode("utf-8"))
 
     output = []

@@ -315,7 +315,7 @@ def datanew(event, context):
                     _type = frame_data["type"]
 
                 data = {
-                    #"comment": f"{subtype} {frame_data['serial']} {frequency} {pressure} {bt} {batt}"
+                    "comment": f"VK5QI please fix",
                     "manufacturer": frame_data['manufacturer'],
                     "type": _type
                 }
