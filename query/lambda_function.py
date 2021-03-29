@@ -3,6 +3,8 @@ import botocore.credentials
 from botocore.awsrequest import AWSRequest
 from botocore.endpoint import URLLib3Session
 from botocore.auth import SigV4Auth
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 import json
 import os
 from datetime import datetime, timedelta, timezone
