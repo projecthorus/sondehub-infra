@@ -89,7 +89,7 @@ def get_telem(event, context):
         "3d": (259200, 1200),  # 3d, 20m
         "1d": (86400, 600),  # 1d, 10m
         "6h": (21600, 60),  # 6h, 1m
-        "3h": (10800, 10),  # 3h, 10s
+        "3h": (10800, 15),  # 3h, 10s
     }
     duration_query = "3h"
     requested_time = datetime.now()
