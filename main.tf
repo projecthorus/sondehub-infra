@@ -372,6 +372,16 @@ resource "aws_iam_role_policy" "history" {
             "Resource": [
                 "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
             ]
+        },
+                       {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
         }
     ]
 }
@@ -687,10 +697,15 @@ resource "aws_lambda_function" "history" {
   filename         = "${path.module}/build/history.zip"
   source_code_hash = data.archive_file.history.output_base64sha256
   publish          = true
-  memory_size      = 1024
-  role             = aws_iam_role.history.arn
+  memory_size      = 512
+  role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
   tracing_config {
     mode = "Active"
   }
@@ -1040,7 +1055,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     dedicated_master_enabled = false
     dedicated_master_type    = "t3.small.elasticsearch"
     instance_count           = 4
-    instance_type            = "r5.large.elasticsearch"
+    instance_type            = "t3.medium.elasticsearch"
     zone_awareness_enabled   = true
     zone_awareness_config {
       availability_zone_count = 3

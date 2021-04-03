@@ -1,70 +1,84 @@
 import boto3
+import botocore.credentials
+from botocore.awsrequest import AWSRequest
+from botocore.endpoint import URLLib3Session
+from botocore.auth import SigV4Auth
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 import json
 import os
-from datetime import datetime, timedelta
-import threading
-from queue import Queue
-import queue
-from botocore import UNSIGNED
-from botocore.config import Config
+from datetime import datetime, timedelta, timezone
+import sys, traceback
 
-S3_BUCKET = "sondehub-open-data"
-
-class Downloader(threading.Thread): # Stolen from the SDK, if I wasn't lazy I'd made a build chain for this lambda so we can reuse the code in both projects
-    def __init__(
-        self, tasks_to_accomplish, tasks_that_are_done, debug=False, *args, **kwargs
-    ):
-        self.tasks_to_accomplish = tasks_to_accomplish
-        self.tasks_that_are_done = tasks_that_are_done
-        self.debug = debug
-        super().__init__(*args, **kwargs)
-
-    def run(self):
-        s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
-        while True:
-            try:
-                task = self.tasks_to_accomplish.get_nowait()
-            except queue.Empty:
-                return
-            data = s3.get_object(Bucket=task[0], Key=task[1])
-            response = json.loads(data["Body"].read())
-            if self.debug:
-                print(response)
-            self.tasks_that_are_done.put(response)
-            self.tasks_to_accomplish.task_done()
-
-
-def download(serial):
-    prefix_filter = f"serial-hashed/{serial}/"
-
-    s3 = boto3.resource("s3", config=Config(signature_version=UNSIGNED))
-    bucket = s3.Bucket(S3_BUCKET)
-    data = []
-
-    number_of_processes = 200
-    tasks_to_accomplish = Queue()
-    tasks_that_are_done = Queue()
-
-    for s3_object in bucket.objects.filter(Prefix=prefix_filter):
-        tasks_to_accomplish.put((s3_object.bucket_name, s3_object.key))
-
-    for _ in range(number_of_processes):
-        Downloader(tasks_to_accomplish, tasks_that_are_done, False).start()
-    tasks_to_accomplish.join()
-
-    while not tasks_that_are_done.empty():
-        data.append(tasks_that_are_done.get())
-
-    return data
+HOST = os.getenv("ES")
+# get current sondes, filter by date, location
 
 def history(event, context):
-    radiosondes = download(serial=event["pathParameters"]["serial"])
-    return json.dumps(radiosondes)
+    path = "telm-*/_search"
+    payload = {
+        "aggs": {
+            "3": {
+                "date_histogram": {
+                    "field": "datetime",
+                    "fixed_interval": "1s",
+                    "min_doc_count": 1,
+                },
+                "aggs": {
+                    "1": {
+                        "top_hits": {
+                            "size": 1,
+                            "sort": [{"datetime": {"order": "desc"}}],
+                        }
+                    }
+                },
+            }
+        },
+        "query": {
+            "bool": {
+                "filter": [
+                    {"match_all": {}},
+                    {
+                        "match_phrase": {
+                        "serial": str(event["pathParameters"]["serial"])
+                        }
+                    }
+                ]
+            }
+        },
+    }
+    
+    results = es_request(payload, path, "POST")
+    output = [
+        data["1"]["hits"]["hits"][0]["_source"] 
+        for data in results["aggregations"]["3"]["buckets"] 
+    ]
+    return json.dumps(output)
+
+
+
+def es_request(payload, path, method):
+    # get aws creds
+    session = boto3.Session()
+
+    params = json.dumps(payload)
+    headers = {"Host": HOST, "Content-Type": "application/json"}
+    request = AWSRequest(
+        method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
+    )
+    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+
+    session = URLLib3Session()
+    r = session.send(request.prepare())
+    return json.loads(r.text)
+
 
 if __name__ == "__main__":
-    # print(get_sondes({"queryStringParameters":{"lat":"-28.22717","lon":"153.82996","distance":"50000"}}, {}))
     print(
         history(
-            {"pathParameters": {"serial": "R2450480"}}, {}
+            {"pathParameters": {"serial": "S4720140"}}, {}
         )
     )
+
+
+
+

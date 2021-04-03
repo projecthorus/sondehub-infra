@@ -130,7 +130,6 @@ def get_telem(event, context):
                         "date_histogram": {
                             "field": "datetime",
                             "fixed_interval": f"{str(interval)}s",
-                            "time_zone": "Australia/Brisbane",
                             "min_doc_count": 1,
                         },
                         "aggs": {
@@ -241,7 +240,6 @@ def datanew(event, context):
                         "date_histogram": {
                             "field": "datetime",
                             "fixed_interval": f"{str(interval)}s",
-                            "time_zone": "Australia/Brisbane",
                             "min_doc_count": 1,
                         },
                         "aggs": {
