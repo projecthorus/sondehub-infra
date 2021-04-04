@@ -507,7 +507,7 @@ resource "aws_lambda_function" "LambdaFunction" {
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
-  timeout          = 10
+  timeout          = 30
   tracing_config {
     mode = "Active"
   }
@@ -1054,7 +1054,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
     dedicated_master_type    = "t3.small.elasticsearch"
-    instance_count           = 4
+    instance_count           = 6
     instance_type            = "t3.medium.elasticsearch"
     zone_awareness_enabled   = true
     zone_awareness_config {
