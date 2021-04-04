@@ -372,6 +372,16 @@ resource "aws_iam_role_policy" "history" {
             "Resource": [
                 "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
             ]
+        },
+                       {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
         }
     ]
 }
@@ -457,6 +467,12 @@ data "archive_file" "api_to_iot" {
   output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
 }
 
+data "archive_file" "station_api_to_iot" {
+  type        = "zip"
+  source_file = "station-api-to-iot-core/lambda_function.py"
+  output_path = "${path.module}/build/station-api-to-iot-core.zip"
+}
+
 data "archive_file" "query" {
   type        = "zip"
   source_file = "query/lambda_function.py"
@@ -487,6 +503,30 @@ resource "aws_lambda_function" "LambdaFunction" {
   handler          = "lambda_function.lambda_handler"
   filename         = "${path.module}/build/sonde-api-to-iot-core.zip"
   source_code_hash = data.archive_file.api_to_iot.output_base64sha256
+  publish          = true
+  memory_size      = 256
+  role             = aws_iam_role.IAMRole5.arn
+  runtime          = "python3.7"
+  timeout          = 30
+  tracing_config {
+    mode = "Active"
+  }
+  environment {
+    variables = {
+      "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
+    }
+  }
+  layers = [
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
+    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
+  ]
+}
+
+resource "aws_lambda_function" "station" {
+  function_name    = "station-api-to-iot-core"
+  handler          = "lambda_function.lambda_handler"
+  filename         = "${path.module}/build/station-api-to-iot-core.zip"
+  source_code_hash = data.archive_file.station_api_to_iot.output_base64sha256
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
@@ -657,10 +697,15 @@ resource "aws_lambda_function" "history" {
   filename         = "${path.module}/build/history.zip"
   source_code_hash = data.archive_file.history.output_base64sha256
   publish          = true
-  memory_size      = 1024
-  role             = aws_iam_role.history.arn
+  memory_size      = 512
+  role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
   tracing_config {
     mode = "Active"
   }
@@ -725,6 +770,13 @@ resource "aws_lambda_permission" "LambdaPermission2" {
   function_name = aws_lambda_function.LambdaFunction.arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/telemetry"
+}
+
+resource "aws_lambda_permission" "station" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.station.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners"
 }
 
 resource "aws_lambda_layer_version" "LambdaLayerVersion2" {
@@ -816,6 +868,15 @@ resource "aws_apigatewayv2_route" "ApiGatewayV2Route" {
   route_key          = "PUT /sondes/telemetry"
   target             = "integrations/${aws_apigatewayv2_integration.ApiGatewayV2Integration.id}"
 }
+
+resource "aws_apigatewayv2_route" "stations" {
+  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "PUT /listeners"
+  target             = "integrations/${aws_apigatewayv2_integration.stations.id}"
+}
+
 
 resource "aws_apigatewayv2_route" "sign_socket" {
   api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
@@ -952,6 +1013,16 @@ resource "aws_apigatewayv2_integration" "ApiGatewayV2Integration" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "stations" {
+  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.station.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_api_mapping" "ApiGatewayV2ApiMapping" {
   api_id          = aws_apigatewayv2_api.ApiGatewayV2Api.id
   domain_name     = aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.id
@@ -983,9 +1054,12 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
     dedicated_master_type    = "t3.small.elasticsearch"
-    instance_count           = 2
-    instance_type            = "r5.xlarge.elasticsearch"
-    zone_awareness_enabled   = false
+    instance_count           = 6
+    instance_type            = "t3.medium.elasticsearch"
+    zone_awareness_enabled   = true
+    zone_awareness_config {
+      availability_zone_count = 3
+    }
   }
   cognito_options {
     enabled          = true
@@ -1024,6 +1098,11 @@ EOF
     volume_type = "gp2"
     volume_size = 60
   }
+        log_publishing_options {
+          cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs" 
+          enabled                  = true 
+          log_type                 = "ES_APPLICATION_LOGS"
+        }
 }
 data "aws_kms_key" "es" {
   key_id = "alias/aws/es"

@@ -89,7 +89,7 @@ def get_telem(event, context):
         "3d": (259200, 1200),  # 3d, 20m
         "1d": (86400, 600),  # 1d, 10m
         "6h": (21600, 60),  # 6h, 1m
-        "3h": (10800, 10),  # 3h, 10s
+        "3h": (10800, 15),  # 3h, 10s
     }
     duration_query = "3h"
     requested_time = datetime.now()
@@ -130,7 +130,6 @@ def get_telem(event, context):
                         "date_histogram": {
                             "field": "datetime",
                             "fixed_interval": f"{str(interval)}s",
-                            "time_zone": "Australia/Brisbane",
                             "min_doc_count": 1,
                         },
                         "aggs": {
@@ -189,9 +188,9 @@ def datanew(event, context):
         "3days": (259200, 1200),  # 3d, 20m
         "1day": (86400, 600),  # 1d, 10m
         "12hours": (43200, 120),  # 12h, 2m
-        "6hours": (21600, 60),  # 6h, 1m
-        "3hours": (10800, 30),  # 3h, 10s
-        "1hour": (3600, 15),  # 1h, 5s
+        "6hours": (21600, 120),  # 6h, 1m
+        "3hours": (10800, 60),  # 3h, 10s
+        "1hour": (3600, 30),  # 1h, 5s
     }
     duration_query = "1hour"
     requested_time = datetime.now()
@@ -241,7 +240,6 @@ def datanew(event, context):
                         "date_histogram": {
                             "field": "datetime",
                             "fixed_interval": f"{str(interval)}s",
-                            "time_zone": "Australia/Brisbane",
                             "min_doc_count": 1,
                         },
                         "aggs": {
@@ -499,12 +497,11 @@ if __name__ == "__main__":
         datanew(
             {
                 "queryStringParameters": {
-                    "mode": "1day",
+                    "mode": "3hours",
                     "type": "positions",
                     "format": "json",
                     "max_positions": "0",
-                    "position_id": "0",
-                    "vehicles": "",
+                    "position_id": "0"
                 }
             },
             {},

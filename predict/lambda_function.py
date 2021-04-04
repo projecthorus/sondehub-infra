@@ -11,9 +11,12 @@ from datetime import datetime, timedelta, timezone
 import sys, traceback
 import http.client
 import math
+import logging
 
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
 HOST = os.getenv("ES")
+
 def getDensity(altitude):
     """ 
 	Calculate the atmospheric density for a given altitude in metres.
@@ -90,7 +93,6 @@ def seaLevelDescentRate(descent_rate, altitude):
 
 
 def predict(event, context):
-
     path = "telm-*/_search"
     payload = {
                 "aggs": {
@@ -206,7 +208,7 @@ def predict(event, context):
                         {
                         "range": {
                             "datetime": {
-                                    "gte": "now-1h",
+                                    "gte": "now-5m",
                                     "lte": "now",
                             "format": "strict_date_optional_time"
                             }
@@ -233,7 +235,9 @@ def predict(event, context):
                     }
                 }
             )
+    logging.debug("Start ES Request")
     results = es_request(payload, path, "GET")
+    logging.debug("Finished ES Request")
     
 
 
@@ -251,9 +255,9 @@ def predict(event, context):
 
     conn = http.client.HTTPSConnection("predict.cusf.co.uk")
     serial_data={}
+    logging.debug("Start Predict")
     for serial in serials:
 
-        print(serial)
         value = serials[serial]
         ascent_rate=value['rate'] if value['rate'] > 0.5 else 5 # this shouldn't really be used but it makes the API happy
         descent_rate= seaLevelDescentRate(abs(value['rate']),value['alt']) if value['rate'] < 0 else 6
@@ -263,16 +267,22 @@ def predict(event, context):
             burst_altitude = value['alt']+0.05
         else:
             burst_altitude = (value['alt']+0.05) if value['alt'] > 26000 else 26000
-        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={float(value['position'][1].strip())+ 180:.2f}&launch_datetime={value['time']}&launch_altitude={value['alt']:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
+
+        longitude = float(value['position'][1].strip())
+        if longitude < 0:
+            longitude += 360
+        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={longitude:.2f}&launch_datetime={value['time']}&launch_altitude={value['alt']:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
+        
+        print(serial)
         print(url)
+
         conn.request("GET", url
             
         )
         res = conn.getresponse()
         data = res.read()
-        print(data)
         serial_data[serial] = json.loads(data.decode("utf-8"))
-
+    logging.debug("Stop Predict")
     output = []
     for serial in serial_data:
         value = serial_data[serial]
@@ -288,7 +298,7 @@ def predict(event, context):
                     data.append({
                         "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
                         "lat": item['latitude'],
-                        "lon": item['longitude']-180,
+                        "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
                     })
 
@@ -304,7 +314,7 @@ def predict(event, context):
             "landed": 0,
             "data":  json.dumps(data)
         })
-
+    logging.debug("Finished")
     return json.dumps(output)
 
 def es_request(payload, path, method):
@@ -331,13 +341,11 @@ if __name__ == "__main__":
 # max_positions: 0
 # position_id: 0
 # vehicles: RS_*;*chase
-    print(
-        predict(
+    predict(
           {"queryStringParameters" : {
-"vehicles": "P4930339"
 }},{}
         )
-    )
+    
 
 
 # get list of sondes,    serial, lat,lon, alt
