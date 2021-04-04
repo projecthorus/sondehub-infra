@@ -1,0 +1,500 @@
+swagger: "2.0"
+info:
+  description: "SondeHub v2 API"
+  version: "2.0.0"
+  title: "SondeHub"
+  termsOfService: "http://github.com/projecthorus/sondehub-infra"
+  contact:
+    email: "vk3fur@sondehub.org"
+  license:
+    name: "Creative Commons BY-SA 2.0"
+    url: "https://creativecommons.org/licenses/by-sa/2.0/"
+host: "api.v2.sondehub.org"
+basePath: "/"
+schemes:
+- "https"
+paths:
+  /sondes/telemetry:
+    put:
+      summary: Adds decoded telemetry to Sondehub bus / database.
+      consumes:
+        - "application/json"
+      produces:
+        - "text/plain"
+      parameters:
+        - in: header
+          name: Date
+          description: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT as per RFC7231. This is used to calculate receiver time offset for correcting clients that have the incorrect time.
+          required: true
+          type: string
+          format: date-time
+        - in: header
+          name: User-Agent
+          type: string
+          description: "The software and version performing the telemetry upload, eg:  `autorx-1.4.1-beta5`"
+        - $ref: "#/parameters/input_payloads"
+            
+                
+              
+      responses:
+        200:
+          description: Telemetry logged
+    get:
+      summary: Gets telemetry data from sondes
+      description: >
+        Do not regularly poll this endpoint, it is rate limited. Use this to get the current state of all the radiosondes then use the realtime API to access streaming data.
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: duration
+          description: This is the max duration of time you'll receive data from. A lower value will result is higher resolution data.
+          required: false
+          type: string
+          enum:
+            - "3h"
+            - "6h"
+            - "1d"
+            - "3d"
+        - in: query
+          name: serial
+          description: Specific serial under
+          required: false
+          type: string
+        - in: query
+          name: datetime
+          description: "End time to query. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          required: false
+          type: string
+          format: date-time
+
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            $ref: "#/definitions/sonde_query_results_format"
+  /sondes:
+    get:
+      summary: Gets latest sonde data indexed by serial number.
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: lat
+          type: number
+          description:  "Latitude - if specified, lon and distance are required. Eg: -34.9285"
+        - in: query
+          name: lon
+          description: "Longitude - if specified, lat and distance are required Eg:  138.6007"
+          type: number
+        - in: query
+          name: distance
+          description: "Distance in meters - if specified, lat and lon are required"
+          type: number
+        - in: query
+          name: last
+          description: "How far back to search in seconds. Defaults to 24hrs"
+          type: number
+          
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            $ref: "#/definitions/sonde_query_results_format"
+  /sonde/{serial}:
+    get:
+      summary: Gets telemetry data from sondes
+      description: >
+        Gets telemetry data for a sonde
+      produces:
+        - "application/json"
+      parameters:
+        - in: path
+          name: serial
+          description: Serial number of the radio sonde to receive
+          required: true
+          type: string
+        
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/telemetry_format" 
+  /listeners:
+    get:
+      deprecated: true
+      summary: Gets a list of stations that have reported a radiosonde in the last 3 days. Used as a legacy endpoint for sondehub.org
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: List of stations receiving radiosonde data
+          schema:
+            type: array
+            description: Returns an array of objects containing listener data.
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Callsign of the station listening
+                tdiff_hours:
+                  type: number
+                  description: Number of hours since the station was last heard from
+                lon:
+                  type: number
+                  format: double
+                  description: Longitude of the station
+                lat:
+                  type: number
+                  format: double
+                  description: Latitude of the station
+                alt:
+                  type: number
+                  description: number of meters above sealevel
+                description:
+                  description: text description of the station
+                  type: string
+    put:
+      summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
+      consumes:
+        - "application/json"
+      produces:
+        - "text/plain"
+      parameters:
+        - in: body
+          required: true
+          name: body
+          schema:
+            $ref: "#/definitions/listener"
+      responses:
+        200:
+          description: Telemetry logged
+  /sondes/websocket:
+    get:
+      description: Gets a presigned URL for using to connect to the MQTT websocket endpoint
+      produces:
+        - "text/plain"
+      responses:
+        200:
+          description: A presigned URL for connecting to a websocket MQTT feed.
+  /predictions:
+    get:
+      deprecated: true
+      description: radiosonde landing predictions
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: vehicles
+          type: string
+      responses:
+        200:
+          description: Prediction results
+          schema:
+            $ref: "#/definitions/predictions" 
+  /datanew:
+    get:
+      deprecated: true
+      description: Legacy endpoint that is utilized to make sondehub ui work
+      parameters:
+        - in: query
+          name: type
+          type: string
+          enum:
+            - positions
+          required: true
+        - in: query
+          name: max_positions
+          type: number
+        - in: query
+          name: mode
+          type: string
+          description: duration to query
+          enum:
+            - "3days"
+            - "1day"
+            - "12hours"
+            - "6hours"
+            - "3hours"
+            - "1hour"
+        - in: query
+          name: vehicles
+          type: string
+          description: "only supports either none, or a single serial number"
+        - in: query
+          name: position_id
+          type: string
+          format: date-time
+      responses:
+        200:
+          description: Results compatiable with sondehub ui
+          schema:
+            type: object
+            properties:
+              positions:
+                type: object
+                properties:
+                  position:
+                    type: array
+                    items:
+                      type: object
+                        
+      
+parameters:
+  input_payloads:
+    in: body
+    required: true
+    name: body
+    schema:
+      description: Open telementry format
+      items:
+        $ref: "#/definitions/telemetry_format"
+definitions:
+  sonde_query_results_format:
+    type: object
+    properties:
+      serial:
+        type: object
+        properties:
+          datetime: 
+            $ref: "#/definitions/telemetry_format"
+  telemetry_format:
+    description: Open telementry format
+    type: "object"
+    required:
+      - software_name
+      - software_version
+      - uploader_callsign
+      - time_received
+      - manufacturer
+      - type
+      - serial
+      - frame
+      - datetime
+      - lat
+      - lon
+      - alt
+    properties:
+      software_name:
+        description: >
+          Name of the decoding software
+          
+          e.g. 'radiosonde_auto_rx', 'dxlAPRS', 'RS41Tracker'
+        type: "string"
+      software_version:
+        description: >
+          Version of the decoding software
+
+          e.g. '1.4.0', '20210115'
+        type: "string"
+      uploader_callsign:
+        type: "string"
+        description: >
+          Callsign of the uploader
+
+          Arbitrary string. Uploader position information and other metadata will be handled separately, but will need to match this callsign to enable calculation of listener statistics.
+      time_received:
+        description: >
+          The time the telemetry packet was received. UTC time in YYYY-MM-DDTHH:MM:SS.SSSSSSZ format.
+        type: "string"
+        format: "date-time"
+      manufacturer:
+        type: "string"
+        enum:
+          - Vaisala
+          - Graw
+          - Meteomodem
+          - Intermet Systems
+          - Lockheed Martin
+          - Meteo-Radiy
+      type:
+        type: "string"
+        enum:
+          - RS41
+          - DFM
+          - M10
+          - M20
+          - iMet-4
+          - iMet-54
+          - LMS6-400
+          - LMS6-1680
+          - MRZ
+      serial:
+        type: "string"
+        description: >
+          Radiosonde Serial Number. Where possible this should be in the format which matches the sticker/label on the radiosonde itself
+
+          iMet-1/iMet-4 sondes do not provide a serial number, and so auto_rx [generates](https://github.com/projecthorus/radiosonde_auto_rx/wiki/Model-Specific-Notes#intermet-imet-1--imet-4) a serial number based on launch time and transmit frequency. DFM sondes do not regularly transmit their serial number, and so data from these sondes should not be uploaded before the serial number is known.
+      
+      frame:
+        type: "number"
+        format: "integer"
+        description: >
+          Frame Number, ideally unique over the entire flight.
+
+      datetime:
+        type: "string"
+        format: "date-time"
+        description: >
+          Date/Time from the sonde's GPS, provided in YYYY-MM-DDTHH:MM:SS.SSSSSSZ format
+
+          Some sondes (e.g. iMet, LMS6) do not provide the date portion of the timestamp. In this situation, the date portion should be added on by the receiver. An example of how to handle this problem is [available here](https://github.com/projecthorus/radiosonde_auto_rx/blob/master/auto_rx/autorx/sonde_specific.py#L13).
+      
+      lat:
+        description: Latitude (decimal degrees)
+        type: "number"
+        format: "double"
+      lon:
+        description: Longitude (decimal degrees)
+        type: "number"
+        format: "double"
+      alt:
+        description: Altitude (metres)  
+        type: "number"
+        format: "double"
+        
+      subtype:
+        description: Detailed Radiosonde Model Type
+        type: "string"
+        enum:
+           - 'RS41-SG'
+           - 'RS41-SGP'
+           - 'RS41-SGM'
+           - 'DFM06'
+           - 'DFM09'
+           - 'DFM09P'
+           - 'DFM17'
+           - 'M10'
+           - 'M20'
+           - 'MRZ-H1'
+
+      
+      
+      frequency:
+        type: "number"
+        format: "float"
+        description: Transmit frequency of the radiosonde in MHz.
+      temp:
+        type: "number"
+        format: "float"
+        description: Measured Temperature (deg C)  
+      humidity:
+        type: "number"
+        format: "float"
+        description: Measured Relative Humidity (%)
+      vel_h:
+        type: "number"
+        format: "float"
+        description: Horizontal Velocity (m/s)  
+      vel_v:
+        type: "number"
+        format: "float"
+        description: Horizontal Velocity (m/s)  
+      pressure:
+        description: Measured Pressure (hPa)  
+        type: "number"
+        format: "float"
+
+      heading:
+        type: "number"
+        format: "float"
+        description: Heading (degrees True)  
+      batt:
+        type: "number"
+        format: "float"
+        description: Battery Voltage (volts)  
+      sats:
+        type: "number"
+        format: "integer"
+        description: Number of SVs used in position solution  
+      
+      xdata:
+        type: "string"
+        format: "ascii hex"
+        description: Auxiliary Data (e.g Ozone data) as a hexadecimal string.  
+      
+      snr:
+        type: number
+        format: float
+        description: Signal-to-Noise ratio of the received signal, in dB  
+      rssi:
+        type: number
+        format: float
+        description: Received-Signal-Strength-Indication of the radiosonde signal, nominally in dBm  
+      uploader_position:
+        type: array
+        items:
+          type: number
+          format: double
+        minItems: 3
+        maxItems: 3
+        description: Station position, as a list [lat, lon, alt]
+      uploader_antenna:
+        type: string
+  listener:
+    type: object
+    properties:
+      software_name:
+        description: 'Software Name, # e.g. radiosonde_auto_rx'
+        type: "string"
+      software_version: 
+        description: "Software version number,  e.g. 1.5.1"
+        type: "string"
+      uploader_callsign:
+        description: "Uploader's callsign, # e.g. CHANGEME_AUTO_RX"
+        type: "string"
+      uploader_position:
+        description: "Station position, as a list [lat, lon, alt] Note: This may be set to null, which will result in the station position not appearing on the map."
+        type: array
+        items:
+          type: number
+          format: double
+        minItems: 3
+        maxItems: 3
+      uploader_antenna:
+        description: Uploader's antenna description
+        type: "string"
+      uploader_contact_email: 
+        description: "user_contact_email@host.com, # Optional contact e-mail, to assist SondeHub admins in resolving faults."
+        type: "string"
+      mobile:
+        type: boolean
+        description: "Set to true to appear as a chase-car on the tracker map."
+  predictions:
+    type: array
+    items:
+      type: object
+      properties: 
+        vehicle:
+          type: string
+          description: callsign / serial of the radiosonde
+        time:
+          type: string
+          format: date-time
+        latitude: 
+          type: number
+        longitude:
+          type: number
+        altitude:
+          type: number
+        ascent_rate:
+          type: number
+        descent_rate:
+          type: number
+        burst_altitude:
+          type: number
+        landed:
+          enum:
+            - 1
+            - 0
+        data:  
+          description: This is the json output from the Tāwhirimātea predictor http://tawhiri.cusf.co.uk
+          type: string
+      
+     
+externalDocs:
+  description: "Sondehub Infra"
+  url: "http://github.com/projecthorus/sondehub-infra"
