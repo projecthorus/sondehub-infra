@@ -77,7 +77,7 @@ paths:
             $ref: "#/definitions/sonde_query_results_format"
   /sondes:
     get:
-      summary: Gets latest sonde data indexed by serial number, with option for position/distance based-filtering.
+      summary: Request latest sonde data indexed by serial number, with options for position/distance based-filtering.
       produces:
         - "application/json"
       parameters:
@@ -113,13 +113,13 @@ paths:
       parameters:
         - in: path
           name: serial
-          description: Serial number of the radiosonde to request data for.
+          description: Serial number of the radiosonde to request data for. e.g. S1130567
           required: true
           type: string
         
       responses:
         200:
-          description: Returns a list of SondeHub Telemetry values. If no data for the requested serial number is available, the list will be empty.
+          description: Returns a time-sorted array of SondeHub Telemetry objects. If no data for the requested serial number is available, the array will be empty.
           schema:
             type: array
             items:
@@ -141,10 +141,10 @@ paths:
               properties:
                 name:
                   type: string
-                  description: Callsign of the station listening
+                  description: Callsign of the station.
                 tdiff_hours:
                   type: number
-                  description: Number of hours since the station was last heard from
+                  description: Number of hours since the station was last heard from.
                 lon:
                   type: number
                   format: double
@@ -155,9 +155,9 @@ paths:
                   description: Latitude of the station
                 alt:
                   type: number
-                  description: number of meters above sealevel
+                  description: Altitude of the station, in metres ASL.
                 description:
-                  description: text description of the station
+                  description: Text Description of the station, with HTML formatting.
                   type: string
     put:
       summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
@@ -466,7 +466,7 @@ definitions:
         type: "string"
       mobile:
         type: boolean
-        description: "Set to true to appear as a chase-car on the tracker map."
+        description: "Indicates that the station is mobile, and should appear as a chase car on the tracker map. Set to false if this is a fixed station."
   predictions:
     type: array
     items:
