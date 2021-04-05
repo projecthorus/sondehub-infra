@@ -374,7 +374,7 @@ def datanew(event, context):
 
 def get_listeners(event, context):
 
-    path = "telm-*/_search"
+    path = "listeners-*/_search"
     payload = {
         "aggs": {
             "2": {
@@ -389,14 +389,14 @@ def get_listeners(event, context):
                             "_source": False,
                             "size": 1,
                             "docvalue_fields": [
-                                "uploader_position",
+                                "uploader_position_elk",
                                 "uploader_alt",
                                 "uploader_antenna.keyword",
                                 "software_name.keyword",
                                 "software_version.keyword",
-                                "datetime",
+                                "ts",
                             ],
-                            "sort": [{"datetime": {"order": "desc"}}],
+                            "sort": [{"ts": {"order": "desc"}}],
                         }
                     }
                 },
@@ -408,15 +408,15 @@ def get_listeners(event, context):
                 "must": [],
                 "filter": [
                     {"match_all": {}},
-                    {"exists": {"field": "uploader_position"},},
+                    {"exists": {"field": "uploader_position_elk"},},
                     {"exists": {"field": "uploader_alt"},},
                     {"exists": {"field": "uploader_antenna.keyword"},},
                     {"exists": {"field": "software_name.keyword"},},
                     {"exists": {"field": "software_version.keyword"},},
-                    {"exists": {"field": "datetime"},},
+                    {"exists": {"field": "ts"},},
                     {
                         "range": {
-                            "datetime": {
+                            "ts": {
                                 "gte": "now-7d",
                                 "lte": "now",
                                 "format": "strict_date_optional_time",
@@ -438,7 +438,7 @@ def get_listeners(event, context):
             "tdiff_hours": (
                 datetime.now(timezone.utc)
                 - datetime.fromisoformat(
-                    listener["1"]["hits"]["hits"][0]["fields"]["datetime"][0].replace(
+                    listener["1"]["hits"]["hits"][0]["fields"]["ts"][0].replace(
                         "Z", "+00:00"
                     )
                 )
@@ -446,12 +446,12 @@ def get_listeners(event, context):
             / 60
             / 60,
             "lon": float(
-                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position"][0]
+                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position_elk"][0]
                 .replace(" ", "")
                 .split(",")[1]
             ),
             "lat": float(
-                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position"][0]
+                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position_elk"][0]
                 .replace(" ", "")
                 .split(",")[0]
             ),
@@ -460,7 +460,7 @@ def get_listeners(event, context):
                 <font size=\"-2\"><BR>\n
                     <B>Radio: {listener["1"]["hits"]["hits"][0]["fields"]["software_name.keyword"][0]}-{listener["1"]["hits"]["hits"][0]["fields"]["software_version.keyword"][0]}</B><BR>\n
                     <B>Antenna: </B>{listener["1"]["hits"]["hits"][0]["fields"]["uploader_antenna.keyword"][0]}<BR>\n
-                    <B>Last Contact: </B>{listener["1"]["hits"]["hits"][0]["fields"]["datetime"][0]} <BR>\n
+                    <B>Last Contact: </B>{listener["1"]["hits"]["hits"][0]["fields"]["ts"][0]} <BR>\n
                 </font>\n
             """,
         }
@@ -494,15 +494,9 @@ if __name__ == "__main__":
     # position_id: 0
     # vehicles: RS_*;*chase
     print(
-        datanew(
+        get_listeners(
             {
-                "queryStringParameters": {
-                    "mode": "3hours",
-                    "type": "positions",
-                    "format": "json",
-                    "max_positions": "0",
-                    "position_id": "0"
-                }
+             
             },
             {},
         )
