@@ -16,7 +16,7 @@ schemes:
 paths:
   /sondes/telemetry:
     put:
-      summary: Adds decoded telemetry to Sondehub bus / database.
+      summary: Upload Radiosonde Telemetry to Sondehub database.
       consumes:
         - "application/json"
       produces:
@@ -24,7 +24,7 @@ paths:
       parameters:
         - in: header
           name: Date
-          description: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT as per RFC7231. This is used to calculate receiver time offset for correcting clients that have the incorrect time.
+          description: <day-name>, <day> <month> <year> <hour>:<minute>:<second> UTC as per RFC7231. This is used to calculate receiver time offset for correcting clients that have the incorrect time.
           required: true
           type: string
           format: date-time
@@ -38,17 +38,19 @@ paths:
               
       responses:
         200:
-          description: Telemetry logged
+          description: Telemetry Saved into Database Successfuly
+        500:
+          description: Other Server error (including malformed data submissions)
     get:
-      summary: Gets telemetry data from sondes
+      summary: Request Radiosonde Telemetry Data
       description: >
-        Do not regularly poll this endpoint, it is rate limited. Use this to get the current state of all the radiosondes then use the realtime API to access streaming data.
+        Use this to get the current state of all the radiosondes then use the realtime API to access streaming data. Do not regularly poll this endpoint, it is rate limited.
       produces:
         - "application/json"
       parameters:
         - in: query
           name: duration
-          description: This is the max duration of time you'll receive data from. A lower value will result is higher resolution data.
+          description: How far back in time to receive data from. A shorter time period will result is higher time resolution data.
           required: false
           type: string
           enum:
@@ -58,12 +60,12 @@ paths:
             - "3d"
         - in: query
           name: serial
-          description: Specific serial under
+          description: Specific serial number to query (if wanted). Requests for data for a single sonde will return the highest time resolution data available.
           required: false
           type: string
         - in: query
           name: datetime
-          description: "End time to query. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
           required: false
           type: string
           format: date-time
@@ -75,7 +77,7 @@ paths:
             $ref: "#/definitions/sonde_query_results_format"
   /sondes:
     get:
-      summary: Gets latest sonde data indexed by serial number.
+      summary: Request latest sonde data indexed by serial number, with options for position/distance based-filtering.
       produces:
         - "application/json"
       parameters:
@@ -103,21 +105,21 @@ paths:
             $ref: "#/definitions/sonde_query_results_format"
   /sonde/{serial}:
     get:
-      summary: Gets telemetry data from sondes
+      summary: Request telemetry data for an individual radiosonde
       description: >
-        Gets telemetry data for a sonde
+        Use this to request all available telemetry data for an individual radiosonde, specified by serial number.
       produces:
         - "application/json"
       parameters:
         - in: path
           name: serial
-          description: Serial number of the radio sonde to receive
+          description: Serial number of the radiosonde to request data for. e.g. S1130567
           required: true
           type: string
         
       responses:
         200:
-          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          description: Returns a time-sorted array of SondeHub Telemetry objects. If no data for the requested serial number is available, the array will be empty.
           schema:
             type: array
             items:
@@ -125,7 +127,7 @@ paths:
   /listeners:
     get:
       deprecated: true
-      summary: Gets a list of stations that have reported a radiosonde in the last 3 days. Used as a legacy endpoint for sondehub.org
+      summary: Requests a list of stations that have reported to Sondehub in the last 3 days. Used as a legacy endpoint for tracker.sondehub.org
       produces:
         - "application/json"
       responses:
@@ -139,10 +141,10 @@ paths:
               properties:
                 name:
                   type: string
-                  description: Callsign of the station listening
+                  description: Callsign of the station.
                 tdiff_hours:
                   type: number
-                  description: Number of hours since the station was last heard from
+                  description: Number of hours since the station was last heard from.
                 lon:
                   type: number
                   format: double
@@ -153,9 +155,9 @@ paths:
                   description: Latitude of the station
                 alt:
                   type: number
-                  description: number of meters above sealevel
+                  description: Altitude of the station, in metres ASL.
                 description:
-                  description: text description of the station
+                  description: Text Description of the station, with HTML formatting.
                   type: string
     put:
       summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
@@ -171,25 +173,26 @@ paths:
             $ref: "#/definitions/listener"
       responses:
         200:
-          description: Telemetry logged
+          description: Station Position successfully uploaded.
   /sondes/websocket:
     get:
-      description: Gets a presigned URL for using to connect to the MQTT websocket endpoint
+      description: Gets a presigned URL for use in connecting to the MQTT websocket endpoint.
       produces:
         - "text/plain"
       responses:
         200:
-          description: A presigned URL for connecting to a websocket MQTT feed.
+          description: A presigned URL for connecting to the websocket MQTT feed.
   /predictions:
     get:
       deprecated: true
-      description: radiosonde landing predictions
+      description: Radiosonde landing predictions
       produces:
         - "application/json"
       parameters:
         - in: query
           name: vehicles
           type: string
+          description: If provided, filters predictions to a single provided serial number. Should be provided, but left blank if no filtering is required.
       responses:
         200:
           description: Prediction results
@@ -198,7 +201,7 @@ paths:
   /datanew:
     get:
       deprecated: true
-      description: Legacy endpoint that is utilized to make sondehub ui work
+      description: "Legacy endpoint required by the sondehub tracker."
       parameters:
         - in: query
           name: type
@@ -212,7 +215,7 @@ paths:
         - in: query
           name: mode
           type: string
-          description: duration to query
+          description: Duration to query
           enum:
             - "3days"
             - "1day"
@@ -223,14 +226,14 @@ paths:
         - in: query
           name: vehicles
           type: string
-          description: "only supports either none, or a single serial number"
+          description: "Filter by serial. Currently only supports either none, or a single serial number"
         - in: query
           name: position_id
           type: string
           format: date-time
       responses:
         200:
-          description: Results compatiable with sondehub ui
+          description: Results compatible with sondehub mobile-tracker.
           schema:
             type: object
             properties:
@@ -249,7 +252,7 @@ parameters:
     required: true
     name: body
     schema:
-      description: Open telementry format
+      description: SondeHub telemetry format
       items:
         $ref: "#/definitions/telemetry_format"
 definitions:
@@ -262,7 +265,7 @@ definitions:
           datetime: 
             $ref: "#/definitions/telemetry_format"
   telemetry_format:
-    description: Open telementry format
+    description: SondeHub telemetry format
     type: "object"
     required:
       - software_name
@@ -282,7 +285,7 @@ definitions:
         description: >
           Name of the decoding software
           
-          e.g. 'radiosonde_auto_rx', 'dxlAPRS', 'RS41Tracker'
+          e.g. 'radiosonde_auto_rx', 'dxlAPRS', 'RS41Tracker', 'mySondy'
         type: "string"
       software_version:
         description: >
@@ -303,6 +306,7 @@ definitions:
         format: "date-time"
       manufacturer:
         type: "string"
+        description: "Radiosonde Manufacturer, as determined from the transmit modulation and high-level packet format."
         enum:
           - Vaisala
           - Graw
@@ -312,6 +316,7 @@ definitions:
           - Meteo-Radiy
       type:
         type: "string"
+        description: "The high-level radiosonde model, as can be determined just from the transmit modulation and high-level packet format."
         enum:
           - RS41
           - DFM
@@ -333,7 +338,7 @@ definitions:
         type: "number"
         format: "integer"
         description: >
-          Frame Number, ideally unique over the entire flight.
+          Frame Number, ideally unique over the entire flight. Should be taken from the telemetry. For some radiosondes (DFM, M10, M20), the datetime (converted to a unix time) is used instead of the provided frame number.
 
       datetime:
         type: "string"
@@ -357,7 +362,7 @@ definitions:
         format: "double"
         
       subtype:
-        description: Detailed Radiosonde Model Type
+        description: Detailed Radiosonde Model Type, as determined through analysis of the telemetry.
         type: "string"
         enum:
            - 'RS41-SG'
@@ -371,8 +376,6 @@ definitions:
            - 'M20'
            - 'MRZ-H1'
 
-      
-      
       frequency:
         type: "number"
         format: "float"
@@ -431,9 +434,10 @@ definitions:
           format: double
         minItems: 3
         maxItems: 3
-        description: Station position, as a list [lat, lon, alt]
+        description: Station position, as a list [lat, lon, alt].
       uploader_antenna:
         type: string
+        description: Station antenna/receiver information, free-text string.
   listener:
     type: object
     properties:
@@ -444,7 +448,7 @@ definitions:
         description: "Software version number,  e.g. 1.5.1"
         type: "string"
       uploader_callsign:
-        description: "Uploader's callsign, # e.g. CHANGEME_AUTO_RX"
+        description: "Station callsign, # e.g. CHANGEME_AUTO_RX"
         type: "string"
       uploader_position:
         description: "Station position, as a list [lat, lon, alt] Note: This may be set to null, which will result in the station position not appearing on the map."
@@ -458,11 +462,11 @@ definitions:
         description: Uploader's antenna description
         type: "string"
       uploader_contact_email: 
-        description: "user_contact_email@host.com, # Optional contact e-mail, to assist SondeHub admins in resolving faults."
+        description: "Optional contact e-mail, to assist SondeHub admins in resolving faults. e.g. user_contact_email@host.com"
         type: "string"
       mobile:
         type: boolean
-        description: "Set to true to appear as a chase-car on the tracker map."
+        description: "Indicates that the station is mobile, and should appear as a chase car on the tracker map. Set to false if this is a fixed station."
   predictions:
     type: array
     items:
