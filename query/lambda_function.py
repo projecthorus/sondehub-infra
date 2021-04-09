@@ -92,7 +92,7 @@ def get_telem(event, context):
         "3h": (10800, 15),  # 3h, 10s
     }
     duration_query = "3h"
-    requested_time = datetime.now()
+    requested_time = datetime.now(timezone.utc)
 
     if (
         "queryStringParameters" in event
@@ -193,7 +193,7 @@ def datanew(event, context):
         "1hour": (3600, 30),  # 1h, 5s
     }
     duration_query = "1hour"
-    requested_time = datetime.now()
+    requested_time = datetime.now(timezone.utc)
 
     if event["queryStringParameters"]["type"] != "positions":
         raise ValueError
@@ -220,11 +220,11 @@ def datanew(event, context):
         requested_time = datetime.fromisoformat(
             event["queryStringParameters"]["position_id"].replace("Z", "+00:00")
         )
-        lt = datetime.now()
+        lt = datetime.now(timezone.utc)
         gte = requested_time
     else:
-        lt = datetime.now()
-        gte = datetime.now() - timedelta(0, duration)
+        lt = datetime.now(timezone.utc)
+        gte = datetime.now(timezone.utc) - timedelta(0, duration)
 
     path = "telm-*/_search"
     payload = {
@@ -289,23 +289,6 @@ def datanew(event, context):
             try:
                 frame_data = frame["1"]["hits"]["hits"][0]["_source"]
 
-                # Commented out until im sure we dont need it.
-                # frequency = (
-                #     f'{frame_data["frequency"]} MHz'
-                #     if "frequency" in frame_data
-                #     else ""
-                # )
-                # pressure = (
-                #     f'{frame_data["pressure"]}hPa' if "pressure" in frame_data else ""
-                # )
-                # bt = (
-                #     f'BT {frame_data["burst_timer"]}'
-                #     if "burst_timer" in frame_data
-                #     else ""
-                # )
-                # batt = f'{frame_data["batt"]}V' if "batt" in frame_data else ""
-                # subtype = frame_data["subtype"] if "subtype" in frame_data else ""
-
                 # Use subtype if it exists, else just use the basic type.
                 if "subtype" in frame_data:
                     _type = frame_data["subtype"]
@@ -365,7 +348,96 @@ def datanew(event, context):
                     }
                 )
             except:
-                pass
+                traceback.print_exc(file=sys.stdout)
+
+
+    # get chase cars
+
+    payload = {
+        "aggs": {
+            "2": {
+                "terms": {
+                    "field": "uploader_callsign.keyword",
+                    "order": {"_key": "desc"},
+                    "size": 10000,
+                },
+                "aggs": {
+                    "3": {
+                        "date_histogram": {
+                            "field": "ts",
+                            "fixed_interval": f"{str(interval)}s",
+                            "min_doc_count": 1,
+                        },
+                        "aggs": {
+                            "1": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [{"ts": {"order": "desc"}}],
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        },
+        "query": {
+            "bool": {
+                "filter": [
+                    {"match_all": {}},
+                    {
+                        "match_phrase": {
+                            "mobile": True
+                        }
+                    },
+                    {
+                        "range": {
+                            "ts": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                        }
+                    },
+                ]
+            }
+        },
+    }
+
+    path = "listeners-*/_search"
+
+    # {"position_id":"82159921","mission_id":"0","vehicle":"KB9RKU_chase",
+    # "server_time":"2021-04-09 06:28:55.109589","gps_time":"2021-04-09 06:28:54",
+    # "gps_lat":"41.539648333","gps_lon":"-89.111862667","gps_alt":"231.6","gps_heading":"",
+    # "gps_speed":"0","picture":"","temp_inside":"","data":{},"callsign":"","sequence":""}
+
+    results = es_request(payload, path, "POST")
+    
+    for car in results["aggregations"]["2"]["buckets"]:
+        for frame in car["3"]["buckets"]:
+            try:
+                frame_data = frame["1"]["hits"]["hits"][0]["_source"]
+
+               
+                data = {}
+                # 
+                output["positions"]["position"].append(
+                    {
+                        "position_id": f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}',
+                        "mission_id": "0",
+                        "vehicle": f'{frame_data["uploader_callsign"]}_chase',
+                        "server_time": datetime.fromtimestamp(frame_data["ts"]/1000).isoformat(),
+                        "gps_time": datetime.fromtimestamp(frame_data["ts"]/1000).isoformat(),
+                        "gps_lat": frame_data["uploader_position"][0],
+                        "gps_lon": frame_data["uploader_position"][1],
+                        "gps_alt": frame_data["uploader_position"][2],
+                        "gps_heading": "",
+                        "gps_speed": 0,
+                        "picture": "",
+                        "temp_inside": "",
+                        "data": data,
+                        "callsign": frame_data["uploader_callsign"],
+                        "sequence": "",
+                    }
+                )
+            except:
+                traceback.print_exc(file=sys.stdout)
+    
     output["positions"]["position"] = sorted(
         output["positions"]["position"], key=lambda k: k["position_id"]
     )
@@ -494,9 +566,13 @@ if __name__ == "__main__":
     # position_id: 0
     # vehicles: RS_*;*chase
     print(
-        get_listeners(
+        datanew(
             {
-             
+             "queryStringParameters": {
+                 "type" : "positions",
+                 "mode": "1hour",
+                 "position_id": "0"
+             }
             },
             {},
         )
