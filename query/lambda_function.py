@@ -489,15 +489,18 @@ def get_listeners(event, context):
                     {
                         "range": {
                             "ts": {
-                                "gte": "now-7d",
+                                "gte": "now-24h",
                                 "lte": "now",
                                 "format": "strict_date_optional_time",
                             }
                         }
                     },
+                    
                 ],
                 "should": [],
-                "must_not": [{"match_phrase": {"type": "SondehubV1"}}],
+                "must_not": [
+                    {"match_phrase": {"mobile": "true"}}, 
+                ],
             }
         },
     }
@@ -566,7 +569,7 @@ if __name__ == "__main__":
     # position_id: 0
     # vehicles: RS_*;*chase
     print(
-        datanew(
+        get_listeners(
             {
              "queryStringParameters": {
                  "type" : "positions",
