@@ -555,7 +555,7 @@ resource "aws_lambda_function" "get_sondes" {
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
-  timeout          = 10
+  timeout          = 30
   tracing_config {
     mode = "Active"
   }
@@ -579,7 +579,7 @@ resource "aws_lambda_function" "listeners" {
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
-  timeout          = 10
+  timeout          = 30
   tracing_config {
     mode = "Active"
   }
@@ -604,7 +604,7 @@ resource "aws_lambda_function" "datanew" {
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
-  timeout          = 10
+  timeout          = 30
   tracing_config {
     mode = "Active"
   }
@@ -628,7 +628,7 @@ resource "aws_lambda_function" "predictions" {
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
-  timeout          = 10
+  timeout          = 30
   tracing_config {
     mode = "Active"
   }

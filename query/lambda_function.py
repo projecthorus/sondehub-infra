@@ -246,7 +246,7 @@ def datanew(event, context):
                             "aggs": {
                                 "1": {
                                     "top_hits": {
-                                        "size": 1,
+                                        "size": 5,
                                         "sort": [{"datetime": {"order": "desc"}}],
                                     }
                                 }
@@ -289,7 +289,14 @@ def datanew(event, context):
             for frame in sonde["3"]["buckets"]:
                 try:
                     frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-
+                    uploaders = {
+                        x["_source"]['uploader_callsign'] : {
+                            "snr" : x["_source"]["snr"] if "snr" in x["_source"]  else None,
+                            "rssi" : x["_source"]["rssi"] if "rssi" in x["_source"] else None
+                        }
+                        for x in frame["1"]["hits"]["hits"]
+                    }
+                    
                     # Use subtype if it exists, else just use the basic type.
                     if "subtype" in frame_data:
                         _type = frame_data["subtype"]
@@ -344,7 +351,7 @@ def datanew(event, context):
                             "picture": "",
                             "temp_inside": "",
                             "data": data,
-                            "callsign": frame_data["uploader_callsign"],
+                            "callsign": uploaders,
                             "sequence": "0",
                         }
                     )
@@ -576,7 +583,8 @@ if __name__ == "__main__":
                  "type" : "positions",
                  "mode": "6hours",
                  "position_id": "0",
-                 "chase_only": "true"
+                 "chase_only": "false",
+                 "vehicles": "17008547"
              }
             },
             {},
