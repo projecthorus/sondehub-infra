@@ -225,130 +225,131 @@ def datanew(event, context):
     else:
         lt = datetime.now(timezone.utc)
         gte = datetime.now(timezone.utc) - timedelta(0, duration)
-
-    path = "telm-*/_search"
-    payload = {
-        "aggs": {
-            "2": {
-                "terms": {
-                    "field": "serial.keyword",
-                    "order": {"_key": "desc"},
-                    "size": 10000,
-                },
-                "aggs": {
-                    "3": {
-                        "date_histogram": {
-                            "field": "datetime",
-                            "fixed_interval": f"{str(interval)}s",
-                            "min_doc_count": 1,
-                        },
-                        "aggs": {
-                            "1": {
-                                "top_hits": {
-                                    "size": 1,
-                                    "sort": [{"datetime": {"order": "desc"}}],
+    output = {"positions": {"position": []}}
+    if "chase_only" not in event["queryStringParameters"] or event["queryStringParameters"]["chase_only"] != "true":
+        path = "telm-*/_search"
+        payload = {
+            "aggs": {
+                "2": {
+                    "terms": {
+                        "field": "serial.keyword",
+                        "order": {"_key": "desc"},
+                        "size": 10000,
+                    },
+                    "aggs": {
+                        "3": {
+                            "date_histogram": {
+                                "field": "datetime",
+                                "fixed_interval": f"{str(interval)}s",
+                                "min_doc_count": 1,
+                            },
+                            "aggs": {
+                                "1": {
+                                    "top_hits": {
+                                        "size": 1,
+                                        "sort": [{"datetime": {"order": "desc"}}],
+                                    }
                                 }
-                            }
-                        },
-                    }
-                },
-            }
-        },
-        "query": {
-            "bool": {
-                "filter": [
-                    {"match_all": {}},
-                    {
-                        "range": {
-                            "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                            },
                         }
                     },
-                ],
-                "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}],
-            }
-        },
-    }
-    if (
-        "vehicles" in event["queryStringParameters"]
-        and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
-        and event["queryStringParameters"]["vehicles"] != ""
-    ):
-        payload["query"]["bool"]["filter"].append(
-            {
-                "match_phrase": {
-                    "serial": str(event["queryStringParameters"]["vehicles"])
                 }
-            }
-        )
-    results = es_request(payload, path, "POST")
-
-    output = {"positions": {"position": []}}
-
-    for sonde in results["aggregations"]["2"]["buckets"]:
-        for frame in sonde["3"]["buckets"]:
-            try:
-                frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-
-                # Use subtype if it exists, else just use the basic type.
-                if "subtype" in frame_data:
-                    _type = frame_data["subtype"]
-                else:
-                    _type = frame_data["type"]
-
-                data = {
-                    "manufacturer": frame_data['manufacturer'],
-                    "type": _type
+            },
+            "query": {
+                "bool": {
+                    "filter": [
+                        {"match_all": {}},
+                        {
+                            "range": {
+                                "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                            }
+                        },
+                    ],
+                    "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}],
                 }
-
-                if "temp" in frame_data:
-                    data["temperature_external"] = frame_data["temp"]
-
-                if "humidity" in frame_data:
-                    data["humidity"] = frame_data["humidity"]
-
-                if "pressure" in frame_data:
-                    data["pressure"] = frame_data["pressure"]
-
-                if "sats" in frame_data:
-                    data["sats"] = frame_data["sats"]
-
-                if "batt" in frame_data:
-                    data["batt"] = frame_data["batt"]
-
-                if "burst_timer" in frame_data:
-                    data["burst_timer"] = frame_data["burst_timer"]
-
-                if "frequency" in frame_data:
-                    data["frequency"] = frame_data["frequency"]
-
-                # May need to revisit this, if the resultant strings are too long.
-                if "xdata" in frame_data:
-                    data["xdata"] = frame_data["xdata"]
-
-                output["positions"]["position"].append(
-                    {
-                        "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
-                        "mission_id": "0",
-                        "vehicle": frame_data["serial"],
-                        "server_time": frame_data["datetime"],
-                        "gps_time": frame_data["datetime"],
-                        "gps_lat": frame_data["lat"],
-                        "gps_lon": frame_data["lon"],
-                        "gps_alt": frame_data["alt"],
-                        "gps_heading": frame_data["heading"]
-                        if "heading" in frame_data
-                        else "",
-                        "gps_speed": frame_data["vel_h"],
-                        "type": _type,
-                        "picture": "",
-                        "temp_inside": "",
-                        "data": data,
-                        "callsign": frame_data["uploader_callsign"],
-                        "sequence": "0",
+            },
+        }
+        if (
+            "vehicles" in event["queryStringParameters"]
+            and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
+            and event["queryStringParameters"]["vehicles"] != ""
+        ):
+            payload["query"]["bool"]["filter"].append(
+                {
+                    "match_phrase": {
+                        "serial": str(event["queryStringParameters"]["vehicles"])
                     }
-                )
-            except:
-                traceback.print_exc(file=sys.stdout)
+                }
+            )
+        results = es_request(payload, path, "POST")
+
+
+
+        for sonde in results["aggregations"]["2"]["buckets"]:
+            for frame in sonde["3"]["buckets"]:
+                try:
+                    frame_data = frame["1"]["hits"]["hits"][0]["_source"]
+
+                    # Use subtype if it exists, else just use the basic type.
+                    if "subtype" in frame_data:
+                        _type = frame_data["subtype"]
+                    else:
+                        _type = frame_data["type"]
+
+                    data = {
+                        "manufacturer": frame_data['manufacturer'],
+                        "type": _type
+                    }
+
+                    if "temp" in frame_data:
+                        data["temperature_external"] = frame_data["temp"]
+
+                    if "humidity" in frame_data:
+                        data["humidity"] = frame_data["humidity"]
+
+                    if "pressure" in frame_data:
+                        data["pressure"] = frame_data["pressure"]
+
+                    if "sats" in frame_data:
+                        data["sats"] = frame_data["sats"]
+
+                    if "batt" in frame_data:
+                        data["batt"] = frame_data["batt"]
+
+                    if "burst_timer" in frame_data:
+                        data["burst_timer"] = frame_data["burst_timer"]
+
+                    if "frequency" in frame_data:
+                        data["frequency"] = frame_data["frequency"]
+
+                    # May need to revisit this, if the resultant strings are too long.
+                    if "xdata" in frame_data:
+                        data["xdata"] = frame_data["xdata"]
+
+                    output["positions"]["position"].append(
+                        {
+                            "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
+                            "mission_id": "0",
+                            "vehicle": frame_data["serial"],
+                            "server_time": frame_data["datetime"],
+                            "gps_time": frame_data["datetime"],
+                            "gps_lat": frame_data["lat"],
+                            "gps_lon": frame_data["lon"],
+                            "gps_alt": frame_data["alt"],
+                            "gps_heading": frame_data["heading"]
+                            if "heading" in frame_data
+                            else "",
+                            "gps_speed": frame_data["vel_h"],
+                            "type": _type,
+                            "picture": "",
+                            "temp_inside": "",
+                            "data": data,
+                            "callsign": frame_data["uploader_callsign"],
+                            "sequence": "0",
+                        }
+                    )
+                except:
+                    traceback.print_exc(file=sys.stdout)
 
 
     # get chase cars
@@ -569,12 +570,13 @@ if __name__ == "__main__":
     # position_id: 0
     # vehicles: RS_*;*chase
     print(
-        get_listeners(
+        datanew(
             {
              "queryStringParameters": {
                  "type" : "positions",
-                 "mode": "1hour",
-                 "position_id": "0"
+                 "mode": "6hours",
+                 "position_id": "0",
+                 "chase_only": "true"
              }
             },
             {},
