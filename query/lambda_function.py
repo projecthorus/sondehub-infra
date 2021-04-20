@@ -9,6 +9,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 import sys, traceback
+import re
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
@@ -195,9 +196,6 @@ def datanew(event, context):
     duration_query = "1hour"
     requested_time = datetime.now(timezone.utc)
 
-    if event["queryStringParameters"]["type"] != "positions":
-        raise ValueError
-
     max_positions = (
         int(event["queryStringParameters"]["max_positions"])
         if "max_positions" in event["queryStringParameters"]
@@ -206,22 +204,40 @@ def datanew(event, context):
 
     if event["queryStringParameters"]["mode"] in durations:
         duration_query = event["queryStringParameters"]["mode"]
+        (duration, interval) = durations[duration_query]
+    elif event["queryStringParameters"]["mode"] == "single":
+        duration = 259200
+        interval = 1
     else:
         return f"Duration must be either {', '.join(durations.keys())}"
 
-    (duration, interval) = durations[duration_query]
+    
     if "vehicles" in event["queryStringParameters"] and (
         event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
         and event["queryStringParameters"]["vehicles"] != ""
     ):
         interval = 1
 
+
     if event["queryStringParameters"]["position_id"] != "0":
-        requested_time = datetime.fromisoformat(
-            event["queryStringParameters"]["position_id"].replace("Z", "+00:00")
-        )
-        lt = datetime.now(timezone.utc)
-        gte = requested_time
+        if event["queryStringParameters"]["mode"] == "single":
+            position_id = event["queryStringParameters"]["position_id"]
+            matches = re.search("(.+)-(\d{4}-\d{2}-\d{2}\w\d{2}:\d{2}:\d{2}.\d+)Z",position_id).groups()
+            matched_time = matches[1].replace("Z", "+00:00")
+            matched_vehicle = matches[0]
+            requested_time = datetime.fromisoformat(matched_time)
+            lt = requested_time
+            gte = requested_time
+
+        else:
+            requested_time = datetime.fromisoformat(
+                event["queryStringParameters"]["position_id"].replace("Z", "+00:00")
+            )
+            lt = datetime.now(timezone.utc)
+            gte = requested_time
+        
+    elif event["queryStringParameters"]["mode"] == "single":
+        return f"Single requires a position id specified"
     else:
         lt = datetime.now(timezone.utc)
         gte = datetime.now(timezone.utc) - timedelta(0, duration)
@@ -246,7 +262,7 @@ def datanew(event, context):
                             "aggs": {
                                 "1": {
                                     "top_hits": {
-                                        "size": 5,
+                                        "size": 8,
                                         "sort": [{"datetime": {"order": "desc"}}],
                                     }
                                 }
@@ -261,7 +277,7 @@ def datanew(event, context):
                         {"match_all": {}},
                         {
                             "range": {
-                                "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                                "datetime": {"gte": gte.isoformat(), "lte": lt.isoformat()}
                             }
                         },
                     ],
@@ -278,6 +294,14 @@ def datanew(event, context):
                 {
                     "match_phrase": {
                         "serial": str(event["queryStringParameters"]["vehicles"])
+                    }
+                }
+            )
+        if event["queryStringParameters"]["mode"] == "single":
+            payload["query"]["bool"]["filter"].append(
+                {
+                    "match_phrase": {
+                        "serial": matched_vehicle
                     }
                 }
             )
@@ -580,11 +604,8 @@ if __name__ == "__main__":
         datanew(
             {
              "queryStringParameters": {
-                 "type" : "positions",
-                 "mode": "6hours",
-                 "position_id": "0",
-                 "chase_only": "false",
-                 "vehicles": "17008547"
+                 "mode": "single",
+                 "position_id": "912-2-12555-2021-04-20T06:47:59.000000Z"
              }
             },
             {},
