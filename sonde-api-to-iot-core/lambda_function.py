@@ -73,7 +73,6 @@ def lambda_handler(event, context):
     except:
         connect()
 
-    print(json.dumps(event))
     if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
         event["body"] = base64.b64decode(event["body"])
     if (
