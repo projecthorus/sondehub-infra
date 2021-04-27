@@ -281,7 +281,7 @@ def datanew(event, context):
                             }
                         },
                     ],
-                    "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}],
+                    "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"serial": "xxxxxxxx"}}],
                 }
             },
         }
@@ -370,7 +370,7 @@ def datanew(event, context):
                             "gps_heading": frame_data["heading"]
                             if "heading" in frame_data
                             else "",
-                            "gps_speed": frame_data["vel_h"],
+                            "gps_speed": frame_data["vel_h"] if "vel_h" in frame_data else "",
                             "type": _type,
                             "picture": "",
                             "temp_inside": "",
@@ -604,8 +604,10 @@ if __name__ == "__main__":
         datanew(
             {
              "queryStringParameters": {
-                 "mode": "single",
-                 "position_id": "912-2-12555-2021-04-20T06:47:59.000000Z"
+                 "vehicles": "55067220",
+                 "type": "positions",
+                 "mode": "1day",
+                 "position_id": "0"
              }
             },
             {},
