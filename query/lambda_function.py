@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta, timezone
 import sys, traceback
 import re
+import html
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
@@ -314,7 +315,7 @@ def datanew(event, context):
                 try:
                     frame_data = frame["1"]["hits"]["hits"][0]["_source"]
                     uploaders = {
-                        x["_source"]['uploader_callsign'] : {
+                        html.escape(x["_source"]['uploader_callsign']) : {
                             "snr" : x["_source"]["snr"] if "snr" in x["_source"]  else None,
                             "rssi" : x["_source"]["rssi"] if "rssi" in x["_source"] else None
                         }
@@ -323,13 +324,13 @@ def datanew(event, context):
                     
                     # Use subtype if it exists, else just use the basic type.
                     if "subtype" in frame_data:
-                        _type = frame_data["subtype"]
+                        _type = html.escape(frame_data["subtype"])
                     else:
-                        _type = frame_data["type"]
+                        _type = html.escape(frame_data["type"])
 
                     data = {
-                        "manufacturer": frame_data['manufacturer'],
-                        "type": _type
+                        "manufacturer": html.escape(frame_data['manufacturer']),
+                        "type": html.escape(_type)
                     }
 
                     if "temp" in frame_data:
@@ -355,15 +356,15 @@ def datanew(event, context):
 
                     # May need to revisit this, if the resultant strings are too long.
                     if "xdata" in frame_data:
-                        data["xdata"] = frame_data["xdata"]
+                        data["xdata"] = html.escape(frame_data["xdata"])
 
                     output["positions"]["position"].append(
                         {
-                            "position_id": f'{frame_data["serial"]}-{frame_data["datetime"]}',
+                            "position_id": html.escape(f'{frame_data["serial"]}-{frame_data["datetime"]}'),
                             "mission_id": "0",
-                            "vehicle": frame_data["serial"],
-                            "server_time": frame_data["datetime"],
-                            "gps_time": frame_data["datetime"],
+                            "vehicle": html.escape(frame_data["serial"]),
+                            "server_time": html.escape(frame_data["datetime"]),
+                            "gps_time": html.escape(frame_data["datetime"]),
                             "gps_lat": frame_data["lat"],
                             "gps_lon": frame_data["lon"],
                             "gps_alt": frame_data["alt"],
@@ -371,7 +372,7 @@ def datanew(event, context):
                             if "heading" in frame_data
                             else "",
                             "gps_speed": frame_data["vel_h"] if "vel_h" in frame_data else "",
-                            "type": _type,
+                            "type": html.escape(_type),
                             "picture": "",
                             "temp_inside": "",
                             "data": data,
@@ -450,11 +451,11 @@ def datanew(event, context):
                 # 
                 output["positions"]["position"].append(
                     {
-                        "position_id": f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}',
+                        "position_id": html.escape(f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}'),
                         "mission_id": "0",
-                        "vehicle": f'{frame_data["uploader_callsign"]}_chase',
-                        "server_time": datetime.fromtimestamp(frame_data["ts"]/1000).isoformat(),
-                        "gps_time": datetime.fromtimestamp(frame_data["ts"]/1000).isoformat(),
+                        "vehicle": html.escape(f'{frame_data["uploader_callsign"]}_chase'),
+                        "server_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
+                        "gps_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
                         "gps_lat": frame_data["uploader_position"][0],
                         "gps_lon": frame_data["uploader_position"][1],
                         "gps_alt": frame_data["uploader_position"][2],
@@ -463,7 +464,7 @@ def datanew(event, context):
                         "picture": "",
                         "temp_inside": "",
                         "data": data,
-                        "callsign": frame_data["uploader_callsign"],
+                        "callsign": html.escape(frame_data["uploader_callsign"]),
                         "sequence": "",
                     }
                 )
@@ -541,7 +542,7 @@ def get_listeners(event, context):
 
     output = [
         {
-            "name": listener["key"],
+            "name": html.escape(listener["key"]),
             "tdiff_hours": (
                 datetime.now(timezone.utc)
                 - datetime.fromisoformat(
@@ -565,9 +566,9 @@ def get_listeners(event, context):
             "alt": float(listener["1"]["hits"]["hits"][0]["fields"]["uploader_alt"][0]),
             "description": f"""\n
                 <font size=\"-2\"><BR>\n
-                    <B>Radio: {listener["1"]["hits"]["hits"][0]["fields"]["software_name.keyword"][0]}-{listener["1"]["hits"]["hits"][0]["fields"]["software_version.keyword"][0]}</B><BR>\n
-                    <B>Antenna: </B>{listener["1"]["hits"]["hits"][0]["fields"]["uploader_antenna.keyword"][0]}<BR>\n
-                    <B>Last Contact: </B>{listener["1"]["hits"]["hits"][0]["fields"]["ts"][0]} <BR>\n
+                    <B>Radio: {html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_name.keyword"][0])}-{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_version.keyword"][0])}</B><BR>\n
+                    <B>Antenna: </B>{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["uploader_antenna.keyword"][0])}<BR>\n
+                    <B>Last Contact: </B>{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["ts"][0])} <BR>\n
                 </font>\n
             """,
         }
@@ -604,12 +605,16 @@ if __name__ == "__main__":
         datanew(
             {
              "queryStringParameters": {
-                 "vehicles": "55067220",
                  "type": "positions",
                  "mode": "1day",
                  "position_id": "0"
              }
             },
             {},
+        )
+    )
+    print(
+        get_listeners(
+            {},{}
         )
     )
