@@ -309,6 +309,12 @@ resource "aws_iam_role_policy" "IAMPolicy4" {
             "Effect": "Allow",
             "Action": "iot:*",
             "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "*"
         }
     ]
 }

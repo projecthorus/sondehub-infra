@@ -9,10 +9,11 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 import sys, traceback
+import uuid
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
-
+s3 = boto3.resource('s3')
 def history(event, context):
     path = "telm-*/_search"
     payload = {
@@ -49,10 +50,14 @@ def history(event, context):
     
     results = es_request(payload, path, "POST")
     output = [
-        data["1"]["hits"]["hits"][0]["_source"] 
+        {k: v for k, v in data["1"]["hits"]["hits"][0]["_source"].items() if k != 'user-agent' and k != 'upload_time_delta'}
+        
         for data in results["aggregations"]["3"]["buckets"] 
     ]
-    return json.dumps(output)
+    s3 = boto3.resource('s3')
+    object = s3.Object('sondehub-open-data', 'export/' + str(uuid.uuid4()))
+    object.put(Body=json.dumps(output).encode('utf-8'), ACL='public-read', ContentType='application/json')
+    return {"statusCode": 302, "headers": {"Location": f'https://{object.bucket_name}.s3.amazonaws.com/{object.key}'}}
 
 
 
@@ -75,7 +80,7 @@ def es_request(payload, path, method):
 if __name__ == "__main__":
     print(
         history(
-            {"pathParameters": {"serial": "S4720140"}}, {}
+            {"pathParameters": {"serial": "S3530044"}}, {}
         )
     )
 

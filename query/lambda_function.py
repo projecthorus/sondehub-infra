@@ -314,13 +314,7 @@ def datanew(event, context):
             for frame in sonde["3"]["buckets"]:
                 try:
                     frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-                    uploaders = {
-                        html.escape(x["_source"]['uploader_callsign']) : {
-                            "snr" : x["_source"]["snr"] if "snr" in x["_source"]  else None,
-                            "rssi" : x["_source"]["rssi"] if "rssi" in x["_source"] else None
-                        }
-                        for x in frame["1"]["hits"]["hits"]
-                    }
+                    uploaders = {}
                     
                     # Use subtype if it exists, else just use the basic type.
                     if "subtype" in frame_data:
@@ -382,7 +376,13 @@ def datanew(event, context):
                     )
                 except:
                     traceback.print_exc(file=sys.stdout)
-
+            output["positions"]["position"][-1]["callsign"] = {
+                html.escape(x["_source"]['uploader_callsign']) : {
+                    "snr" : x["_source"]["snr"] if "snr" in x["_source"]  else None,
+                    "rssi" : x["_source"]["rssi"] if "rssi" in x["_source"] else None
+                }
+                for x in frame["1"]["hits"]["hits"]
+            }
 
     # get chase cars
 
@@ -607,7 +607,8 @@ if __name__ == "__main__":
              "queryStringParameters": {
                  "type": "positions",
                  "mode": "1day",
-                 "position_id": "0"
+                 "position_id": "0",
+                 "vehicles": "S3530044"
              }
             },
             {},
