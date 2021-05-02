@@ -189,9 +189,9 @@ def datanew(event, context):
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
         "3days": (259200, 1200),  # 3d, 20m
         "1day": (86400, 600),  # 1d, 10m
-        "12hours": (43200, 120),  # 12h, 2m
+        "12hours": (43200, 300),  # 12h, 2m
         "6hours": (21600, 120),  # 6h, 1m
-        "3hours": (10800, 60),  # 3h, 10s
+        "3hours": (10800, 90),  # 3h, 10s
         "1hour": (3600, 30),  # 1h, 5s
     }
     duration_query = "1hour"
@@ -217,7 +217,7 @@ def datanew(event, context):
         event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
         and event["queryStringParameters"]["vehicles"] != ""
     ):
-        interval = 1
+        interval = 2
 
 
     if event["queryStringParameters"]["position_id"] != "0":
@@ -264,7 +264,7 @@ def datanew(event, context):
                                 "1": {
                                     "top_hits": {
                                         "size": 8,
-                                        "sort": [{"datetime": {"order": "desc"}}],
+                                        "sort": [{"pressure": {"order": "desc","mode" : "median"}},{"humidity": {"order": "desc","mode" : "median"}},{"temp": {"order": "desc","mode" : "median"}},{"alt": {"order": "desc","mode" : "median"}}],
                                     }
                                 }
                             },
@@ -606,16 +606,16 @@ if __name__ == "__main__":
             {
              "queryStringParameters": {
                  "type": "positions",
-                 "mode": "1day",
+                 "mode": "12hours",
                  "position_id": "0",
-                 "vehicles": "S3530044"
+                 "vehicles": ""
              }
             },
             {},
         )
     )
-    print(
-        get_listeners(
-            {},{}
-        )
-    )
+    # print(
+    #     get_listeners(
+    #         {},{}
+    #     )
+    # )
