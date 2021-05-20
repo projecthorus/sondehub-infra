@@ -1,8 +1,12 @@
+import sys
+sys.path.append("vendor/lib/python3.9/site-packages")
 import json
 import boto3
 import os
 import uuid
 import hashlib
+import asyncio
+import aioboto3
 
 BUCKET = "sondehub-open-data"
 
@@ -33,32 +37,42 @@ def values_to_hash(payload):
             output += str(payload[field])
     return output
 
-s3 = boto3.client('s3')
+
+
+async def upload(event, context):
+    async with aioboto3.client("s3") as s3:
+        tasks = []
+        payloads = {}
+        for record in event['Records']:
+            sns_message = json.loads(record["body"])
+            payload = json.loads(sns_message["Message"])
+
+            body = json.dumps(payload)
+            id = str(uuid.uuid4())
+            hash = hashlib.sha256(values_to_hash(payload).encode("utf-8")).hexdigest()
+
+            filenames = [
+                f"date/{payload['datetime']}-{payload['serial']}-{id}.json",
+                f"serial/{payload['serial']}/{payload['datetime']}-{id}.json",
+                f"serial-hashed/{payload['serial']}/{payload['datetime']}-{hash}.json"
+            ]
+            
+            for filename in filenames:
+                print(filename)
+                tasks.append(s3.put_object(
+                    Bucket=BUCKET,
+                    Body=body,
+                    Key=filename
+                ))
+        await asyncio.gather(*tasks)
+
 
 def lambda_handler(event, context):
-    payloads = {}
-    for record in event['Records']:
-        sns_message = json.loads(record["body"])
-        payload = json.loads(sns_message["Message"])
-
-        body = json.dumps(payload)
-        id = str(uuid.uuid4())
-        hash = hashlib.sha256(values_to_hash(payload).encode("utf-8")).hexdigest()
-
-        filenames = [
-            f"date/{payload['datetime']}-{payload['serial']}-{id}.json",
-            f"serial/{payload['serial']}/{payload['datetime']}-{id}.json",
-            f"serial-hashed/{payload['serial']}/{payload['datetime']}-{hash}.json"
-        ]
-        
-        for filename in filenames:
-            s3.put_object(
-                Bucket=BUCKET,
-                Body=body,
-                Key=filename
-            )
+    asyncio.run(upload(event, context))
 
 
+# test event
+###########
 if __name__ == "__main__":
     demo_event = {
         "Records": [
@@ -82,3 +96,5 @@ if __name__ == "__main__":
         ]
     }
     lambda_handler(demo_event, {})
+
+    

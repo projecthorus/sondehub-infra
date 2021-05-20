@@ -1,6 +1,6 @@
 data "archive_file" "sqs_to_s3" {
   type        = "zip"
-  source_file = "sonde-to-s3/lambda_function.py"
+  source_dir = "sonde-to-s3/"
   output_path = "${path.module}/build/sonde-to-s3.zip"
 }
 
