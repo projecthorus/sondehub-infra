@@ -128,6 +128,8 @@ EOF
   max_session_duration = 3600
 }
 
+
+
 resource "aws_iam_role" "sign_socket" {
   name                 = "sign_socket"
   assume_role_policy   = <<EOF
@@ -194,6 +196,26 @@ resource "aws_iam_policy" "IAMManagedPolicy" {
             ]
         }
     ]
+}
+EOF
+}
+
+resource "aws_sns_topic" "sonde_telem" {
+  name            = "sonde-telem"
+  delivery_policy = <<EOF
+{
+  "http": {
+    "defaultHealthyRetryPolicy": {
+      "minDelayTarget": 5,
+      "maxDelayTarget": 30,
+      "numRetries": 100,
+      "numMaxDelayRetries": 0,
+      "numNoDelayRetries": 3,
+      "numMinDelayRetries": 0,
+      "backoffFunction": "linear"
+    },
+    "disableSubscriptionOverrides": false
+  }
 }
 EOF
 }
@@ -514,9 +536,6 @@ resource "aws_lambda_function" "LambdaFunction" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
@@ -538,9 +557,6 @@ resource "aws_lambda_function" "station" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 10
-  tracing_config {
-    mode = "Active"
-  }
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
@@ -562,9 +578,7 @@ resource "aws_lambda_function" "get_sondes" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -586,9 +600,7 @@ resource "aws_lambda_function" "listeners" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -611,9 +623,7 @@ resource "aws_lambda_function" "datanew" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -635,9 +645,7 @@ resource "aws_lambda_function" "predictions" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -659,9 +667,7 @@ resource "aws_lambda_function" "get_telem" {
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -683,9 +689,7 @@ resource "aws_lambda_function" "sign_socket" {
   role             = aws_iam_role.sign_socket.arn
   runtime          = "python3.7"
   timeout          = 10
-  tracing_config {
-    mode = "Active"
-  }
+
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
@@ -712,9 +716,7 @@ resource "aws_lambda_function" "history" {
       "ES" = "es.${local.domain_name}"
     }
   }
-  tracing_config {
-    mode = "Active"
-  }
+
   layers = [
     "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
     "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
@@ -1060,12 +1062,9 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
     dedicated_master_type    = "t3.small.elasticsearch"
-    instance_count           = 6
-    instance_type            = "t3.medium.elasticsearch"
-    zone_awareness_enabled   = true
-    zone_awareness_config {
-      availability_zone_count = 3
-    }
+    instance_count           = 1
+    instance_type            = "r5.xlarge.elasticsearch"
+    zone_awareness_enabled   = false
   }
   cognito_options {
     enabled          = true
@@ -1102,13 +1101,13 @@ EOF
   ebs_options {
     ebs_enabled = true
     volume_type = "gp2"
-    volume_size = 60
+    volume_size = 250
   }
-        log_publishing_options {
-          cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs" 
-          enabled                  = true 
-          log_type                 = "ES_APPLICATION_LOGS"
-        }
+  log_publishing_options {
+    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs"
+    enabled                  = true
+    log_type                 = "ES_APPLICATION_LOGS"
+  }
 }
 data "aws_kms_key" "es" {
   key_id = "alias/aws/es"
