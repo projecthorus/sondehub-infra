@@ -337,6 +337,11 @@ resource "aws_iam_role_policy" "IAMPolicy4" {
             "Effect": "Allow",
             "Action": "s3:*",
             "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "sns:*",
+            "Resource": "*"
         }
     ]
 }
@@ -491,7 +496,7 @@ resource "aws_route53_record" "Route53RecordSet7" {
 
 data "archive_file" "api_to_iot" {
   type        = "zip"
-  source_file = "sonde-api-to-iot-core/lambda_function.py"
+  source_dir = "sonde-api-to-iot-core/"
   output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
 }
 
@@ -539,6 +544,7 @@ resource "aws_lambda_function" "LambdaFunction" {
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
+      "SNS_TOPIC" = aws_sns_topic.sonde_telem.arn
     }
   }
   layers = [

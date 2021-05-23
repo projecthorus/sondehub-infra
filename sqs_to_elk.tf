@@ -70,7 +70,7 @@ resource "aws_lambda_function" "sqs_to_elk" {
   role                           = aws_iam_role.sqs_to_elk.arn
   runtime                        = "python3.8"
   timeout                        = 5
-  reserved_concurrent_executions = 30
+  reserved_concurrent_executions = 100
   environment {
     variables = {
       "ES" = aws_route53_record.Route53RecordSet7.fqdn

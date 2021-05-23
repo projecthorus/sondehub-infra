@@ -81,7 +81,7 @@ resource "aws_lambda_function" "sqs_to_s3" {
   role                           = aws_iam_role.sqs_to_s3.arn
   runtime                        = "python3.8"
   timeout                        = 30
-  reserved_concurrent_executions = 30
+  reserved_concurrent_executions = 100
   vpc_config {
     security_group_ids = ["sg-772f357f"]
     subnet_ids = ["subnet-5c34ec6d", "subnet-7b1c3836", "subnet-204b052e", "subnet-de4ddeff", "subnet-408d1c1f", "subnet-a7f460c1"]

@@ -263,7 +263,7 @@ def datanew(event, context):
                             "aggs": {
                                 "1": {
                                     "top_hits": {
-                                        "size": 8,
+                                        "size": 5,
                                         "sort": [{"pressure": {"order": "desc","mode" : "median"}},{"humidity": {"order": "desc","mode" : "median"}},{"temp": {"order": "desc","mode" : "median"}},{"alt": {"order": "desc","mode" : "median"}}],
                                     }
                                 }

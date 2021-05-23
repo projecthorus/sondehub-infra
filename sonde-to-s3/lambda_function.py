@@ -58,7 +58,6 @@ async def upload(event, context):
             ]
             
             for filename in filenames:
-                print(filename)
                 tasks.append(s3.put_object(
                     ACL="public-read",
                     Bucket=BUCKET,
