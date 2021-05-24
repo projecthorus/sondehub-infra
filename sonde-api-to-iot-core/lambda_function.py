@@ -14,19 +14,7 @@ import threading
 from email.utils import parsedate
 import os
 import asyncio
-import aioboto3
 
-import asyncio
-from functools import wraps, partial
-
-def async_wrap(func):
-    @wraps(func)
-    async def run(*args, loop=None, executor=None, **kwargs):
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        pfunc = partial(func, *args, **kwargs)
-        return await loop.run_in_executor(executor, pfunc)
-    return run 
 
 # this needs a bunch of refactor but the general approach is
 # connect to mqtt via websockets during init
@@ -46,9 +34,6 @@ def set_connection_header(request, operation_name, **kwargs):
 
 event_loop_group = io.EventLoopGroup(1)
 host_resolver = io.DefaultHostResolver(event_loop_group)
-
-
-#io.init_logging(io.LogLevel.Error, "stderr")
 
 
 def connect():
@@ -75,7 +60,6 @@ connect()
 sns = boto3.client("sns",region_name="us-east-1")
 sns.meta.events.register('request-created.dynamodb', set_connection_header)
 
-@async_wrap
 def post(payload):
     sns.publish(
                 TopicArn=os.getenv("SNS_TOPIC"),
@@ -83,68 +67,68 @@ def post(payload):
     )
 
 async def upload(event, context):
-        global connect_future, mqtt_connection
-        
-        tasks = []
-        # Future.result() waits until a result is available
+    global connect_future, mqtt_connection
+    
+    tasks = []
+    # Future.result() waits until a result is available
+    try:
+        connect_future.result()
+    except:
+        connect()
+
+    if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
+        event["body"] = base64.b64decode(event["body"])
+    if (
+        "content-encoding" in event["headers"]
+        and event["headers"]["content-encoding"] == "gzip"
+    ):
+        event["body"] = zlib.decompress(event["body"], 16 + zlib.MAX_WBITS)
+    time_delta = None
+    if "date" in event["headers"]:
         try:
-            connect_future.result()
+            time_delta_header = event["headers"]["date"]
+            time_delta = (
+                datetime.datetime(*parsedate(time_delta_header)[:7])
+                - datetime.datetime.utcnow()
+            ).total_seconds()
         except:
+            pass
+    payloads = json.loads(event["body"])
+    to_sns = []
+    first = False
+    for payload in payloads:
+        if "user-agent" in event["headers"]:
+            event["time_server"] = datetime.datetime.now().isoformat()
+            payload["user-agent"] = event["headers"]["user-agent"]
+        payload["position"] = f'{payload["lat"]},{payload["lon"]}'
+        if time_delta:
+            payload["upload_time_delta"] = time_delta
+        if "uploader_position" in payload:
+            if not payload["uploader_position"]:
+                payload.pop("uploader_position")
+            else:
+                (payload["uploader_alt"], payload["uploader_position"]) = (
+                    payload["uploader_position"][2],
+                    f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
+                )
+        to_sns.append(payload)
+        (msg, x) = mqtt_connection.publish(
+            topic=f'sondes/{payload["serial"]}',
+            payload=json.dumps(payload),
+            qos=mqtt.QoS.AT_MOST_ONCE,
+        )
+        try:
+            msg.result()
+        except (RuntimeError, AwsCrtError):
             connect()
-
-        if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
-            event["body"] = base64.b64decode(event["body"])
-        if (
-            "content-encoding" in event["headers"]
-            and event["headers"]["content-encoding"] == "gzip"
-        ):
-            event["body"] = zlib.decompress(event["body"], 16 + zlib.MAX_WBITS)
-        time_delta = None
-        if "date" in event["headers"]:
-            try:
-                time_delta_header = event["headers"]["date"]
-                time_delta = (
-                    datetime.datetime(*parsedate(time_delta_header)[:7])
-                    - datetime.datetime.utcnow()
-                ).total_seconds()
-            except:
-                pass
-        payloads = json.loads(event["body"])
-
-        first = False
-        for payload in payloads:
-            if "user-agent" in event["headers"]:
-                event["time_server"] = datetime.datetime.now().isoformat()
-                payload["user-agent"] = event["headers"]["user-agent"]
-            payload["position"] = f'{payload["lat"]},{payload["lon"]}'
-            if time_delta:
-                payload["upload_time_delta"] = time_delta
-            if "uploader_position" in payload:
-                if not payload["uploader_position"]:
-                    payload.pop("uploader_position")
-                else:
-                    (payload["uploader_alt"], payload["uploader_position"]) = (
-                        payload["uploader_position"][2],
-                        f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
-                    )
-            tasks.append(post(payload))
             (msg, x) = mqtt_connection.publish(
                 topic=f'sondes/{payload["serial"]}',
                 payload=json.dumps(payload),
                 qos=mqtt.QoS.AT_MOST_ONCE,
             )
-            try:
-                msg.result()
-            except (RuntimeError, AwsCrtError):
-                connect()
-                (msg, x) = mqtt_connection.publish(
-                    topic=f'sondes/{payload["serial"]}',
-                    payload=json.dumps(payload),
-                    qos=mqtt.QoS.AT_MOST_ONCE,
-                )
-                msg.result()
-                
-        await asyncio.gather(*tasks)
+            msg.result()
+    
+    post(to_sns)
 def lambda_handler(event, context):
     asyncio.run(upload(event, context))
     return {"statusCode": 200, "body": "^v^ telm logged"}

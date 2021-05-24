@@ -27,13 +27,17 @@ def lambda_handler(event, context):
     payloads = {}
     for record in event['Records']:
         sns_message = json.loads(record["body"])
-        payload = json.loads(sns_message["Message"])
-        index = payload['datetime'][:7]
-        
-        if index not in payloads: # create index if not exists
-            payloads[index] = []
+        if type(json.loads(sns_message["Message"])) == dict:
+            incoming_payloads = [json.loads(sns_message["Message"])]
+        else:
+            incoming_payloads = json.loads(sns_message["Message"])
+        for payload in incoming_payloads:
+            index = payload['datetime'][:7]
             
-        payloads[index].append(payload)
+            if index not in payloads: # create index if not exists
+                payloads[index] = []
+                
+            payloads[index].append(payload)
         
     for index in payloads:
         body=""
@@ -49,4 +53,3 @@ def lambda_handler(event, context):
                 print(event)
                 print(result)
                 raise RuntimeError
-       
