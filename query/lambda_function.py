@@ -514,7 +514,6 @@ def get_listeners(event, context):
                 "filter": [
                     {"match_all": {}},
                     {"exists": {"field": "uploader_position_elk"},},
-                    {"exists": {"field": "uploader_alt"},},
                     {"exists": {"field": "uploader_antenna.keyword"},},
                     {"exists": {"field": "software_name.keyword"},},
                     {"exists": {"field": "software_version.keyword"},},
@@ -563,7 +562,7 @@ def get_listeners(event, context):
                 .replace(" ", "")
                 .split(",")[0]
             ),
-            "alt": float(listener["1"]["hits"]["hits"][0]["fields"]["uploader_alt"][0]),
+            "alt": float(listener["1"]["hits"]["hits"][0]["fields"]["uploader_alt"][0]) if "uploader_alt" in listener["1"]["hits"]["hits"][0]["fields"] else 0,
             "description": f"""\n
                 <font size=\"-2\"><BR>\n
                     <B>Radio: {html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_name.keyword"][0])}-{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_version.keyword"][0])}</B><BR>\n
@@ -601,21 +600,21 @@ if __name__ == "__main__":
     # max_positions: 0
     # position_id: 0
     # vehicles: RS_*;*chase
-    print(
-        datanew(
-            {
-             "queryStringParameters": {
-                 "type": "positions",
-                 "mode": "12hours",
-                 "position_id": "0",
-                 "vehicles": ""
-             }
-            },
-            {},
-        )
-    )
     # print(
-    #     get_listeners(
-    #         {},{}
+    #     datanew(
+    #         {
+    #          "queryStringParameters": {
+    #              "type": "positions",
+    #              "mode": "12hours",
+    #              "position_id": "0",
+    #              "vehicles": ""
+    #          }
+    #         },
+    #         {},
     #     )
     # )
+    print(
+        get_listeners(
+            {},{}
+        )
+    )
