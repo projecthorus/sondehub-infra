@@ -101,6 +101,12 @@ async def upload(event, context):
             event["time_server"] = datetime.datetime.now().isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
+        current_year = datetime.datetime.now().year
+        if payload["datetime"].split("-")[0] not in [str(current_year), str(current_year-1), str(current_year+1)]:
+            # skip any telm that's not last year, this year or next year
+            print(payload)
+            print("Not within time range - not suitable to add to queues")
+            continue
         if time_delta:
             payload["upload_time_delta"] = time_delta
         if "uploader_position" in payload:
