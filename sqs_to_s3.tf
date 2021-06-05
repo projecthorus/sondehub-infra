@@ -91,7 +91,7 @@ resource "aws_lambda_function" "sqs_to_s3" {
 resource "aws_lambda_event_source_mapping" "sqs_to_s3" {
   event_source_arn                   = aws_sqs_queue.sqs_to_s3.arn
   function_name                      = aws_lambda_function.sqs_to_s3.arn
-  batch_size                         = 3
+  batch_size                         = 1
   maximum_batching_window_in_seconds = 15
 }
 
