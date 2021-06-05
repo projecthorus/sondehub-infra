@@ -339,6 +339,10 @@ definitions:
       - recovered_by
       - recovered
     properties:
+      datetime:
+        type: "string"
+        format: "date-time"
+        description: Time that the radiosonde was recovered
       serial:
         description: Serial number of the radiosonde
         type: string
