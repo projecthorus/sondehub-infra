@@ -252,7 +252,64 @@ paths:
                     items:
                       type: object
                         
-      
+  /recovered:
+    put:
+      summary: Adds a recovery object to the SondeHub database to indicate if a radiosonde was recovered
+      consumes:
+        - "application/json"
+      produces:
+        - "text/plain"
+      parameters:
+        - in: header
+          name: Date
+          description: <day-name>, <day> <month> <year> <hour>:<minute>:<second> UTC as per RFC7231. This is used to calculate receiver time offset for correcting clients that have the incorrect time.
+          required: true
+          type: string
+          format: date-time
+        - in: header
+          name: User-Agent
+          type: string
+          description: "The software and version performing the telemetry upload, eg:  `autorx-1.4.1-beta5`"
+        - in: body
+          required: true
+          name: body
+          schema: 
+            $ref: "#/definitions/recovery_object"
+              
+      responses:
+        200:
+          description: Recovery logged
+        500:
+          description: Other Server error (including malformed data submissions)
+    get:
+      summary: Request Recovery Data
+      description: >
+        Use this to get the recovery data 
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: lat
+          type: number
+          description:  "Latitude - if specified, lon and distance are required. Eg: -34.9285"
+        - in: query
+          name: lon
+          description: "Longitude - if specified, lat and distance are required Eg:  138.6007"
+          type: number
+        - in: query
+          name: distance
+          description: "Distance in meters - if specified, lat and lon are required"
+          type: number
+        - in: query
+          name: last
+          description: "How far back to search in seconds. Defaults to 14 days"
+          type: number
+
+      responses:
+        200:
+          description: Returns a list of recovery objects
+          schema:
+            $ref: "#/definitions/recovery_results_format"      
 parameters:
   input_payloads:
     in: body
@@ -262,7 +319,50 @@ parameters:
       description: SondeHub telemetry format
       items:
         $ref: "#/definitions/telemetry_format"
+  recovery_object:
+    in: body
+    required: true
+    name: body
+    schema: 
+      description: SondeHub recovery format
+      items:
+        $ref: "#/definitions/recovery_object"
+
 definitions:
+  recovery_object:
+    type: object
+    required:
+      - serial
+      - lat
+      - lon
+      - alt
+      - recovered_by
+      - recovered
+    properties:
+      serial:
+        description: Serial number of the radiosonde
+        type: string
+      lat:
+        description: Latitude (decimal degrees) of the recovery location
+        type: "number"
+        format: "double"
+      lon:
+        description: Longitude (decimal degrees) of the recovery location
+        type: "number"
+        format: "double"
+      alt:
+        description: Altitude (metres) of the recovery location
+        type: "number"
+        format: "double"
+      recovered:
+        description: was this recovery attempt was successful
+        type: boolean
+      recovered_by:
+        description: callsign or name of the person who recovered the sonde
+        type: string
+      description:
+        description: Description of the recovery effort
+        type: string
   sonde_query_results_format:
     type: object
     properties:
@@ -271,6 +371,10 @@ definitions:
         properties:
           datetime: 
             $ref: "#/definitions/telemetry_format"
+  recovery_results_format:
+    type: array
+    items:
+      $ref: "#/definitions/recovery_object"
   telemetry_format:
     description: SondeHub telemetry format
     type: "object"

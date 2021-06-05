@@ -1,26 +1,13 @@
 import sys
-sys.path.append("vendor/lib/python3.9/site-packages")
 import json
 import boto3
 import zlib
 import base64
 import datetime
 import functools
-from awscrt import io, mqtt, auth, http
-from awscrt.exceptions import AwsCrtError
-from awsiot import mqtt_connection_builder
-import uuid
-import threading
 from email.utils import parsedate
 import os
-import asyncio
 
-
-# this needs a bunch of refactor but the general approach is
-# connect to mqtt via websockets during init
-# if we detect that we are disconnected then reconnect
-# this is to make the lambda function nice and quick when during
-# peak load
 
 # todo
 # we should add some value checking
@@ -32,33 +19,8 @@ import asyncio
 def set_connection_header(request, operation_name, **kwargs):
     request.headers['Connection'] = 'keep-alive'
 
-event_loop_group = io.EventLoopGroup(1)
-host_resolver = io.DefaultHostResolver(event_loop_group)
-
-
-def connect():
-    global connect_future, mqtt_connection
-    session = boto3.session.Session()
-    client_bootstrap = io.ClientBootstrap(event_loop_group, host_resolver)
-    credentials_provider = auth.AwsCredentialsProvider.new_default_chain(
-        client_bootstrap
-    )
-    mqtt_connection = mqtt_connection_builder.websockets_with_default_aws_signing(
-        endpoint=os.getenv("IOT_ENDPOINT"),
-        client_bootstrap=client_bootstrap,
-        region="us-east-1",
-        credentials_provider=credentials_provider,
-        client_id=str(uuid.uuid4()),
-        clean_session=False,
-        keep_alive_secs=6,
-    )
-    connect_future = mqtt_connection.connect()
-    connect_future.result()
-
-
-connect()
 sns = boto3.client("sns",region_name="us-east-1")
-sns.meta.events.register('request-created.dynamodb', set_connection_header)
+sns.meta.events.register('request-created.sns', set_connection_header)
 
 def post(payload):
     sns.publish(
@@ -66,16 +28,7 @@ def post(payload):
                 Message=json.dumps(payload)
     )
 
-async def upload(event, context):
-    global connect_future, mqtt_connection
-    
-    tasks = []
-    # Future.result() waits until a result is available
-    try:
-        connect_future.result()
-    except:
-        connect()
-
+def upload(event, context):
     if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
         event["body"] = base64.b64decode(event["body"])
     if (
@@ -118,25 +71,9 @@ async def upload(event, context):
                     f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
                 )
         to_sns.append(payload)
-        (msg, x) = mqtt_connection.publish(
-            topic=f'sondes/{payload["serial"]}',
-            payload=json.dumps(payload),
-            qos=mqtt.QoS.AT_MOST_ONCE,
-        )
-        try:
-            msg.result()
-        except (RuntimeError, AwsCrtError):
-            connect()
-            (msg, x) = mqtt_connection.publish(
-                topic=f'sondes/{payload["serial"]}',
-                payload=json.dumps(payload),
-                qos=mqtt.QoS.AT_MOST_ONCE,
-            )
-            msg.result()
-    
     post(to_sns)
 def lambda_handler(event, context):
-    asyncio.run(upload(event, context))
+    upload(event, context)
     return {"statusCode": 200, "body": "^v^ telm logged"}
 
 if __name__ == "__main__":
