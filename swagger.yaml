@@ -289,6 +289,10 @@ paths:
         - "application/json"
       parameters:
         - in: query
+          name: serial
+          type: string
+          description: radiosonde serial number to filter on. If none provided all serials will be presented
+        - in: query
           name: lat
           type: number
           description:  "Latitude - if specified, lon and distance are required. Eg: -34.9285"
@@ -302,7 +306,7 @@ paths:
           type: number
         - in: query
           name: last
-          description: "How far back to search in seconds. Defaults to 14 days"
+          description: "How far back to search in seconds. Defaults to 3 days. Set to 0 for all"
           type: number
 
       responses:
