@@ -134,22 +134,25 @@ def put(event, context):
 
     recovered = json.loads(event["body"])
 
+    if "datetime" not in recovered:
+        recovered["datetime"] = datetime.datetime.now().isoformat()
+
     sonde_last_data = getSonde(recovered["serial"])
 
     if len(sonde_last_data) == 0:
-        return {"statusCode": 400, "body": "serial not found in db"}
+        return {"statusCode": 400, "body":  json.dumps({"message":"serial not found in db"})}
 
     already_recovered = getRecovered(recovered["serial"])
     if len(already_recovered) != 0:
         recovered_by = already_recovered[0]['fields']['recovered_by.keyword'][0]
-        return {"statusCode": 400, "body": f"Already recovered by {recovered_by}"}
+        return {"statusCode": 400, "body": json.dumps({"message":f"Already recovered by {recovered_by}"})}
 
     recovered['position'] = [recovered['lon'], recovered['lat']]
 
     result = es_request(recovered, "recovered/_doc", "POST")
 
     # add in elasticsearch extra position field
-    return {"statusCode": 200, "body": "^v^ telm logged"}
+    return {"statusCode": 200, "body": json.dumps({"message":"telm logged. Have a good day ^_^"})}
 
 
 def get(event, context):
