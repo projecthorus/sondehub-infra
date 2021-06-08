@@ -139,20 +139,23 @@ def put(event, context):
 
     sonde_last_data = getSonde(recovered["serial"])
 
+    if recovered["serial"] == "":
+        return {"statusCode": 400, "body":  json.dumps({"message": "serial cannot be empty"})}
+
     if len(sonde_last_data) == 0:
-        return {"statusCode": 400, "body":  json.dumps({"message":"serial not found in db"})}
+        return {"statusCode": 400, "body":  json.dumps({"message": "serial not found in db"})}
 
     already_recovered = getRecovered(recovered["serial"])
     if len(already_recovered) != 0:
         recovered_by = already_recovered[0]['fields']['recovered_by.keyword'][0]
-        return {"statusCode": 400, "body": json.dumps({"message":f"Already recovered by {recovered_by}"})}
+        return {"statusCode": 400, "body": json.dumps({"message": f"Already recovered by {recovered_by}"})}
 
     recovered['position'] = [recovered['lon'], recovered['lat']]
 
     result = es_request(recovered, "recovered/_doc", "POST")
 
     # add in elasticsearch extra position field
-    return {"statusCode": 200, "body": json.dumps({"message":"telm logged. Have a good day ^_^"})}
+    return {"statusCode": 200, "body": json.dumps({"message": "telm logged. Have a good day ^_^"})}
 
 
 def get(event, context):
@@ -213,10 +216,47 @@ def get(event, context):
             "bool": {
                 "filter": filters
             }
+        },
+        "aggs": {
+            "2": {
+                "terms": {
+                    "field": "serial.keyword",
+                    "order": {
+                        "2-orderAgg": "desc"
+                    },
+                    "size": 500
+                },
+                "aggs": {
+                    "2-orderAgg": {
+                        "max": {
+                            "field": "datetime"
+                        },
+                    },
+                    "1": {
+                        "top_hits": {
+                            "_source": True,
+                            "size": 1,
+                            "sort": [
+                                {
+                                    "recovered": {
+                                        "order": "desc"
+                                    }
+                                },
+                                {
+                                    "datetime": {
+                                        "order": "desc"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     }
     results = es_request(query, "recovered*/_search", "POST")
-    output = [x["_source"] for x in results['hits']['hits']]
+    output = [x['1']['hits']['hits'][0]["_source"]
+              for x in results['aggregations']['2']['buckets']]
     return {"statusCode": 200, "body": json.dumps(output)}
 
 
@@ -259,16 +299,16 @@ if __name__ == "__main__":
             "timeEpoch": 1612051825409,
         },
         "body": json.dumps({
-  "datetime": "2021-06-06T01:10:07.629Z",
-  "serial": "string",
-  "lat": 0,
-  "lon": 0,
-  "alt": 0,
-  "recovered": True,
-  "recovered_by": "string",
-  "description": "string"
-}),
+            "datetime": "2021-06-06T01:10:07.629Z",
+            "serial": "string",
+            "lat": 0,
+            "lon": 0,
+            "alt": 0,
+            "recovered": True,
+            "recovered_by": "string",
+            "description": "string"
+        }),
         "isBase64Encoded": False,
     }
-    print(put(payload, {}))
-    # print(get(payload,{}))
+    # print(put(payload, {}))
+    print(get(payload, {}))
