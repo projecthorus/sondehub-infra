@@ -11,7 +11,7 @@ import http.client
 import math
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
+#logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
 HOST = os.getenv("ES")
 
@@ -269,7 +269,7 @@ def predict(event, context):
         longitude = float(value['position'][1].strip())
         if longitude < 0:
             longitude += 360
-        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={longitude:.2f}&launch_datetime={value['time']}&launch_altitude={value['alt']:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
+        url = f"/api/v1/?launch_latitude={value['position'][0].strip()}&launch_longitude={longitude}&launch_datetime={value['time']}&launch_altitude={value['alt']:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
         
 
         conn.request("GET", url
