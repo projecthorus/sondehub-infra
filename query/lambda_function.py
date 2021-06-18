@@ -264,7 +264,13 @@ def datanew(event, context):
                                 "1": {
                                     "top_hits": {
                                         "size": 5,
-                                        "sort": [{"pressure": {"order": "desc","mode" : "median"}},{"humidity": {"order": "desc","mode" : "median"}},{"temp": {"order": "desc","mode" : "median"}},{"alt": {"order": "desc","mode" : "median"}}],
+                                        "sort": [
+                                                {"datetime": {"order": "desc"}},
+                                                {"pressure": {"order": "desc","mode" : "median"}},
+                                                {"humidity": {"order": "desc","mode" : "median"}},
+                                                {"temp": {"order": "desc","mode" : "median"}},
+                                                {"alt": {"order": "desc","mode" : "median"}}
+                                            ],
                                     }
                                 }
                             },

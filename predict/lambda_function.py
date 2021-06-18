@@ -3,8 +3,6 @@ import botocore.credentials
 from botocore.awsrequest import AWSRequest
 from botocore.endpoint import URLLib3Session
 from botocore.auth import SigV4Auth
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -309,6 +307,7 @@ def predict(event, context):
             "ascent_rate":value['request']['ascent_rate'],
             "descent_rate":value['request']['descent_rate'],
             "burst_altitude": value['request']['burst_altitude'],
+            "descending": 1 if serials[serial]['rate'] < 0 else 0,
             "landed": 0,
             "data":  json.dumps(data)
         })
@@ -339,10 +338,10 @@ if __name__ == "__main__":
 # max_positions: 0
 # position_id: 0
 # vehicles: RS_*;*chase
-    predict(
+    print(predict(
           {"queryStringParameters" : {
 }},{}
-        )
+        ))
     
 
 
