@@ -11,7 +11,7 @@ import http.client
 import math
 import logging
 
-#logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
 HOST = os.getenv("ES")
 
@@ -206,7 +206,7 @@ def predict(event, context):
                         {
                         "range": {
                             "datetime": {
-                                    "gte": "now-5m",
+                                    "gte": "now-10m",
                                     "lte": "now",
                             "format": "strict_date_optional_time"
                             }
@@ -222,7 +222,8 @@ def predict(event, context):
                     }
                 ]
                     }
-                }
+                },
+                "size": 0
             }
     if "queryStringParameters" in event:
         if "vehicles" in event["queryStringParameters"] and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"  and event["queryStringParameters"]["vehicles"] != "":
@@ -233,6 +234,7 @@ def predict(event, context):
                     }
                 }
             )
+            payload['query']['bool']['filter'][1]['range']['datetime']['gte'] = 'now-6h' # for single sonde allow longer predictions
     logging.debug("Start ES Request")
     results = es_request(payload, path, "GET")
     logging.debug("Finished ES Request")
@@ -277,6 +279,8 @@ def predict(event, context):
         )
         res = conn.getresponse()
         data = res.read()
+        if res.code != 200:
+            logging.debug(data)
         serial_data[serial] = json.loads(data.decode("utf-8"))
     logging.debug("Stop Predict")
     output = []
@@ -285,32 +289,32 @@ def predict(event, context):
 
         
         data = []
+        if 'prediction' in value:
+            for stage in value['prediction']:
+                if stage['stage'] == 'ascent' and serials[serial]['rate'] < 0: # ignore ascent stage if we have already burst
+                    continue
+                else:
+                    for item in stage['trajectory']:
+                        data.append({
+                            "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                            "lat": item['latitude'],
+                            "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
+                            "alt": item['altitude'],
+                        })
 
-        for stage in value['prediction']:
-            if stage['stage'] == 'ascent' and serials[serial]['rate'] < 0: # ignore ascent stage if we have already burst
-                continue
-            else:
-                for item in stage['trajectory']:
-                    data.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
-                        "lat": item['latitude'],
-                        "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
-                        "alt": item['altitude'],
-                    })
-
-        output.append({
-            "vehicle": serial,
-            "time": value['request']['launch_datetime'],
-            "latitude": value['request']['launch_latitude'],
-            "longitude": value['request']['launch_longitude'],
-            "altitude": value['request']['launch_altitude'],
-            "ascent_rate":value['request']['ascent_rate'],
-            "descent_rate":value['request']['descent_rate'],
-            "burst_altitude": value['request']['burst_altitude'],
-            "descending": 1 if serials[serial]['rate'] < 0 else 0,
-            "landed": 0,
-            "data":  json.dumps(data)
-        })
+            output.append({
+                "vehicle": serial,
+                "time": value['request']['launch_datetime'],
+                "latitude": value['request']['launch_latitude'],
+                "longitude": value['request']['launch_longitude'],
+                "altitude": value['request']['launch_altitude'],
+                "ascent_rate":value['request']['ascent_rate'],
+                "descent_rate":value['request']['descent_rate'],
+                "burst_altitude": value['request']['burst_altitude'],
+                "descending": 1 if serials[serial]['rate'] < 0 else 0,
+                "landed": 0,
+                "data":  json.dumps(data)
+            })
     logging.debug("Finished")
     return json.dumps(output)
 
@@ -340,6 +344,7 @@ if __name__ == "__main__":
 # vehicles: RS_*;*chase
     print(predict(
           {"queryStringParameters" : {
+             # "vehicles": "S4610686"
 }},{}
         ))
     

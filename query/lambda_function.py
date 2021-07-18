@@ -11,6 +11,10 @@ from datetime import datetime, timedelta, timezone
 import sys, traceback
 import re
 import html
+import base64
+import gzip
+from io import BytesIO
+
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
@@ -480,7 +484,22 @@ def datanew(event, context):
     output["positions"]["position"] = sorted(
         output["positions"]["position"], key=lambda k: k["position_id"]
     )
-    return json.dumps(output)
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(output)
+        f.write(json_response.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
 
 
 def get_listeners(event, context):
@@ -606,21 +625,21 @@ if __name__ == "__main__":
     # max_positions: 0
     # position_id: 0
     # vehicles: RS_*;*chase
-    # print(
-    #     datanew(
-    #         {
-    #          "queryStringParameters": {
-    #              "type": "positions",
-    #              "mode": "12hours",
-    #              "position_id": "0",
-    #              "vehicles": ""
-    #          }
-    #         },
-    #         {},
-    #     )
-    # )
     print(
-        get_listeners(
-            {},{}
+        datanew(
+            {
+             "queryStringParameters": {
+                 "type": "positions",
+                 "mode": "12hours",
+                 "position_id": "0",
+                 "vehicles": "T1240847"
+             }
+            },
+            {},
         )
     )
+    # print(
+    #     get_listeners(
+    #         {},{}
+    #     )
+    # )
