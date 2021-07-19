@@ -124,6 +124,7 @@ def get_telem(event, context):
 
     path = "telm-*/_search"
     payload = {
+        "timeout": "30s",
         "aggs": {
             "2": {
                 "terms": {
@@ -191,10 +192,10 @@ def get_telem(event, context):
 
 def datanew(event, context):
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
-        "3days": (259200, 1200),  # 3d, 20m
-        "1day": (86400, 600),  # 1d, 10m
-        "12hours": (43200, 300),  # 12h, 2m
-        "6hours": (21600, 120),  # 6h, 1m
+        "3days": (259200, 1800),  # 3d, 20m
+        "1day": (86400, 900),  # 1d, 10m
+        "12hours": (43200, 480),  # 12h, 2m
+        "6hours": (21600, 180),  # 6h, 1m
         "3hours": (10800, 90),  # 3h, 10s
         "1hour": (3600, 30),  # 1h, 5s
     }
@@ -231,14 +232,14 @@ def datanew(event, context):
             matched_time = matches[1].replace("Z", "+00:00")
             matched_vehicle = matches[0]
             requested_time = datetime.fromisoformat(matched_time)
-            lt = requested_time
+            lt = requested_time + timedelta(seconds=duration)
             gte = requested_time
 
         else:
             requested_time = datetime.fromisoformat(
                 event["queryStringParameters"]["position_id"].replace("Z", "+00:00")
             )
-            lt = datetime.now(timezone.utc)
+            lt = requested_time + timedelta(seconds=duration)
             gte = requested_time
         
     elif event["queryStringParameters"]["mode"] == "single":
@@ -250,6 +251,7 @@ def datanew(event, context):
     if "chase_only" not in event["queryStringParameters"] or event["queryStringParameters"]["chase_only"] != "true":
         path = "telm-*/_search"
         payload = {
+            "timeout": "30s",
             "aggs": {
                 "2": {
                     "terms": {
@@ -397,6 +399,7 @@ def datanew(event, context):
     # get chase cars
 
     payload = {
+        "timeout": "30s",
         "aggs": {
             "2": {
                 "terms": {
@@ -506,6 +509,7 @@ def get_listeners(event, context):
 
     path = "listeners-*/_search"
     payload = {
+        "timeout": "30s",
         "aggs": {
             "2": {
                 "terms": {
@@ -630,7 +634,7 @@ if __name__ == "__main__":
             {
              "queryStringParameters": {
                  "type": "positions",
-                 "mode": "12hours",
+                 "mode": "3hours",
                  "position_id": "0",
                  "vehicles": "T1240847"
              }

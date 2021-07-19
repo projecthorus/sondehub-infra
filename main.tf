@@ -625,7 +625,7 @@ resource "aws_lambda_function" "datanew" {
   filename         = "${path.module}/build/query.zip"
   source_code_hash = data.archive_file.query.output_base64sha256
   publish          = true
-  memory_size      = 256
+  memory_size      = 1024
   role             = aws_iam_role.IAMRole5.arn
   runtime          = "python3.7"
   timeout          = 30
