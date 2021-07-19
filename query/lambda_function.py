@@ -94,8 +94,12 @@ def get_telem(event, context):
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
         "3d": (259200, 1200),  # 3d, 20m
         "1d": (86400, 600),  # 1d, 10m
+        "12h": (43200, 600),  # 1d, 10m
         "6h": (21600, 60),  # 6h, 1m
         "3h": (10800, 15),  # 3h, 10s
+        "1h": (3600, 15),
+        "30m": (3600, 5),
+        "1m": (60, 1)
     }
     duration_query = "3h"
     requested_time = datetime.now(timezone.utc)
@@ -629,21 +633,30 @@ if __name__ == "__main__":
     # max_positions: 0
     # position_id: 0
     # vehicles: RS_*;*chase
-    print(
-        datanew(
-            {
-             "queryStringParameters": {
-                 "type": "positions",
-                 "mode": "3hours",
-                 "position_id": "0",
-                 "vehicles": "T1240847"
-             }
-            },
-            {},
-        )
-    )
+    # print(
+    #     datanew(
+    #         {
+    #          "queryStringParameters": {
+    #              "type": "positions",
+    #              "mode": "3hours",
+    #              "position_id": "0",
+    #              "vehicles": "T1240847"
+    #          }
+    #         },
+    #         {},
+    #     )
+    # )
     # print(
     #     get_listeners(
     #         {},{}
     #     )
     # )
+    print (
+        get_telem(
+            {"queryStringParameters": {
+                "duration": "1m"
+                }
+            },
+            {}
+        )
+    )
