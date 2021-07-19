@@ -99,7 +99,8 @@ def get_telem(event, context):
         "3h": (10800, 15),  # 3h, 10s
         "1h": (3600, 15),
         "30m": (3600, 5),
-        "1m": (60, 1)
+        "1m": (60, 1),
+        "15s": (15, 1)
     }
     duration_query = "3h"
     requested_time = datetime.now(timezone.utc)
@@ -122,7 +123,8 @@ def get_telem(event, context):
         )
 
     (duration, interval) = durations[duration_query]
-
+    if "serial" in event["queryStringParameters"]:
+        interval = 1
     lt = requested_time
     gte = requested_time - timedelta(0, duration)
 
@@ -654,7 +656,8 @@ if __name__ == "__main__":
     print (
         get_telem(
             {"queryStringParameters": {
-                "duration": "1m"
+                "duration": "1d",
+                "serial": "T1230861"
                 }
             },
             {}
