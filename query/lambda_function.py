@@ -238,7 +238,7 @@ def datanew(event, context):
             matched_time = matches[1].replace("Z", "+00:00")
             matched_vehicle = matches[0]
             requested_time = datetime.fromisoformat(matched_time)
-            lt = requested_time + timedelta(seconds=duration)
+            lt = requested_time
             gte = requested_time
 
         else:
@@ -457,42 +457,42 @@ def datanew(event, context):
     # "server_time":"2021-04-09 06:28:55.109589","gps_time":"2021-04-09 06:28:54",
     # "gps_lat":"41.539648333","gps_lon":"-89.111862667","gps_alt":"231.6","gps_heading":"",
     # "gps_speed":"0","picture":"","temp_inside":"","data":{},"callsign":"","sequence":""}
+    if event["queryStringParameters"]["mode"] != "single":
+        results = es_request(payload, path, "POST")
+        
+        for car in results["aggregations"]["2"]["buckets"]:
+            for frame in car["3"]["buckets"]:
+                try:
+                    frame_data = frame["1"]["hits"]["hits"][0]["_source"]
 
-    results = es_request(payload, path, "POST")
-    
-    for car in results["aggregations"]["2"]["buckets"]:
-        for frame in car["3"]["buckets"]:
-            try:
-                frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-
-               
-                data = {}
-                # 
-                output["positions"]["position"].append(
-                    {
-                        "position_id": html.escape(f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}'),
-                        "mission_id": "0",
-                        "vehicle": html.escape(f'{frame_data["uploader_callsign"]}_chase'),
-                        "server_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
-                        "gps_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
-                        "gps_lat": frame_data["uploader_position"][0],
-                        "gps_lon": frame_data["uploader_position"][1],
-                        "gps_alt": frame_data["uploader_position"][2],
-                        "gps_heading": "",
-                        "gps_speed": 0,
-                        "picture": "",
-                        "temp_inside": "",
-                        "data": data,
-                        "callsign": html.escape(frame_data["uploader_callsign"]),
-                        "sequence": "",
-                    }
-                )
-            except:
-                traceback.print_exc(file=sys.stdout)
-    
-    output["positions"]["position"] = sorted(
-        output["positions"]["position"], key=lambda k: k["position_id"]
-    )
+                
+                    data = {}
+                    # 
+                    output["positions"]["position"].append(
+                        {
+                            "position_id": html.escape(f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}'),
+                            "mission_id": "0",
+                            "vehicle": html.escape(f'{frame_data["uploader_callsign"]}_chase'),
+                            "server_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
+                            "gps_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
+                            "gps_lat": frame_data["uploader_position"][0],
+                            "gps_lon": frame_data["uploader_position"][1],
+                            "gps_alt": frame_data["uploader_position"][2],
+                            "gps_heading": "",
+                            "gps_speed": 0,
+                            "picture": "",
+                            "temp_inside": "",
+                            "data": data,
+                            "callsign": html.escape(frame_data["uploader_callsign"]),
+                            "sequence": "",
+                        }
+                    )
+                except:
+                    traceback.print_exc(file=sys.stdout)
+        
+        output["positions"]["position"] = sorted(
+            output["positions"]["position"], key=lambda k: k["position_id"]
+        )
     compressed = BytesIO()
     with gzip.GzipFile(fileobj=compressed, mode='w') as f:
         json_response = json.dumps(output)
@@ -635,31 +635,46 @@ if __name__ == "__main__":
     # max_positions: 0
     # position_id: 0
     # vehicles: RS_*;*chase
-    # print(
-    #     datanew(
-    #         {
-    #          "queryStringParameters": {
-    #              "type": "positions",
-    #              "mode": "3hours",
-    #              "position_id": "0",
-    #              "vehicles": "T1240847"
-    #          }
-    #         },
-    #         {},
-    #     )
-    # )
+    print(
+        datanew(
+            {
+             "queryStringParameters": {
+"mode": "single",
+"format": "json",
+"position_id": "S1443103-2021-07-20T12:46:19.040000Z"
+             }
+            },
+            {},
+        )
+    )
     # print(
     #     get_listeners(
     #         {},{}
     #     )
     # )
-    print (
-        get_telem(
-            {"queryStringParameters": {
-                "duration": "1d",
-                "serial": "T1230861"
-                }
+    # print (
+    #     get_telem(
+    #         {"queryStringParameters": {
+    #             "duration": "1d",
+    #             "serial": "T1230861"
+    #             }
+    #         },
+    #         {}
+    #     )
+    # )
+
+
+    print(
+        datanew(
+            {
+             "queryStringParameters": {
+                 "type": "positions",
+                 "mode": "3hours",
+                 "position_id": "0",
+                 "vehicles": "S1443103"
+             }
             },
-            {}
+            {},
         )
     )
+
