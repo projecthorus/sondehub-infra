@@ -3,8 +3,6 @@ import botocore.credentials
 from botocore.awsrequest import AWSRequest
 from botocore.endpoint import URLLib3Session
 from botocore.auth import SigV4Auth
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -51,7 +49,7 @@ def get_sondes(event, context):
                     "range": {
                         "datetime": {
                             "gte": f"now-{int(event['queryStringParameters']['last'])}s",
-                            "lte": "now",
+                            "lte": "now+1m",
                         }
                     }
                 }
@@ -75,7 +73,7 @@ def get_sondes(event, context):
     # if the user doesn't specify a range we should add one - 24 hours is probably a good start
     if "range" not in payload["query"]["bool"]["filter"]:
         payload["query"]["bool"]["filter"].append(
-            {"range": {"datetime": {"gte": "now-1d", "lte": "now"}}}
+            {"range": {"datetime": {"gte": "now-1d", "lte": "now+1m"}}}
         )
 
     results = es_request(payload, path, "POST")
@@ -390,7 +388,7 @@ def datanew(event, context):
     elif event["queryStringParameters"]["mode"] == "single":
         return f"Single requires a position id specified"
     else:
-        lt = datetime.now(timezone.utc)
+        lt = datetime.now(timezone.utc) + timedelta(seconds=60)
         gte = datetime.now(timezone.utc) - timedelta(0, duration)
     output = {"positions": {"position": []}}
     if "chase_only" not in event["queryStringParameters"] or event["queryStringParameters"]["chase_only"] != "true":
@@ -696,7 +694,7 @@ def get_listeners(event, context):
                         "range": {
                             "ts": {
                                 "gte": "now-24h",
-                                "lte": "now",
+                                "lte": "now+1m",
                                 "format": "strict_date_optional_time",
                             }
                         }
@@ -791,15 +789,15 @@ if __name__ == "__main__":
     #         {},{}
     #     )
     # )
-    print (
-        get_chase(
-            {"queryStringParameters": {
-                "duration": "1d"
-                }
-            },
-            {}
-        )
-    )
+    # print (
+    #     get_chase(
+    #         {"queryStringParameters": {
+    #             "duration": "1d"
+    #             }
+    #         },
+    #         {}
+    #     )
+    # )
 
 
     # print(
@@ -808,11 +806,19 @@ if __name__ == "__main__":
     #          "queryStringParameters": {
     #              "type": "positions",
     #              "mode": "3hours",
-    #              "position_id": "0",
-    #              "vehicles": "S1443103"
+    #              "position_id": "0"
     #          }
     #         },
     #         {},
     #     )
     # )
+    print(
+        get_telem(
+            {
+                "queryStringParameters":{
+                    "serial": "S2440723"
+                }
+            }, {}
+        )
+    )
 
