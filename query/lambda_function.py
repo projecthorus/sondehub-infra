@@ -98,7 +98,8 @@ def get_telem(event, context):
         "1h": (3600, 15),
         "30m": (3600, 5),
         "1m": (60, 1),
-        "15s": (15, 1)
+        "15s": (15, 1),
+        "0": (0, 1) # for getting a single time point
     }
     duration_query = "3h"
     requested_time = datetime.now(timezone.utc)
@@ -123,7 +124,7 @@ def get_telem(event, context):
     (duration, interval) = durations[duration_query]
     if "serial" in event["queryStringParameters"]:
         interval = 1
-    lt = requested_time
+    lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, duration)
 
     path = "telm-*/_search"
@@ -816,7 +817,9 @@ if __name__ == "__main__":
         get_telem(
             {
                 "queryStringParameters":{
-                    "serial": "S2440723"
+                    "serial": "S3210639",
+                    "duration": "0",
+                    "datetime": "2021-07-26T06:49:29.001000Z"
                 }
             }, {}
         )
