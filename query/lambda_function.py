@@ -153,8 +153,14 @@ def get_telem(event, context):
                                     #     {"field": "datetime"},
                                     # ],
                                     # "_source": "position",
-                                    "size": 1,
-                                    "sort": [{"datetime": {"order": "desc"}}],
+                                    "size": 5,
+                                        "sort": [
+                                                {"datetime": {"order": "desc"}},
+                                                {"pressure": {"order": "desc","mode" : "median"}},
+                                                {"humidity": {"order": "desc","mode" : "median"}},
+                                                {"temp": {"order": "desc","mode" : "median"}},
+                                                {"alt": {"order": "desc","mode" : "median"}}
+                                            ],
                                 }
                             }
                         },
@@ -188,7 +194,11 @@ def get_telem(event, context):
     results = es_request(payload, path, "POST")
     output = {
         sonde["key"]: {
-            data["key_as_string"]: data["1"]["hits"]["hits"][0]["_source"]
+            data["key_as_string"]: dict(data["1"]["hits"]["hits"][0]["_source"],
+                uploaders=[ #add additional uploader information
+                    {key:value for key,value in uploader['_source'].items() if key in ["snr","rssi","uploader_callsign"]}
+                    for uploader in data["1"]["hits"]["hits"] 
+                ])
             for data in sonde["3"]["buckets"]
         }
         for sonde in results["aggregations"]["2"]["buckets"]
