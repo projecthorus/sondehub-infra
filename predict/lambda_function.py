@@ -253,7 +253,7 @@ def predict(event, context):
         except:
             pass
 
-    conn = http.client.HTTPSConnection("predict.cusf.co.uk")
+    conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
     serial_data={}
     logging.debug("Start Predict")
     for serial in serials:

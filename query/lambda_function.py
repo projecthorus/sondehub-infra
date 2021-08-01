@@ -94,9 +94,9 @@ def get_telem(event, context):
         "1d": (86400, 600),  # 1d, 10m
         "12h": (43200, 600),  # 1d, 10m
         "6h": (21600, 60),  # 6h, 1m
-        "3h": (10800, 15),  # 3h, 10s
-        "1h": (3600, 15),
-        "30m": (3600, 5),
+        "3h": (10800, 30),  # 3h, 10s
+        "1h": (3600, 20),
+        "30m": (1800, 10),
         "1m": (60, 1),
         "15s": (15, 1),
         "0": (0, 1) # for getting a single time point
@@ -127,9 +127,10 @@ def get_telem(event, context):
     lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, duration)
 
-    path = "telm-*/_search"
+    path = f"telm-{lt.year:2}-{lt.month:02},telm-{gte.year:2}-{gte.month:02}/_search"
     payload = {
         "timeout": "30s",
+        "size": 0,
         "aggs": {
             "2": {
                 "terms": {
@@ -153,13 +154,10 @@ def get_telem(event, context):
                                     #     {"field": "datetime"},
                                     # ],
                                     # "_source": "position",
-                                    "size": 5,
+                                    "size": 10 if (duration == 0 ) else 1,
                                         "sort": [
                                                 {"datetime": {"order": "desc"}},
-                                                {"pressure": {"order": "desc","mode" : "median"}},
-                                                {"humidity": {"order": "desc","mode" : "median"}},
-                                                {"temp": {"order": "desc","mode" : "median"}},
-                                                {"alt": {"order": "desc","mode" : "median"}}
+                                                {"pressure": {"order": "desc","mode" : "median"}}
                                             ],
                                 }
                             }
@@ -228,10 +226,10 @@ def get_listener_telemetry(event, context):
         "3d": (259200, 1200),  # 3d, 20m
         "1d": (86400, 600),  # 1d, 10m
         "12h": (43200, 600),  # 1d, 10m
-        "6h": (21600, 60),  # 6h, 1m
-        "3h": (10800, 15),  # 3h, 10s
-        "1h": (3600, 15),
-        "30m": (3600, 5),
+        "6h": (21600, 120),  # 6h, 1m
+        "3h": (10800, 90),  # 3h, 10s
+        "1h": (3600, 30),
+        "30m": (3600, 15),
         "1m": (60, 1),
         "15s": (15, 1)
     }
@@ -827,9 +825,9 @@ if __name__ == "__main__":
         get_telem(
             {
                 "queryStringParameters":{
-                    "serial": "S3210639",
-                    "duration": "0",
-                    "datetime": "2021-07-26T06:49:29.001000Z"
+                    # "serial": "S3210639",
+                    "duration": "3h",
+                   # "datetime": "2021-07-26T06:49:29.001000Z"
                 }
             }, {}
         )
