@@ -45,7 +45,10 @@ def lambda_handler(event, context):
             incoming_payloads = [json.loads(sns_message["Message"])]
         else:
             incoming_payloads = json.loads(sns_message["Message"])
-        for payload in incoming_payloads:
+        
+        #send only the first, last and every 5th packet
+        payloads = [incoming_payloads[0]] + incoming_payloads[1:-1:5][1:] + [incoming_payloads[-1]]
+        for payload in payloads:
             
             body = json.dumps(payload)
 
@@ -58,7 +61,13 @@ def lambda_handler(event, context):
                 qos=0,
                 retain=False
             )
-    time.sleep(0.1) # give paho mqtt 100ms to send messages this could be improved on but paho mqtt is a pain to interface with
+        client.publish(
+            topic=f'batch',
+            payload=json.dumps(payloads),
+            qos=0,
+            retain=False
+        )
+    time.sleep(0.05) # give paho mqtt 100ms to send messages this could be improved on but paho mqtt is a pain to interface with
     
 
 

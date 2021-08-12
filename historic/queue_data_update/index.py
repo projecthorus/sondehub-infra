@@ -25,7 +25,7 @@ def es_request(payload, path, method):
     params = json.dumps(payload)
     headers = {"Host": HOST, "Content-Type": "application/json"}
     request = AWSRequest(
-        method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
+        method=method, url=f"https://{HOST}/{path}", data=params, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(),
               "es", "us-east-1").add_auth(request)
@@ -41,7 +41,7 @@ def handler(event, context):
             "serials": {
                 "terms": {
                     "field": "serial.keyword",
-                    "size": 5000
+                    "size": 10000
                 }
             }
         },
@@ -56,8 +56,7 @@ def handler(event, context):
                     {
                         "range": {
                             "datetime": {
-                                "gte": "2021-07-23T06:45:17.308Z",
-                                "lte": "2021-07-25T06:45:17.308Z",
+                                "gte": "now-24h",
                                 "format": "strict_date_optional_time"
                             }
                         }
@@ -66,6 +65,7 @@ def handler(event, context):
             }
         }
     }
+
     results = es_request(query, "telm-*/_search", "POST")
     serials = [ x['key'] for x in results['aggregations']['serials']['buckets'] ]
     for serial_batch in batch(serials, 10):
@@ -73,7 +73,7 @@ def handler(event, context):
             QueueUrl="https://sqs.us-east-1.amazonaws.com/143841941773/update-history",
             Entries=[
                 {
-                    "Id": x,
+                    "Id": str(serial_batch.index(x)),
                     "MessageBody": x
                 }
             for x in serial_batch]

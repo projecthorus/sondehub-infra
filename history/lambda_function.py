@@ -3,18 +3,33 @@ import botocore.credentials
 from botocore.awsrequest import AWSRequest
 from botocore.endpoint import URLLib3Session
 from botocore.auth import SigV4Auth
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
 import json
 import os
 from datetime import datetime, timedelta, timezone
 import sys, traceback
 import uuid
 
+
+# TODO , HEAD S3 object, if it's less than 24 hours check ES, else 302 to bucket
+
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
-s3 = boto3.resource('s3')
+
 def history(event, context):
+    s3 = boto3.resource('s3')
+    serial = str(event["pathParameters"]["serial"])
+
+    # if there's a historic file created for this sonde, use that instead
+    try:
+        object = s3.Object('sondehub-history', f'serial/{serial}.json.gz')
+        object.load()
+        return {"statusCode": 302, "headers": {"Location": f'https://{object.bucket_name}.s3.amazonaws.com/{object.key}'}}
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            pass
+        else:
+            # Something else has gone wrong.
+            raise
     path = "telm-*/_search"
     payload = {
         "aggs": {
@@ -80,7 +95,7 @@ def es_request(payload, path, method):
 if __name__ == "__main__":
     print(
         history(
-            {"pathParameters": {"serial": "S3530044"}}, {}
+            {"pathParameters": {"serial": "N4750769"}}, {}
         )
     )
 

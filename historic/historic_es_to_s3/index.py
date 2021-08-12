@@ -19,7 +19,7 @@ def es_request(payload, path, method, params=None):
 
     headers = {"Host": HOST, "Content-Type": "application/json"}
     request = AWSRequest(
-        method="POST", url=f"https://{HOST}/{path}", data=payload, headers=headers, params=params
+        method=method, url=f"https://{HOST}/{path}", data=payload, headers=headers, params=params
     )
     SigV4Auth(boto3.Session().get_credentials(),
               "es", "us-east-1").add_auth(request)
@@ -56,13 +56,23 @@ def fetch_es(serial):
     data = []
     response = es_request(json.dumps(payload),
                           "telm-*/_search", "POST", params={"scroll": "1m"})
-    data += [x["_source"] for x in response['hits']['hits']]
+    try:
+        data += [x["_source"] for x in response['hits']['hits']]
+    except:
+        print(response)
+        raise
     scroll_id = response['_scroll_id']
+    scroll_ids = [scroll_id]
     while response['hits']['hits']:
         response = es_request(json.dumps({"scroll": "1m", "scroll_id": scroll_id }),
                           "_search/scroll", "POST")
         scroll_id = response['_scroll_id']
+        scroll_ids.append(scroll_id)
         data += [x["_source"] for x in response['hits']['hits']]
+    for scroll_id in scroll_ids:
+        scroll_delete = es_request(json.dumps({"scroll_id": scroll_id }),
+                            "_search/scroll", "DELETE")
+        print(scroll_delete)                
     return data
 
 def fetch_s3(serial):
@@ -105,7 +115,8 @@ def write_s3(serial, data):
     object = s3.Object(BUCKET,f'serial/{serial}.json.gz')
     object.put(
         Body=gz_data,
-        ContentType='application/x-gzip',
+        ContentType='application/json',
+        ContentEncoding='gzip',
         Metadata={
             "first-lat": str(summary[0]['lat']),
             "first-lon": str(summary[0]['lon']),
@@ -119,19 +130,44 @@ def write_s3(serial, data):
         }
     )
 
-def lambda_handler(event, context):
+def handler(event, context):
+    print(json.dumps(event))
     payloads = {}
     for record in event['Records']:
-        sns_message = json.loads(record["body"])
-        serial = sns_message["Message"]
+        serial = record["body"]
+        print(f"Getting {serial} S3")
         s3_data = fetch_s3(serial)
+        print(f"Getting {serial} ES")
         es = fetch_es(serial)
+        print(f"Combining data {serial}")
         data = s3_data + es
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
         data = sorted(data, key=lambda k: k['datetime'])  # sort by datetime
+        print(f"Writing {serial} to s3")
         write_s3(serial, data)
+        print(f"{serial} done")
 
 
 if __name__ == "__main__":
-    print(lambda_handler(
-        {'Records': [{"body": "{\"Message\":\"S4520727\"}"}]}, {}))
+    print(handler(
+       {
+    "Records": [
+        {
+            "messageId": "3b5853b3-369c-40bf-8746-130c918fbb5c",
+            "receiptHandle": "AQEBg+/MIA2rSNmlrpXvk7pbi26kgIzqhairaHWGSpMgLzf2T54PLUmG+eG6CDOv35e42scDH0gppmS9RTQVu8D161oHYohhd1+0S4LtFJdgXr3At86NBIky5+y1A/wVuUm1FNQSvGKIDRgBhCgcCzLkEMNYIWWeDmg2ez2SCPu/3hmY5sc7eC32uqz5es9PspgQXOTykmoNv/q37iy2RBRDdu51Tq7yIxEr+Us3qkQrddAJ7qsA0l09aRL+/PJe1V/7MMN3CFyBATpRP/G3Gjn0Iuu4i2UhkRx2pF+0Hj8yhhHbqTMcw5sbbGIWMdsMXFQKUCHNx6HPkbuwIWo0TsINQjY7IXeZM/mNq65xC4avSlctJ/9BMzOBtFwbnRPZfHmlS5Al2nF1Vu3RecFGbTm1nQ==",
+            "body": "S2710639",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1627873604999",
+                "SenderId": "AROASC7NF3EG5DNHEPSYZ:queue_data_update",
+                "ApproximateFirstReceiveTimestamp": "1627873751266"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "b3d67879b6a2e7f3abd62d404e53f71f",
+            "md5OfMessageAttributes": None,
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-1:143841941773:update-history",
+            "awsRegion": "us-east-1"
+        }
+    ]
+}, {}))
