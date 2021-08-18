@@ -22,8 +22,11 @@ def history(event, context):
     # if there's a historic file created for this sonde, use that instead
     try:
         object = s3.Object('sondehub-history', f'serial/{serial}.json.gz')
+        
         object.load()
-        return {"statusCode": 302, "headers": {"Location": f'https://{object.bucket_name}.s3.amazonaws.com/{object.key}'}}
+        lastModified = object.meta.data['LastModified']
+        if not lastModified + timedelta(hours=12) > datetime.now(timezone.utc):
+            return {"statusCode": 302, "headers": {"Location": f'https://{object.bucket_name}.s3.amazonaws.com/{object.key}'}}
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             pass
@@ -95,7 +98,7 @@ def es_request(payload, path, method):
 if __name__ == "__main__":
     print(
         history(
-            {"pathParameters": {"serial": "N4750769"}}, {}
+            {"pathParameters": {"serial": "S5050020"}}, {}
         )
     )
 
