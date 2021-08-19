@@ -118,6 +118,10 @@ def telemetry_filter(telemetry):
         _altitude_breach = telemetry["alt"] - max_altitude
         return (False,f"Sonde {telemetry['serial']} position breached altitude cap by {_altitude_breach}m.")
 
+    if telemetry["alt"] == 0:
+        return (False,f"Sonde {telemetry['serial']} altitude is exactly 0m. Position is likely incorrect")
+
+
     # Third check: Number of satellites visible.
     if "sats" in telemetry:
         if telemetry["sats"] < 4: 
