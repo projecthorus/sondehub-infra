@@ -157,7 +157,8 @@ def get_telem(event, context):
                                     "size": 10 if (duration == 0 ) else 1,
                                         "sort": [
                                                 {"datetime": {"order": "desc"}},
-                                                {"pressure": {"order": "desc","mode" : "median"}}
+                                                {"pressure": {"order": "desc","mode" : "median"}},
+                                                {"uploader_alt": {"order": "desc"}}
                                             ],
                                 }
                             }
