@@ -275,7 +275,7 @@ def upload(event, context):
         check_data = payload_serials[serial]
         if len(check_data) > 10: # need at least 10 payloads to be useful
             lats = [ x['lat'] for x in check_data ]
-            lons = [ x['lon'] for x in check_data ]
+            lons = [ abs(x['lon']) for x in check_data ]
             alts = [ x['alt'] for x in check_data ]
             lat_outliers = z_check(lats, 3)
             lon_outliers = z_check(lons, 3)
