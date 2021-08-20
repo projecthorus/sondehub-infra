@@ -326,7 +326,12 @@ def upload(event, context):
     post(to_sns)
     return errors
 def lambda_handler(event, context):
-    errors = upload(event, context)
+    try:
+        errors = upload(event, context)
+    except zlib.error:
+        return {"statusCode": 400, "body": "Could not decompress"}
+    except json.decoder.JSONDecodeError:
+        return {"statusCode": 400, "body": "Not valid json"}
     error_message = {
         "message": "some or all payloads could not be processed",
         "errors": errors
