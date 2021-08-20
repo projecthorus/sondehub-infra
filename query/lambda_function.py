@@ -161,8 +161,7 @@ def get_telem(event, context):
                                     "size": 10 if (duration == 0 ) else 1,
                                         "sort": [
                                                 {"datetime": {"order": "desc"}},
-                                                {"pressure": {"order": "desc","mode" : "median"}},
-                                                {"uploader_alt": {"order": "desc"}}
+                                                {"pressure": {"order": "desc","mode" : "median"}}
                                             ],
                                 }
                             }
@@ -228,15 +227,16 @@ def get_telem(event, context):
 def get_listener_telemetry(event, context):
 
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
-        "3d": (259200, 1200),  # 3d, 20m
-        "1d": (86400, 600),  # 1d, 10m
-        "12h": (43200, 600),  # 1d, 10m
-        "6h": (21600, 120),  # 6h, 1m
-        "3h": (10800, 90),  # 3h, 10s
-        "1h": (3600, 30),
-        "30m": (3600, 15),
+ "3d": (259200, 2400),  # 3d, 20m
+        "1d": (86400, 2400),  # 1d, 10m
+        "12h": (43200, 1200),  # 1d, 10m
+        "6h": (21600, 300),  # 6h, 1m
+        "3h": (10800, 120),  # 3h, 10s
+        "1h": (3600, 120),
+        "30m": (1800, 30),
         "1m": (60, 1),
-        "15s": (15, 1)
+        "15s": (15, 1),
+        "0": (0, 1)
     }
     duration_query = "3h"
     requested_time = datetime.now(timezone.utc)
