@@ -9,7 +9,25 @@ from email.utils import parsedate
 import os
 import re
 from math import radians, degrees, sin, cos, atan2, sqrt, pi
+import statistics
+from collections import defaultdict
 
+def z_check(data, threshold):
+    outliers = []
+    mean = statistics.mean(data)
+    sd = statistics.stdev(data)
+    for index, i in enumerate(data): 
+        try:
+            z = (i-mean)/sd # calculate z-score
+        except ZeroDivisionError:
+            continue
+        if abs(z) > threshold:  # identify outliers
+            outliers.append(index) # add to the empty list
+        # print outliers    
+    if outliers:
+        print("The detected outliers are: ", outliers)
+        print("Data : ", data)
+    return outliers
 
 # todo
 # we should add some value checking
@@ -246,6 +264,42 @@ def upload(event, context):
     to_sns = []
     first = False
     errors = []
+
+    # perform z check
+    payload_serials = defaultdict(list)
+    for payload in payloads:
+        payload_serials[payload['serial']].append(payload)
+    # rebuild payloads with the outliers marked
+    payloads = []
+    for serial in payload_serials:
+        check_data = payload_serials[serial]
+        if len(check_data) > 10: # need at least 10 payloads to be useful
+            lats = [ x['lat'] for x in check_data ]
+            lons = [ x['lon'] for x in check_data ]
+            alts = [ x['alt'] for x in check_data ]
+            lat_outliers = z_check(lats, 3)
+            lon_outliers = z_check(lons, 3)
+            alt_outliers = z_check(alts, 3)
+            if lat_outliers or lon_outliers or alt_outliers:
+                print("Outlier check detected outlier, serial:", check_data[0]["serial"])
+            for index in lat_outliers:
+                payload_serials[serial][index]["lat_outlier"] = True
+            for index in lon_outliers:
+                payload_serials[serial][index]["lon_outliers"] = True
+            for index in alt_outliers:
+                payload_serials[serial][index]["alt_outliers"] = True
+        
+
+        #generate error messages and regenerate payload list of bad data removed
+        for payload in payload_serials[serial]:
+            if "alt_outliers" in payload or "lon_outliers" in payload or "lat_outlier" in payload:
+                errors.append({
+                    "error_message": f"z-check failed - payload GPS may not be valid for {payload['serial']}.",
+                    "payload": payload
+                })
+            else:
+                payloads.append(payload)
+
     for payload in payloads:
         if "user-agent" in event["headers"]:
             event["time_server"] = datetime.datetime.now().isoformat()
@@ -278,8 +332,8 @@ def lambda_handler(event, context):
         "errors": errors
     }
     if errors:
-        print(json.dumps({"statusCode": 400, "body": error_message}))
-        return {"statusCode": 400, "body": error_message}
+        print(json.dumps({"statusCode": 202, "body": error_message}))
+        return {"statusCode": 202, "body": error_message}
     else:
         return {"statusCode": 200, "body": "^v^ telm logged"}
 
@@ -321,7 +375,7 @@ if __name__ == "__main__":
             "time": "31/Jan/2021:00:10:25 +0000",
             "timeEpoch": 1612051825409,
         },
-        "body": "H4sIAOzVHGEAA22ST2/bMAzF7/sUhs+xJsn64+RWFOh2G9AOO6woDCZmUgOylMmyu27Yd5+oFm0GzDc+//hoPvr+dz2HY3qCiL2HCetdVUcYxjAHP2APSwp9/FlvqndsxTiPwRMpmGay2WMCQ8hydgEGjP0BnJvHU2FuzOcvt/+8PYd5TC8O96pjgguzsUy2Wm74wyUIPqH3UCZ9VNUTrFhNwYdzcEiOaZywj3jAccWBKMmlaHjXiO4rFztldkoxaVWn+HfiB0hIPf9B7Y5zxstT0An8coRDWiJGwr/BOIODMvX5XBxu75QowWAcwRWlNSYv0xZ12V+Czd0nUo/xJWMhtLK5dpBypQyTgtstCSUWy6xUpss1uAJw2zIuuaWeFV2/ZrFpmRFKd6/SI9lyttVW6Cw9Yr6iP5HYtkyLVlLvDGnOEvXsIZG1ZLZ8F/5Y0B+ey7DME7DEOfWUFyVgtG5JnT1V20IsefUGTujJqL6a4Ffw1bULy3ATQxYzcnHr+m3N1/Xef4oypR/QJTp2k7dotRbqz8OHvxLcNOCgAgAA",
+        "body": "H4sIACfzHmEAA+XaT2/bNhQA8Ps+hZGzw/HxP30utqHoLsNOGwaDjZnWgC15suysGPbdR6kiHZNUTKAGBFQBcghNKXriL+R7ZP78YbH4130vFg/H+rl9MY1dV2ZvH1aLh8ZstvWxrjZ2bU5tvW7+eVhGXc+2OW7rqusNiCPuO5wOu9psbLN+Mrvdcfup7/HuA7z/5bdH6HpF3UzV2qoy/X1+ZIsXc7aLfV3Vh3pn/T3b7d6uG/tkt2e76XoSTOARq0fQv2Ox4njFGeJcKyH/8NdsTGu76/LdKcL9V+i+N9Xp2Ty1p8Y23SU/N+Yl/Povh/427376NbyG08dXrViHdttsza4PRmGFKcP+k+fm67sFCpRqwJwOH+xM65qZRIqCZL6xf7OAkdJUwdBodl1PEEohRvyz2f3BNUokhoaz3a3ProUgYK+aPrsmN0pqaPps3QhXn1yjch39zY6mPbomPfz40bRtfxllIQj798lWT1+6J8YEcez7HqumDy48x6E+btsBSAjOB5Rg+RoaZ9y1/7f8rmRyxAQVuFQmm14my8nk1zJJP5A6kqkx0uy2TJqRKROZUiJK7ybT/dZxmdzL1HOSKZ1MzUAUyhTTyxQ5mepaZjeQDMtYpkAskckTmSyViVOZChCou8mkCMZlqqUPaDYyYYWpe0tESF4i03Unk8sUJCNTyYxMHsmUbmZi4rZMriOZDBGayJS4QCYplUlGXbrQfDhzcumewI21UoUup1/LRW4t1xmWIfMMLCXSNGbJUpYQsVQXgFcTZuj47SzpG0u5Xvp45uTSLW4uvdZFOWbPeHKXPOcSMjAVjWASjCjchgkxTI5IClO47FzfDSYgOQ4Tlj6gOcnsSlXFRelKLqeXKXMyeSqTxy45EgUuuYhcqkvS+WrCxAjfrMrL1/HwHBmXQ+2TQvmOVWrEKRUKClWq6VWqnMpMfnkZ++BSXsyNunSDQiKXHKUsBSDC78jyjelySDA5nk9JDiu3gnCGaWmC6d7Q1DAlTmGSDEsST5cUUJhC32Cp47JHIJ3JL+XF7z22ikYLcrL04cxJZbcvwqQkhSphepWQUYkz6SWncd1D2WXXMbikkUuCKE9cZjaKpKN0M728i0s8pJcuoDnJZIgJXFz4wPTHPjJz7EOwyMgME1qQqZBSBTJpIlNkZLpySN5N5mg93oXmw5mTS1eQS5CCFbqcviCXmYKc4MxOEQ+pqHfJKFLJcWTqEuIE0xU+kLjk+pIWfLtLHDZSMzKHrSIX0JxkuqGRTDJcKHP6Qx+ZOfQhkMsxZSJTZLaKUpk8njElCjPy1Vqu7nkcOVr7dMH5gOYk080HUmNauFUE028VyWirSPWDRzMyVXzow7T7M7wtU8fHkeKSAlz9C4e8n8zxtdx95MN52+Vf/wNvRwsqXCQAAA==",
         "isBase64Encoded": True,
     }
     print(lambda_handler(payload, {}))

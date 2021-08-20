@@ -54,6 +54,11 @@ def get_sondes(event, context):
                     }
                 }
             )
+        else:
+            payload["query"]["bool"]["filter"].append(
+                {"range": {"datetime": {"gte": "now-1d", "lte": "now+1m"}}}
+            )
+
         if (
             "lat" in event["queryStringParameters"]
             and "lon" in event["queryStringParameters"]
@@ -70,12 +75,11 @@ def get_sondes(event, context):
                     }
                 }
             )
-    # if the user doesn't specify a range we should add one - 24 hours is probably a good start
-    if "range" not in payload["query"]["bool"]["filter"]:
+    else:
         payload["query"]["bool"]["filter"].append(
-            {"range": {"datetime": {"gte": "now-1d", "lte": "now+1m"}}}
+                {"range": {"datetime": {"gte": "now-1d", "lte": "now+1m"}}}
         )
-
+        
     results = es_request(payload, path, "POST")
     buckets = results["aggregations"]["2"]["buckets"]
     sondes = {
@@ -775,7 +779,7 @@ def es_request(payload, path, method):
 
 
 if __name__ == "__main__":
-    # print(get_sondes({"queryStringParameters":{"lat":"-28.22717","lon":"153.82996","distance":"50000"}}, {}))
+    print(get_sondes({"queryStringParameters":{"lat":"-32.7933","lon":"151.8358","distance":"5000", "last":"604800"}}, {}))
     # mode: 6hours
     # type: positions
     # format: json
@@ -822,15 +826,15 @@ if __name__ == "__main__":
     #         {},
     #     )
     # )
-    print(
-        get_telem(
-            {
-                "queryStringParameters":{
-                    # "serial": "S3210639",
-                    "duration": "3h",
-                   # "datetime": "2021-07-26T06:49:29.001000Z"
-                }
-            }, {}
-        )
-    )
+    # print(
+    #     get_telem(
+    #         {
+    #             "queryStringParameters":{
+    #                 # "serial": "S3210639",
+    #                 "duration": "3h",
+    #                # "datetime": "2021-07-26T06:49:29.001000Z"
+    #             }
+    #         }, {}
+    #     )
+    # )
 
