@@ -300,6 +300,12 @@ def upload(event, context):
             else:
                 payloads.append(payload)
 
+    # limit payloads to 3
+    if payloads:
+        last = payloads.pop()
+        payloads = payloads[::5]
+        payloads.append(last)
+
     for payload in payloads:
         if "user-agent" in event["headers"]:
             event["time_server"] = datetime.datetime.now().isoformat()
@@ -337,8 +343,21 @@ def lambda_handler(event, context):
         "errors": errors
     }
     if errors:
-        print(json.dumps({"statusCode": 202, "body": error_message}))
-        return {"statusCode": 202, "body": error_message}
+        output = {
+            "statusCode": 202, 
+            "body": json.dumps(error_message),
+            "headers": {
+                "content-type": "application/json"
+            }
+        }
+        print({
+            "statusCode": 202, 
+            "body": error_message,
+            "headers": {
+                "content-type": "application/json"
+            }
+        })
+        return output
     else:
         return {"statusCode": 200, "body": "^v^ telm logged"}
 
