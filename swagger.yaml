@@ -439,6 +439,10 @@ definitions:
       - lon
       - alt
     properties:
+      dev:
+        description: >
+          If this field is set then the payload will not be uploaded to the database. This is useful for development and testing.
+        type: "string"
       software_name:
         description: >
           Name of the decoding software

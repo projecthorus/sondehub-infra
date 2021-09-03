@@ -207,7 +207,7 @@ def telemetry_filter(telemetry):
         mrz_callsign_valid = False
 
     # If Vaisala or DFMs, check the callsigns are valid. If M10, iMet or LMS6, just pass it through - we get callsigns immediately and reliably from these.
-    if (
+    if not (
         vaisala_callsign_valid
         or dfm_callsign_valid
         or meisei_callsign_valid
@@ -217,8 +217,6 @@ def telemetry_filter(telemetry):
         or ("LMS" in telemetry["type"])
         or ("iMet" in telemetry["type"])
     ):
-        return (True, "")
-    else:
         _id_msg = "Payload ID %s is invalid." % telemetry["serial"]
         # Add in a note about DFM sondes and their oddness...
         if "DFM" in telemetry["serial"]:
@@ -228,6 +226,11 @@ def telemetry_filter(telemetry):
             _id_msg += " Note: MRZ sondes may take a while to get an ID."
 
         return (False, _id_msg)
+    
+    if "dev" in telemetry:
+        return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
+
+    return (True, "")
 
 
 def set_connection_header(request, operation_name, **kwargs):
@@ -399,7 +402,7 @@ if __name__ == "__main__":
             "time": "31/Jan/2021:00:10:25 +0000",
             "timeEpoch": 1612051825409,
         },
-        "body": "H4sIACfzHmEAA+XaT2/bNhQA8Ps+hZGzw/HxP30utqHoLsNOGwaDjZnWgC15suysGPbdR6kiHZNUTKAGBFQBcghNKXriL+R7ZP78YbH4130vFg/H+rl9MY1dV2ZvH1aLh8ZstvWxrjZ2bU5tvW7+eVhGXc+2OW7rqusNiCPuO5wOu9psbLN+Mrvdcfup7/HuA7z/5bdH6HpF3UzV2qoy/X1+ZIsXc7aLfV3Vh3pn/T3b7d6uG/tkt2e76XoSTOARq0fQv2Ox4njFGeJcKyH/8NdsTGu76/LdKcL9V+i+N9Xp2Ty1p8Y23SU/N+Yl/Povh/427376NbyG08dXrViHdttsza4PRmGFKcP+k+fm67sFCpRqwJwOH+xM65qZRIqCZL6xf7OAkdJUwdBodl1PEEohRvyz2f3BNUokhoaz3a3ProUgYK+aPrsmN0pqaPps3QhXn1yjch39zY6mPbomPfz40bRtfxllIQj798lWT1+6J8YEcez7HqumDy48x6E+btsBSAjOB5Rg+RoaZ9y1/7f8rmRyxAQVuFQmm14my8nk1zJJP5A6kqkx0uy2TJqRKROZUiJK7ybT/dZxmdzL1HOSKZ1MzUAUyhTTyxQ5mepaZjeQDMtYpkAskckTmSyViVOZChCou8mkCMZlqqUPaDYyYYWpe0tESF4i03Unk8sUJCNTyYxMHsmUbmZi4rZMriOZDBGayJS4QCYplUlGXbrQfDhzcumewI21UoUup1/LRW4t1xmWIfMMLCXSNGbJUpYQsVQXgFcTZuj47SzpG0u5Xvp45uTSLW4uvdZFOWbPeHKXPOcSMjAVjWASjCjchgkxTI5IClO47FzfDSYgOQ4Tlj6gOcnsSlXFRelKLqeXKXMyeSqTxy45EgUuuYhcqkvS+WrCxAjfrMrL1/HwHBmXQ+2TQvmOVWrEKRUKClWq6VWqnMpMfnkZ++BSXsyNunSDQiKXHKUsBSDC78jyjelySDA5nk9JDiu3gnCGaWmC6d7Q1DAlTmGSDEsST5cUUJhC32Cp47JHIJ3JL+XF7z22ikYLcrL04cxJZbcvwqQkhSphepWQUYkz6SWncd1D2WXXMbikkUuCKE9cZjaKpKN0M728i0s8pJcuoDnJZIgJXFz4wPTHPjJz7EOwyMgME1qQqZBSBTJpIlNkZLpySN5N5mg93oXmw5mTS1eQS5CCFbqcviCXmYKc4MxOEQ+pqHfJKFLJcWTqEuIE0xU+kLjk+pIWfLtLHDZSMzKHrSIX0JxkuqGRTDJcKHP6Qx+ZOfQhkMsxZSJTZLaKUpk8njElCjPy1Vqu7nkcOVr7dMH5gOYk080HUmNauFUE028VyWirSPWDRzMyVXzow7T7M7wtU8fHkeKSAlz9C4e8n8zxtdx95MN52+Vf/wNvRwsqXCQAAA==",
+        "body": "H4sIAEHtMWEAA+XaT2/bNhQA8Hs/heGzw/H/I30u1mLYLkNPGwZDjZnWgC15suysKPrdS6kiHZNUTKACBEwBcghNKXriL+R7ZP5+s1h8td+LxfJUPTXPRW02ZXEwy/ViWRfbXXWqyq3ZFOem2tT/LVdB14upT7uqbHsTJJCwHd4st+bSNjT12bgLzsd9VWxNvXks9vvT7lN3xdvfyW/v/3wg3VW33YqyMWVZdPf9hS+ei4tZHKqyOlZ7f89mdzCb2jya3cVs254UU/KA9QNmH7BcC7wWHAmhlYS/3DXbojHtdenuDOHuy3c/FOX5qXhszrWp20ve1cWz//Vfjt1t3v76h38t548vWrH27abeFfsuGIUVZhy7T57qH++aMMKYJliw/oN90dhmDkgxAtw1dm+aYKQ0U6RvLPZtTyKVQpy6ZzOHo20EJPuGi9lv2kGhiPAXTZ9tkx011Td9NnbEy0+2UdmO7manojnZJt3/+LFomu4yxn0Q5t+zKR+/tE+MKRLY9T2VdRecf45jddo1PRgfnAsowvIjNMGFbf+2+l9LFYhLJnGuVD69VJ6SKm6l0m5gdSBVY6T5faksIRUiqQCIsdGk2t86LFU4qXrOUsFK1ZzITKlyeqkyJVXdSm0HlmMIpUrEI6kikspjqTiWqggiajSpDJFhqWrlApqtVLLGzL41KkHkSLXd6eRSJU1IVZCQKgKpYGcuLu9LFTqQyhFlkVTAGVJprlQ66NSG5sKZs1P7RHbslcp0Ov3aL1Nrv04w9ZmrZwpIs5Apj5mSgKm6gryZUH3Hn2fKXln69crFM2endjG06brOylE71pM7FSmnJAFVsQAqxYiR+1BJCFUgGkOVNrvXo0ElCIahkpULaM5S21JYCZm78sP0UiElVcRSRehUIJnhVMjAqbomrS8mVIzw3ao/f933z5Fw2tdSYs5KNRKMSUUylarplaqU0kR+erXgncLV4KBTO0g0cCpQzFQSRMWITF+ZTvsEVeD5lvxkbVccwTHLTVDtG5saKuAYKk0wpeF0ygjyU+wrTHVYRkmkE/kpXD2PsTU1WPDTlQtnzkrbfRgOQDOVkumVkoRSnEhPBQvrKMavu57eKQucUsRE5DSxMQWW1t30dBSnuE9PbUBzlsoRlzi7kCLTH0tB4liKYpmQ6ic8L1UhpTKkskiqTEi15RWMJnWw3m9Dc+HM2akt+IGA5JlOpy/4IVHwU5zYmRI+lXVOOUMqOj6NnZIwQbWFFImcCn1NI37eKfYbuQmp/daUDWjOUu1QAQeOM6VOfygFiUMpSlI5KkRSZWJrKpYqwhkVkJ+xb9Z+Nebx6WAt1QbnApqzVDtfgMYsc2uKTL81BcHWlOoGkyWkqvBQimv7Z3lfqg6PT+U1Zbj5lxQYT+rw2m8/cuG87vSf70CKNr48JQAA",
         "isBase64Encoded": True,
     }
     print(lambda_handler(payload, {}))
