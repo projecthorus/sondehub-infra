@@ -23,10 +23,6 @@ def z_check(data, threshold):
             continue
         if abs(z) > threshold:  # identify outliers
             outliers.append(index) # add to the empty list
-        # print outliers    
-    if outliers:
-        print("The detected outliers are: ", outliers)
-        print("Data : ", data)
     return outliers
 
 # todo
@@ -309,11 +305,7 @@ def upload(event, context):
             else:
                 payloads.append(payload)
 
-    # limit payloads to 3
-    if payloads:
-        last = payloads.pop()
-        payloads = payloads[::5]
-        payloads.append(last)
+
 
     for payload in payloads:
         if "user-agent" in event["headers"]:
@@ -338,6 +330,12 @@ def upload(event, context):
                         f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
                     )
             to_sns.append(payload)
+
+    # limit payloads to 3
+    if to_sns:
+        last = to_sns.pop()
+        to_sns = to_sns[::5]
+        to_sns.append(last)
     post(to_sns)
     return errors
 def lambda_handler(event, context):
@@ -408,7 +406,7 @@ if __name__ == "__main__":
             "time": "31/Jan/2021:00:10:25 +0000",
             "timeEpoch": 1612051825409,
         },
-        "body": "H4sIADsCMmEAA+XaT2/bNhQA8Hs/heGzw/HxP30utmFoL0NPGwZDjZlGgC15suysKPbdR6kiHZNUTKAGBEwBcsgzpeiJv5CPZP58t1h8s9+LxfJYP7UvRWM2VbE3y/Vi2RTbsj7W1dZsilNbb5p/lqug6dk0x7KuutaAOOK2wbvl1py7QNucjLvgdNjVxdY0m8ditzuWX/or3n+A3379/QH6q66bFVVrqqro7/sTW7wUZ7PY11V9qHf+nm25N5vGPJrybLZdS4IJPGD9gOknLNYcrzlDnGsl5B/umm3Rmu66dHOKcP/lm++L6vRUPLanxjTdJb80xYv/9V8P/W3e//zRv5bT51dRrH3cNGWx65NRWGHKsPvkqfn+roECpRowp8MHu6K1YSaRoiCZC/ZvGjBSmioYgsWuawlCKcSIezazP9igRGIInM1u03UKQcBehZ5tyPaaGkLPxvZ49cUGlW3obnYs2qMN6eHHz0Xb9pdRd6fn077clu1XG30An5j5+2Sqxy7IMEEcu+uPVdMn7J/tUB/LdkDkE3ZJRoC+p8sZt/F/V/9rvRwxQQXO1cum18tSevm1XtJ3rA70aow0u62XJvTKSK+UiNJcvTel2t86LpU7qXrOUqWVqhmITKlieqkiJVVdS+06lmEZShWIRVJ5JJXFUnEsVQECdTepFMG4VLVyCc1WKqwxtW+NCMlzpNrmZHKpgiSkKpmQygOp0o5cTNyWynUglSFCI6kSZ0gluVLJqFObmktnzk7tE9m+VyrT6fRzv0jN/TrB1FeznqlEmoZMWcwUAqbqAvJqQPUNf5wpfWPq1yuXz5yd2snQlus6q0btWU/ulKecQgKqogFUghGF21AhhMoRiaEKW93ru0EFJMehwsolNGep3fJYcZE788vppcqUVB5L5aFTjkSGUy4Cp+pStL4aUDHCN3cC8ud9/xwJp8Nais9ZqUacUqEgU6maXqlKKU3UpxcL3qm8GBx1ajuJBE45ipkKQITfkekbw+lQoHI83yU/rO2MwxmmuQWqfWNTQ5U4hkoSTEk4nFJAfoh9g6kOl1EC6UR9Ki+e77E1NbrgJyuXzpyVdvswTEqSqRSmVwoJpThRnnIarqMou+x6eqc0cEoQ5ZHTxMaUtLRulqd3cYqH8tQmNGepDDGBsxdSMP1RlUwcVREsElL9gOelKqRUhlQaSRUJqXZ5Je8mdXS936Xm0pmzU7vglyAFy3Q6/YJfJhb8BCd2prgvZZ1TRpGKjlRjpxAWqHYhBZFTri9lxI87xX4jNyF12JqyCc1Zqu0qySTDmVKnP5SSiUMpAqkaVUZSRWJrKpbKwxFVIj9iX8396p7Hp6NrqS45l9CcpdrxQmpMM7emYPqtKRlsTam+M2lCqgoPpZi2f5a3perw+FRcSoarf1OR95M6Pvfbj1w6bzv96z/GsefrUCUAAA==",
+        "body": "H4sIAFsEMmEAA+XaS2/jNhAA4Pv+CiNnh+X74fOiLYr2UvTUojC0MbMRYEuuLDtdFP3vHWlFKiapmMAaEFAtkMOOKVkjfiGHZP74sFr9Az+r1cOpfm5fi8Zuq+JgHzarh6bYlfWprnZ2W5zbetv8/bAOml5scyrrqmtNkEACGnz42uR83NfFzjbbp2K/P5Wf+zYffyY//fjrI+nbXTcrqtZWVdHf6Tu+ei0udnWoq/pY76372rY82G1jn2x5sbuuJcWUPGLziNlvWG4E3giOhDBaqt/dNbuitd116eYM4f6fb34oqvNz8dSeG9t0l/zQFK/+678c+9t8/P4X/yLOn95EsfFx25TFvk9GY40Zx+6T5+br2yWMMGYIFmz4YF+0EOYKaUYUd8H+3RKMtGGaDMFi37UkUmvEqXs2ezhCUCE5BC52v71AhCLC34ReIAT9pIfQi4U+rj5DUENDd7NT0Z4gZIb/firatr+MuTu9nA/lrmy/QPSR+MTsX2dbPXVBjikS2F1/qpo+Yf9sx/pUtgMbn7BL0r2oUUafruAC4v+u/2deBeKSSZzrlc/vlae8imuvtO9KE3g1GBl+2ytLeFWRV6UQY7leb9qEb522KZxNsyybCmwaTmSmTTm/TZmyqa9tdl3JsQptSsQjmyKyyWObOLapCSL6bjYZItM29doltCCbZIMZvCcqlcixCc3p7DYlTdjUKmFTBDYVjE5c3rYpTGCTI8oimwpn2KS5NumkTEjNpbMsmfAM0NtaZ8qcf0aXqRndJGD6qtTDVMiwECaPYZIAph4JXg2avuG3w2TvTOhm7fJZlkyY4qDQNlm1Zg95dpkiJZMkaGoW0KQYMXKbJglpCkRjmhKqdHM3mgSpaZpk7RJals1uKauFzJ3P1fw2VcqmiG2KUKZAMkOmkIFMPRafbwZNjPDNVXv+bO6fIyFzWAWJZbk0SDAmNcl0qed3qVMuE3Xm2PtephrVTcqEbqGBTIFimJIgKu4I850hcyg0BV7S8pxsYB4RHLPcQhPe0dw0FY5p0gRMGg6ZjCA/jL4D04QLIIlMos5Uo+B7bBxNLs7p2qWzLJfdLglXima6JPO7JAmXOFFmChaugBgfdyG9TBbIpIiJSGZi20gBpptl5l1k4qHMhISWZZMjLnH2EojMfzykEsdDFMuETT+oeZsaaZ1hk0U2ZcImLIzU3WxOrs271Fw6y5IJi3NFlOSZMudfnKvE4pzixL6R8CWpk8kZ0tHBZSyThIUmLIFIJFOYsTj4dpnYb6wmbA4bR5DQsmxC5yiuOM60Of9BkEocBFGSqjVVZFMmNo5imyIcNRXyo/LVjK7veUg5uQrqknMJLcsmjAnKYJa5cUTm3zhSwcaR7ruPJWzq8CCIG/hFvG3ThIeUciwErv7gQ93P5vSMDh+5dN6X+ed/QRi1DYwkAAA=",
         "isBase64Encoded": True,
     }
     print(lambda_handler(payload, {}))
