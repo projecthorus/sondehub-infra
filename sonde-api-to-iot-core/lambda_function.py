@@ -140,6 +140,12 @@ def telemetry_filter(telemetry):
         return (False,f"Sonde {telemetry['serial']} altitude is exactly 0m. Position is likely incorrect")
 
 
+    if "humidity" in telemetry and telemetry["humidity"] < 0:
+        return (False,f"Humidity {telemetry['humidity']} is below 0")
+
+    if "pressure" in telemetry and telemetry["pressure"] < 0:
+        return (False,f"Pressure {telemetry['pressure']} is below 0")
+
     # Third check: Number of satellites visible.
     if "sats" in telemetry:
         if telemetry["sats"] < 4: 
@@ -402,7 +408,7 @@ if __name__ == "__main__":
             "time": "31/Jan/2021:00:10:25 +0000",
             "timeEpoch": 1612051825409,
         },
-        "body": "H4sIAEHtMWEAA+XaT2/bNhQA8Hs/heGzw/H/I30u1mLYLkNPGwZDjZnWgC15suysKPrdS6kiHZNUTKACBEwBcghNKXriL+R7ZP5+s1h8td+LxfJUPTXPRW02ZXEwy/ViWRfbXXWqyq3ZFOem2tT/LVdB14upT7uqbHsTJJCwHd4st+bSNjT12bgLzsd9VWxNvXks9vvT7lN3xdvfyW/v/3wg3VW33YqyMWVZdPf9hS+ei4tZHKqyOlZ7f89mdzCb2jya3cVs254UU/KA9QNmH7BcC7wWHAmhlYS/3DXbojHtdenuDOHuy3c/FOX5qXhszrWp20ve1cWz//Vfjt1t3v76h38t548vWrH27abeFfsuGIUVZhy7T57qH++aMMKYJliw/oN90dhmDkgxAtw1dm+aYKQ0U6RvLPZtTyKVQpy6ZzOHo20EJPuGi9lv2kGhiPAXTZ9tkx011Td9NnbEy0+2UdmO7manojnZJt3/+LFomu4yxn0Q5t+zKR+/tE+MKRLY9T2VdRecf45jddo1PRgfnAsowvIjNMGFbf+2+l9LFYhLJnGuVD69VJ6SKm6l0m5gdSBVY6T5faksIRUiqQCIsdGk2t86LFU4qXrOUsFK1ZzITKlyeqkyJVXdSm0HlmMIpUrEI6kikspjqTiWqggiajSpDJFhqWrlApqtVLLGzL41KkHkSLXd6eRSJU1IVZCQKgKpYGcuLu9LFTqQyhFlkVTAGVJprlQ66NSG5sKZs1P7RHbslcp0Ov3aL1Nrv04w9ZmrZwpIs5Apj5mSgKm6gryZUH3Hn2fKXln69crFM2endjG06brOylE71pM7FSmnJAFVsQAqxYiR+1BJCFUgGkOVNrvXo0ElCIahkpULaM5S21JYCZm78sP0UiElVcRSRehUIJnhVMjAqbomrS8mVIzw3ao/f933z5Fw2tdSYs5KNRKMSUUylarplaqU0kR+erXgncLV4KBTO0g0cCpQzFQSRMWITF+ZTvsEVeD5lvxkbVccwTHLTVDtG5saKuAYKk0wpeF0ygjyU+wrTHVYRkmkE/kpXD2PsTU1WPDTlQtnzkrbfRgOQDOVkumVkoRSnEhPBQvrKMavu57eKQucUsRE5DSxMQWW1t30dBSnuE9PbUBzlsoRlzi7kCLTH0tB4liKYpmQ6ic8L1UhpTKkskiqTEi15RWMJnWw3m9Dc+HM2akt+IGA5JlOpy/4IVHwU5zYmRI+lXVOOUMqOj6NnZIwQbWFFImcCn1NI37eKfYbuQmp/daUDWjOUu1QAQeOM6VOfygFiUMpSlI5KkRSZWJrKpYqwhkVkJ+xb9Z+Nebx6WAt1QbnApqzVDtfgMYsc2uKTL81BcHWlOoGkyWkqvBQimv7Z3lfqg6PT+U1Zbj5lxQYT+rw2m8/cuG87vSf70CKNr48JQAA",
+        "body": "H4sIADsCMmEAA+XaT2/bNhQA8Hs/heGzw/HxP30utmFoL0NPGwZDjZlGgC15suysKPbdR6kiHZNUTKAGBEwBcsgzpeiJv5CPZP58t1h8s9+LxfJYP7UvRWM2VbE3y/Vi2RTbsj7W1dZsilNbb5p/lqug6dk0x7KuutaAOOK2wbvl1py7QNucjLvgdNjVxdY0m8ditzuWX/or3n+A3379/QH6q66bFVVrqqro7/sTW7wUZ7PY11V9qHf+nm25N5vGPJrybLZdS4IJPGD9gOknLNYcrzlDnGsl5B/umm3Rmu66dHOKcP/lm++L6vRUPLanxjTdJb80xYv/9V8P/W3e//zRv5bT51dRrH3cNGWx65NRWGHKsPvkqfn+roECpRowp8MHu6K1YSaRoiCZC/ZvGjBSmioYgsWuawlCKcSIezazP9igRGIInM1u03UKQcBehZ5tyPaaGkLPxvZ49cUGlW3obnYs2qMN6eHHz0Xb9pdRd6fn077clu1XG30An5j5+2Sqxy7IMEEcu+uPVdMn7J/tUB/LdkDkE3ZJRoC+p8sZt/F/V/9rvRwxQQXO1cum18tSevm1XtJ3rA70aow0u62XJvTKSK+UiNJcvTel2t86LpU7qXrOUqWVqhmITKlieqkiJVVdS+06lmEZShWIRVJ5JJXFUnEsVQECdTepFMG4VLVyCc1WKqwxtW+NCMlzpNrmZHKpgiSkKpmQygOp0o5cTNyWynUglSFCI6kSZ0gluVLJqFObmktnzk7tE9m+VyrT6fRzv0jN/TrB1FeznqlEmoZMWcwUAqbqAvJqQPUNf5wpfWPq1yuXz5yd2snQlus6q0btWU/ulKecQgKqogFUghGF21AhhMoRiaEKW93ru0EFJMehwsolNGep3fJYcZE788vppcqUVB5L5aFTjkSGUy4Cp+pStL4aUDHCN3cC8ud9/xwJp8Nais9ZqUacUqEgU6maXqlKKU3UpxcL3qm8GBx1ajuJBE45ipkKQITfkekbw+lQoHI83yU/rO2MwxmmuQWqfWNTQ5U4hkoSTEk4nFJAfoh9g6kOl1EC6UR9Ki+e77E1NbrgJyuXzpyVdvswTEqSqRSmVwoJpThRnnIarqMou+x6eqc0cEoQ5ZHTxMaUtLRulqd3cYqH8tQmNGepDDGBsxdSMP1RlUwcVREsElL9gOelKqRUhlQaSRUJqXZ5Je8mdXS936Xm0pmzU7vglyAFy3Q6/YJfJhb8BCd2prgvZZ1TRpGKjlRjpxAWqHYhBZFTri9lxI87xX4jNyF12JqyCc1Zqu0qySTDmVKnP5SSiUMpAqkaVUZSRWJrKpbKwxFVIj9iX8396p7Hp6NrqS45l9CcpdrxQmpMM7emYPqtKRlsTam+M2lCqgoPpZi2f5a3perw+FRcSoarf1OR95M6Pvfbj1w6bzv96z/GsefrUCUAAA==",
         "isBase64Encoded": True,
     }
     print(lambda_handler(payload, {}))
