@@ -170,9 +170,12 @@ def telemetry_filter(telemetry):
 
     # DateTime Check
     
-    _delta_time = (
-        datetime.datetime.now() - datetime.datetime.fromisoformat(telemetry["datetime"].replace("Z",""))
-    ).total_seconds()
+    try:
+        _delta_time = (
+            datetime.datetime.now() - datetime.datetime.fromisoformat(telemetry["datetime"].replace("Z",""))
+        ).total_seconds()
+    except:
+        return (False, f"Unable to parse time")
 
     sonde_time_threshold = 48
     if abs(_delta_time) > (3600 * sonde_time_threshold):
