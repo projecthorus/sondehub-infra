@@ -237,60 +237,7 @@ paths:
           description: Prediction results
           schema:
             $ref: "#/definitions/predictions" 
-  /datanew:
-    get:
-      deprecated: true
-      description: "Legacy endpoint required by the sondehub tracker."
-      parameters:
-        - in: query
-          name: type
-          type: string
-          enum:
-            - positions
-          required: true
-        - in: query
-          name: max_positions
-          type: number
-        - in: query
-          name: mode
-          type: string
-          description: Duration to query
-          enum:
-            - "3days"
-            - "1day"
-            - "12hours"
-            - "6hours"
-            - "3hours"
-            - "1hour"
-        - in: query
-          name: chase_only
-          type: string
-          description: Return only chase cars
-          enum:
-            - "true"
-            - "false"
-        - in: query
-          name: vehicles
-          type: string
-          description: "Filter by serial. Currently only supports either none, or a single serial number"
-        - in: query
-          name: position_id
-          type: string
-          format: date-time
-      responses:
-        200:
-          description: Results compatible with sondehub mobile-tracker.
-          schema:
-            type: object
-            properties:
-              positions:
-                type: object
-                properties:
-                  position:
-                    type: array
-                    items:
-                      type: object
-                        
+
   /recovered:
     put:
       summary: Adds a recovery object to the SondeHub database to indicate if a radiosonde was recovered

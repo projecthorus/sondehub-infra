@@ -9,6 +9,8 @@ import zlib
 import base64
 import datetime
 import os
+import gzip
+from io import BytesIO
 
 HOST = os.getenv("ES")
 
@@ -23,7 +25,14 @@ def es_request(payload, path, method):
     session = boto3.Session()
 
     params = json.dumps(payload)
-    headers = {"Host": HOST, "Content-Type": "application/json"}
+    
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(params.encode('utf-8'))
+    params = compressed.getvalue()
+
+    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
+
     request = AWSRequest(
         method=method, url=f"https://{HOST}/{path}", data=params, headers=headers
     )

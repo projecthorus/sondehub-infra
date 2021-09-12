@@ -5,14 +5,19 @@ from botocore.auth import SigV4Auth
 import boto3
 import botocore.credentials
 import os
-
+from io import BytesIO
+import gzip
+null = None
 HOST = os.getenv("ES")
 
 def es_request(payload, path, method):
     # get aws creds
     session = boto3.Session()
-
-    headers = {"Host": HOST, "Content-Type": "application/json"}
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(payload.encode('utf-8'))
+    payload = compressed.getvalue()
+    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
     request = AWSRequest(
         method="POST", url=f"https://{HOST}/{path}", data=payload, headers=headers
     )
@@ -20,6 +25,8 @@ def es_request(payload, path, method):
 
     session = URLLib3Session()
     r = session.send(request.prepare())
+    if r.status_code != 200:
+        raise RuntimeError
     return json.loads(r.text)
 
 

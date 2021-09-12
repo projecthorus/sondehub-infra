@@ -347,320 +347,6 @@ def get_listener_telemetry(event, context):
             
         }
 
-def datanew(event, context):
-    durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
-        "3days": (259200, 1800),  # 3d, 20m
-        "1day": (86400, 900),  # 1d, 10m
-        "12hours": (43200, 480),  # 12h, 2m
-        "6hours": (21600, 180),  # 6h, 1m
-        "3hours": (10800, 90),  # 3h, 10s
-        "1hour": (3600, 30),  # 1h, 5s
-    }
-    duration_query = "1hour"
-    requested_time = datetime.now(timezone.utc)
-
-    max_positions = (
-        int(event["queryStringParameters"]["max_positions"])
-        if "max_positions" in event["queryStringParameters"]
-        else 10000
-    )
-
-    if event["queryStringParameters"]["mode"] in durations:
-        duration_query = event["queryStringParameters"]["mode"]
-        (duration, interval) = durations[duration_query]
-    elif event["queryStringParameters"]["mode"] == "single":
-        duration = 259200
-        interval = 1
-    else:
-        return f"Duration must be either {', '.join(durations.keys())}"
-
-    
-    if "vehicles" in event["queryStringParameters"] and (
-        event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
-        and event["queryStringParameters"]["vehicles"] != ""
-    ):
-        interval = 2
-
-
-    if event["queryStringParameters"]["position_id"] != "0":
-        if event["queryStringParameters"]["mode"] == "single":
-            position_id = event["queryStringParameters"]["position_id"]
-            matches = re.search("(.+)-(\d{4}-\d{2}-\d{2}\w\d{2}:\d{2}:\d{2}.\d+)Z",position_id).groups()
-            matched_time = matches[1].replace("Z", "+00:00")
-            matched_vehicle = matches[0]
-            requested_time = datetime.fromisoformat(matched_time)
-            lt = requested_time
-            gte = requested_time
-
-        else:
-            requested_time = datetime.fromisoformat(
-                event["queryStringParameters"]["position_id"].replace("Z", "+00:00")
-            )
-            lt = requested_time + timedelta(seconds=duration)
-            gte = requested_time
-        
-    elif event["queryStringParameters"]["mode"] == "single":
-        return f"Single requires a position id specified"
-    else:
-        lt = datetime.now(timezone.utc) + timedelta(seconds=60)
-        gte = datetime.now(timezone.utc) - timedelta(0, duration)
-    output = {"positions": {"position": []}}
-    if "chase_only" not in event["queryStringParameters"] or event["queryStringParameters"]["chase_only"] != "true":
-        path = "telm-*/_search"
-        payload = {
-            "timeout": "30s",
-            "aggs": {
-                "2": {
-                    "terms": {
-                        "field": "serial.keyword",
-                        "order": {"_key": "desc"},
-                        "size": 10000,
-                    },
-                    "aggs": {
-                        "3": {
-                            "date_histogram": {
-                                "field": "datetime",
-                                "fixed_interval": f"{str(interval)}s",
-                                "min_doc_count": 1,
-                            },
-                            "aggs": {
-                                "1": {
-                                    "top_hits": {
-                                        "size": 5,
-                                        "sort": [
-                                                {"datetime": {"order": "desc"}},
-                                                {"pressure": {"order": "desc","mode" : "median"}},
-                                                {"humidity": {"order": "desc","mode" : "median"}},
-                                                {"temp": {"order": "desc","mode" : "median"}},
-                                                {"alt": {"order": "desc","mode" : "median"}}
-                                            ],
-                                    }
-                                }
-                            },
-                        }
-                    },
-                }
-            },
-            "query": {
-                "bool": {
-                    "filter": [
-                        {"match_all": {}},
-                        {
-                            "range": {
-                                "datetime": {"gte": gte.isoformat(), "lte": lt.isoformat()}
-                            }
-                        },
-                    ],
-                    "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"serial": "xxxxxxxx"}}],
-                }
-            },
-        }
-        if (
-            "vehicles" in event["queryStringParameters"]
-            and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"
-            and event["queryStringParameters"]["vehicles"] != ""
-        ):
-            payload["query"]["bool"]["filter"].append(
-                {
-                    "match_phrase": {
-                        "serial": str(event["queryStringParameters"]["vehicles"])
-                    }
-                }
-            )
-        if event["queryStringParameters"]["mode"] == "single":
-            payload["query"]["bool"]["filter"].append(
-                {
-                    "match_phrase": {
-                        "serial": matched_vehicle
-                    }
-                }
-            )
-        results = es_request(payload, path, "POST")
-
-
-
-        for sonde in results["aggregations"]["2"]["buckets"]:
-            for frame in sonde["3"]["buckets"]:
-                try:
-                    frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-                    uploaders = {}
-                    
-                    # Use subtype if it exists, else just use the basic type.
-                    if "subtype" in frame_data:
-                        _type = html.escape(frame_data["subtype"])
-                    else:
-                        _type = html.escape(frame_data["type"])
-
-                    data = {
-                        "manufacturer": html.escape(frame_data['manufacturer']),
-                        "type": html.escape(_type)
-                    }
-
-                    if "temp" in frame_data:
-                        data["temperature_external"] = frame_data["temp"]
-
-                    if "humidity" in frame_data:
-                        data["humidity"] = frame_data["humidity"]
-
-                    if "pressure" in frame_data:
-                        data["pressure"] = frame_data["pressure"]
-
-                    if "sats" in frame_data:
-                        data["sats"] = frame_data["sats"]
-
-                    if "batt" in frame_data:
-                        data["batt"] = frame_data["batt"]
-
-                    if "burst_timer" in frame_data:
-                        data["burst_timer"] = frame_data["burst_timer"]
-
-                    if "frequency" in frame_data:
-                        data["frequency"] = frame_data["frequency"]
-
-                    # May need to revisit this, if the resultant strings are too long.
-                    if "xdata" in frame_data:
-                        data["xdata"] = html.escape(frame_data["xdata"])
-
-                    output["positions"]["position"].append(
-                        {
-                            "position_id": html.escape(f'{frame_data["serial"]}-{frame_data["datetime"]}'),
-                            "mission_id": "0",
-                            "vehicle": html.escape(frame_data["serial"]),
-                            "server_time": html.escape(frame_data["datetime"]),
-                            "gps_time": html.escape(frame_data["datetime"]),
-                            "gps_lat": frame_data["lat"],
-                            "gps_lon": frame_data["lon"],
-                            "gps_alt": frame_data["alt"],
-                            "gps_heading": frame_data["heading"]
-                            if "heading" in frame_data
-                            else "",
-                            "gps_speed": frame_data["vel_h"] if "vel_h" in frame_data else "",
-                            "type": html.escape(_type),
-                            "picture": "",
-                            "temp_inside": "",
-                            "data": data,
-                            "callsign": uploaders,
-                            "sequence": "0",
-                        }
-                    )
-                except:
-                    traceback.print_exc(file=sys.stdout)
-            output["positions"]["position"][-1]["callsign"] = {
-                html.escape(x["_source"]['uploader_callsign']) : {
-                    "snr" : x["_source"]["snr"] if "snr" in x["_source"]  else None,
-                    "rssi" : x["_source"]["rssi"] if "rssi" in x["_source"] else None
-                }
-                for x in frame["1"]["hits"]["hits"]
-            }
-
-    # get chase cars
-
-    payload = {
-        "timeout": "30s",
-        "aggs": {
-            "2": {
-                "terms": {
-                    "field": "uploader_callsign.keyword",
-                    "order": {"_key": "desc"},
-                    "size": 10000,
-                },
-                "aggs": {
-                    "3": {
-                        "date_histogram": {
-                            "field": "ts",
-                            "fixed_interval": f"{str(interval)}s",
-                            "min_doc_count": 1,
-                        },
-                        "aggs": {
-                            "1": {
-                                "top_hits": {
-                                    "size": 1,
-                                    "sort": [{"ts": {"order": "desc"}}],
-                                }
-                            }
-                        },
-                    }
-                },
-            }
-        },
-        "query": {
-            "bool": {
-                "filter": [
-                    {"match_all": {}},
-                    {
-                        "match_phrase": {
-                            "mobile": True
-                        }
-                    },
-                    {
-                        "range": {
-                            "ts": {"gte": gte.isoformat(), "lt": lt.isoformat()}
-                        }
-                    },
-                ]
-            }
-        },
-    }
-
-    path = "listeners-*/_search"
-
-    # {"position_id":"82159921","mission_id":"0","vehicle":"KB9RKU_chase",
-    # "server_time":"2021-04-09 06:28:55.109589","gps_time":"2021-04-09 06:28:54",
-    # "gps_lat":"41.539648333","gps_lon":"-89.111862667","gps_alt":"231.6","gps_heading":"",
-    # "gps_speed":"0","picture":"","temp_inside":"","data":{},"callsign":"","sequence":""}
-    if event["queryStringParameters"]["mode"] != "single":
-        results = es_request(payload, path, "POST")
-        
-        for car in results["aggregations"]["2"]["buckets"]:
-            for frame in car["3"]["buckets"]:
-                try:
-                    frame_data = frame["1"]["hits"]["hits"][0]["_source"]
-
-                
-                    data = {}
-                    # 
-                    output["positions"]["position"].append(
-                        {
-                            "position_id": html.escape(f'{frame_data["uploader_callsign"]}-{frame_data["ts"]}'),
-                            "mission_id": "0",
-                            "vehicle": html.escape(f'{frame_data["uploader_callsign"]}_chase'),
-                            "server_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
-                            "gps_time": html.escape(datetime.fromtimestamp(frame_data["ts"]/1000).isoformat()),
-                            "gps_lat": frame_data["uploader_position"][0],
-                            "gps_lon": frame_data["uploader_position"][1],
-                            "gps_alt": frame_data["uploader_position"][2],
-                            "gps_heading": "",
-                            "gps_speed": 0,
-                            "picture": "",
-                            "temp_inside": "",
-                            "data": data,
-                            "callsign": html.escape(frame_data["uploader_callsign"]),
-                            "sequence": "",
-                        }
-                    )
-                except:
-                    traceback.print_exc(file=sys.stdout)
-        
-        output["positions"]["position"] = sorted(
-            output["positions"]["position"], key=lambda k: k["position_id"]
-        )
-    compressed = BytesIO()
-    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
-        json_response = json.dumps(output)
-        f.write(json_response.encode('utf-8'))
-    
-    gzippedResponse = compressed.getvalue()
-    return {
-            "body": base64.b64encode(gzippedResponse).decode(),
-            "isBase64Encoded": True,
-            "statusCode": 200,
-            "headers": {
-                "Content-Encoding": "gzip",
-                "content-type": "application/json"
-            }
-            
-        }
-
 
 def get_listeners(event, context):
 
@@ -767,7 +453,12 @@ def es_request(payload, path, method):
     session = boto3.Session()
 
     params = json.dumps(payload)
-    headers = {"Host": HOST, "Content-Type": "application/json"}
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(params.encode('utf-8'))
+    params = compressed.getvalue()
+
+    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
     request = AWSRequest(
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
     )
@@ -779,7 +470,7 @@ def es_request(payload, path, method):
 
 
 if __name__ == "__main__":
-    print(get_sondes({"queryStringParameters":{"lat":"-32.7933","lon":"151.8358","distance":"5000", "last":"604800"}}, {}))
+    #print(get_sondes({"queryStringParameters":{"lat":"-32.7933","lon":"151.8358","distance":"5000", "last":"604800"}}, {}))
     # mode: 6hours
     # type: positions
     # format: json
@@ -798,11 +489,11 @@ if __name__ == "__main__":
 #             {},
 #         )
 #     )
-    # print(
-    #     get_listeners(
-    #         {},{}
-    #     )
-    # )
+    print(
+        get_listeners(
+            {},{}
+        )
+    )
     # print (
     #     get_chase(
     #         {"queryStringParameters": {

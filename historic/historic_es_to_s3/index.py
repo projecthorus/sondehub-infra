@@ -7,6 +7,7 @@ import botocore.credentials
 import os
 import gzip
 from botocore.exceptions import ClientError
+from io import BytesIO
 
 HOST = os.getenv("ES")
 BUCKET = "sondehub-history"
@@ -17,7 +18,13 @@ def es_request(payload, path, method, params=None):
     # get aws creds
     session = boto3.Session()
 
-    headers = {"Host": HOST, "Content-Type": "application/json"}
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(payload.encode('utf-8'))
+    payload = compressed.getvalue()
+
+    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
+
     request = AWSRequest(
         method=method, url=f"https://{HOST}/{path}", data=payload, headers=headers, params=params
     )

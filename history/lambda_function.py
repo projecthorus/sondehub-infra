@@ -8,7 +8,8 @@ import os
 from datetime import datetime, timedelta, timezone
 import sys, traceback
 import uuid
-
+import gzip
+from io import BytesIO
 
 # TODO , HEAD S3 object, if it's less than 24 hours check ES, else 302 to bucket
 
@@ -84,7 +85,14 @@ def es_request(payload, path, method):
     session = boto3.Session()
 
     params = json.dumps(payload)
-    headers = {"Host": HOST, "Content-Type": "application/json"}
+    
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(params.encode('utf-8'))
+    params = compressed.getvalue()
+
+
+    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
     request = AWSRequest(
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
     )
@@ -98,7 +106,7 @@ def es_request(payload, path, method):
 if __name__ == "__main__":
     print(
         history(
-            {"pathParameters": {"serial": "S5050020"}}, {}
+            {"pathParameters": {"serial": "T1510227"}}, {}
         )
     )
 
