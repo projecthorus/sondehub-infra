@@ -310,8 +310,8 @@ def predict(event, context):
                     "subtype": serials[serial]['subtype'],
                     "datetime": value['request']['launch_datetime'],
                     "position": [
-                        value['request']['launch_latitude'],
-                        value['request']['launch_longitude'] - 360 if value['request']['launch_longitude'] > 180 else value['request']['launch_longitude']
+                            value['request']['launch_longitude'] - 360 if value['request']['launch_longitude'] > 180 else value['request']['launch_longitude'],
+                            value['request']['launch_latitude']
                         ],
                     "altitude": value['request']['launch_altitude'],
                     "ascent_rate": value['request']['ascent_rate'],
