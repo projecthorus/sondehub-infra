@@ -103,8 +103,8 @@ def predict(event, context):
         output.append({
             "vehicle": data["serial"],
             "time": data['datetime'],
-            "latitude": data['position'][0],
-            "longitude": data['position'][1],
+            "latitude": data['position'][1],
+            "longitude": data['position'][0],
             "altitude":  data['altitude'],
             "ascent_rate": data['ascent_rate'],
             "descent_rate": data['descent_rate'],
