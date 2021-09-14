@@ -225,16 +225,6 @@ def predict(event, context):
                 },
                 "size": 0
             }
-    if "queryStringParameters" in event:
-        if "vehicles" in event["queryStringParameters"] and event["queryStringParameters"]["vehicles"] != "RS_*;*chase"  and event["queryStringParameters"]["vehicles"] != "":
-            payload["query"]["bool"]["filter"].append(
-                {
-                    "match_phrase": {
-                        "serial": str(event["queryStringParameters"]["vehicles"])
-                    }
-                }
-            )
-            payload['query']['bool']['filter'][1]['range']['datetime']['gte'] = 'now-6h' # for single sonde allow longer predictions
     logging.debug("Start ES Request")
     results = es_request(json.dumps(payload), path, "GET")
     logging.debug("Finished ES Request")
@@ -250,7 +240,7 @@ def predict(event, context):
                 "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/25, # as we bucket for every 5 seconds with a lag of 5
                 "time": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['key_as_string'],
                 "type": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"]["type"],
-                "subtype": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"]["subtype"]
+                "subtype": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"]["subtype"] if "subtype" in sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"] else None
             }
         except:
             pass
