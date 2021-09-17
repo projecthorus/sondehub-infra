@@ -13,6 +13,7 @@ import math
 import logging
 import gzip
 from io import BytesIO
+import base64
 
 HOST = os.getenv("ES")
 
@@ -67,7 +68,7 @@ def predict(event, context):
                     {
                         "range": {
                             "datetime": {
-                                "gte": "now-3d",
+                                "gte": "now-6h",
                                 "lte": "now",
                                 "format": "strict_date_optional_time"
                             }
@@ -114,8 +115,22 @@ def predict(event, context):
             "data":  json.dumps(data['data'])
         })
 
-    return json.dumps(output)
-
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(output)
+        f.write(json_response.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
 
 def es_request(payload, path, method):
     # get aws creds

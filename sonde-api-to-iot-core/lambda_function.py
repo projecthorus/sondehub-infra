@@ -264,7 +264,7 @@ def upload(event, context):
             time_delta_header = event["headers"]["date"]
             time_delta = (
                 datetime.datetime(*parsedate(time_delta_header)[:7])
-                - datetime.datetime.utcnow()
+                - datetime.datetime.utcnow() # TODO we should use the request context datetime here so that timedelta works for chunked requests
             ).total_seconds()
         except:
             pass
