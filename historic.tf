@@ -118,7 +118,7 @@ resource "aws_cloudwatch_event_rule" "history" {
   name        = "history_queue"
   description = "History Queue"
 
-  schedule_expression = "cron(0 13,20,3,9 * * ? *)"
+  schedule_expression = "cron(0 15,20,3,9 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "sns" {
