@@ -490,8 +490,13 @@ if __name__ == "__main__":
 #         )
 #     )
     print(
-        get_listeners(
-            {},{}
+        get_telem(
+            {
+                "queryStringParameters": {
+                    "duration": "3d",
+                    "serial": "P4120469"
+                }},{}
+            
         )
     )
     # print (

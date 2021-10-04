@@ -74,7 +74,8 @@ resource "aws_lambda_function" "predict_updater" {
   publish                        = true
   memory_size                    = 256
   role                           = aws_iam_role.predict_updater.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
+  architectures                  = ["arm64"]
   timeout                        = 60
   reserved_concurrent_executions = 8
   environment {

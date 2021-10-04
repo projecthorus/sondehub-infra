@@ -64,7 +64,7 @@ resource "aws_lambda_function" "recovered_get" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.recovered.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
   timeout                        = 30
   reserved_concurrent_executions = 100
   environment {
@@ -82,7 +82,7 @@ resource "aws_lambda_function" "recovered_put" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.recovered.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
   timeout                        = 30
   reserved_concurrent_executions = 100
   environment {

@@ -68,14 +68,14 @@ resource "aws_lambda_function" "sqs_to_elk" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.sqs_to_elk.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
   timeout                        = 5
   reserved_concurrent_executions = 100
   environment {
     variables = {
       "ES" = aws_route53_record.Route53RecordSet7.fqdn
     }
-  } 
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_to_elk" {

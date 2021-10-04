@@ -496,7 +496,7 @@ resource "aws_route53_record" "Route53RecordSet7" {
 
 data "archive_file" "api_to_iot" {
   type        = "zip"
-  source_dir = "sonde-api-to-iot-core/"
+  source_dir  = "sonde-api-to-iot-core/"
   output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
 }
 
@@ -537,20 +537,17 @@ resource "aws_lambda_function" "LambdaFunction" {
   filename         = "${path.module}/build/sonde-api-to-iot-core.zip"
   source_code_hash = data.archive_file.api_to_iot.output_base64sha256
   publish          = true
-  memory_size      = 256
+  memory_size      = 128
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
+  architectures    = ["arm64"]
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
-      "SNS_TOPIC" = aws_sns_topic.sonde_telem.arn
+      "SNS_TOPIC"    = aws_sns_topic.sonde_telem.arn
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 resource "aws_lambda_function" "station" {
@@ -582,18 +579,14 @@ resource "aws_lambda_function" "get_sondes" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
-
+  architectures    = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 resource "aws_lambda_function" "listeners" {
@@ -604,18 +597,14 @@ resource "aws_lambda_function" "listeners" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
-
+  architectures    = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 
@@ -627,20 +616,16 @@ resource "aws_lambda_function" "predictions" {
   filename         = "${path.module}/build/predictions.zip"
   source_code_hash = data.archive_file.predictions.output_base64sha256
   publish          = true
-  memory_size      = 256
+  memory_size      = 128
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
-
+  architectures    = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 resource "aws_lambda_function" "get_telem" {
@@ -651,18 +636,14 @@ resource "aws_lambda_function" "get_telem" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
-
+  architectures    = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 resource "aws_lambda_function" "get_listener_telemetry" {
@@ -673,12 +654,9 @@ resource "aws_lambda_function" "get_listener_telemetry" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 30
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
+  architectures    = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -694,41 +672,35 @@ resource "aws_lambda_function" "sign_socket" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.sign_socket.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 10
-
+  architectures    = ["arm64"]
   environment {
     variables = {
       "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
 }
 
 resource "aws_lambda_function" "history" {
-  function_name    = "history"
-  handler          = "lambda_function.history"
-  filename         = "${path.module}/build/history.zip"
-  source_code_hash = data.archive_file.history.output_base64sha256
-  publish          = true
-  memory_size      = 512
-  role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
-  timeout          = 30
+  function_name                  = "history"
+  handler                        = "lambda_function.history"
+  filename                       = "${path.module}/build/history.zip"
+  source_code_hash               = data.archive_file.history.output_base64sha256
+  publish                        = true
+  memory_size                    = 512
+  role                           = aws_iam_role.IAMRole5.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
   reserved_concurrent_executions = 4
+  architectures                  = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
   }
 
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
+
 }
 
 resource "aws_lambda_permission" "sign_socket" {
@@ -821,7 +793,7 @@ resource "aws_s3_bucket" "S3Bucket" {
 }
 
 resource "aws_cloudwatch_log_group" "LogsLogGroup" {
-  name = "/aws/lambda/sonde-api-to-iot-core"
+  name              = "/aws/lambda/sonde-api-to-iot-core"
   retention_in_days = 30
 }
 
@@ -1069,7 +1041,7 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   domain_name           = "sondes-v2"
-  elasticsearch_version = "7.9"
+  elasticsearch_version = "OpenSearch_1.0"
   cluster_config {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
@@ -1109,11 +1081,12 @@ EOF
   }
   advanced_options = {
     "rest.action.multi.allow_explicit_index" = "true"
+    "override_main_response_version"         = "true"
   }
   ebs_options {
     ebs_enabled = true
     volume_type = "gp2"
-    volume_size = 400
+    volume_size = 250
   }
   log_publishing_options {
     cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs"
@@ -1128,7 +1101,7 @@ EOF
   log_publishing_options {
     cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/search-logs"
     enabled                  = true
-    log_type                 = "SEARCH_SLOW_LOGS" 
+    log_type                 = "SEARCH_SLOW_LOGS"
   }
 }
 data "aws_kms_key" "es" {
@@ -1156,7 +1129,7 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
   }
   role_mapping {
     ambiguous_role_resolution = "AuthenticatedRole"
-    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:5sngha3l291nb4784iid5hli48"
+    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:62uut02s5ts991uhpf4fbuvrtj"
     type                      = "Token"
   }
 }
@@ -1229,8 +1202,8 @@ resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_scopes                 = ["email", "openid", "phone", "profile"]
-  callback_urls                        = ["https://es.${local.domain_name}/_plugin/kibana/app/kibana"]
-  logout_urls                          = ["https://es.${local.domain_name}/_plugin/kibana/app/kibana"]
+  callback_urls                        = ["https://es.${local.domain_name}/_dashboards/app/home"]
+  logout_urls                          = ["https://es.${local.domain_name}/_dashboards/app/home"]
   supported_identity_providers         = ["COGNITO", "Google"]
   explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
 }
