@@ -82,7 +82,7 @@ resource "aws_lambda_function" "historic_to_s3" {
   role                           = aws_iam_role.historic.arn
   runtime                        = "python3.9"
   timeout                        = 60
-  reserved_concurrent_executions = 8
+  reserved_concurrent_executions = 2
   environment {
     variables = {
       "ES" = aws_route53_record.Route53RecordSet7.fqdn
