@@ -347,6 +347,53 @@ def get_listener_telemetry(event, context):
             
         }
 
+def get_sites(event, context):
+
+    path = "sites/_search"
+    payload = {
+        "version": True,
+        "size": 10000,
+        "_source": {
+            "excludes": []
+        },
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                    "match_all": {}
+                    }
+                ]
+            }
+        }
+    }
+    if "queryStringParameters" in event:
+        if "station" in event["queryStringParameters"]:
+            payload["query"]["bool"]["filter"].append(
+                {
+                    "match_phrase": {
+                        "station": str(event["queryStringParameters"]["station"])
+                    }
+                }
+            )
+    results = es_request(payload, path, "POST")
+    output = {x['_source']['station']: x['_source'] for x in results['hits']['hits']}
+
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(output)
+        f.write(json_response.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
 
 def get_listeners(event, context):
 
@@ -489,16 +536,17 @@ if __name__ == "__main__":
 #             {},
 #         )
 #     )
-    print(
-        get_telem(
-            {
-                "queryStringParameters": {
-                    "duration": "3d",
-                    "serial": "P4120469"
-                }},{}
+    print(get_sites({},{}))
+    # print(
+    #     get_telem(
+    #         {
+    #             "queryStringParameters": {
+    #                 "duration": "3d",
+    #                 "serial": "P4120469"
+    #             }},{}
             
-        )
-    )
+    #     )
+    # )
     # print (
     #     get_chase(
     #         {"queryStringParameters": {
