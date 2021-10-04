@@ -80,9 +80,9 @@ resource "aws_lambda_function" "historic_to_s3" {
   publish                        = true
   memory_size                    = 2048
   role                           = aws_iam_role.historic.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
   timeout                        = 60
-  reserved_concurrent_executions = 8
+  reserved_concurrent_executions = 2
   environment {
     variables = {
       "ES" = aws_route53_record.Route53RecordSet7.fqdn
@@ -97,7 +97,7 @@ resource "aws_lambda_function" "queue_data_update" {
   publish                        = true
   memory_size                    = 256
   role                           = aws_iam_role.historic.arn
-  runtime                        = "python3.8"
+  runtime                        = "python3.9"
   timeout                        = 30
   reserved_concurrent_executions = 1
   environment {
