@@ -133,3 +133,20 @@ resource "aws_lambda_permission" "history_cron" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.history.arn
 }
+
+resource "aws_iam_role" "history" {
+  name                 = "history"
+  assume_role_policy   = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+    }]
+}
+EOF
+  max_session_duration = 3600
+}

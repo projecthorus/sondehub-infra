@@ -57,31 +57,9 @@ EOF
   max_session_duration = 3600
 }
 
-resource "aws_iam_role" "history" {
-  name                 = "history"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
-  max_session_duration = 3600
-}
 
-resource "aws_iam_service_linked_role" "IAMServiceLinkedRole" {
-  aws_service_name = "es.amazonaws.com"
-}
 
-resource "aws_iam_service_linked_role" "IAMServiceLinkedRole3" {
-  aws_service_name = "ops.apigateway.amazonaws.com"
-  description      = "The Service Linked Role is used by Amazon API Gateway."
-}
+
 
 resource "aws_iam_policy" "IAMManagedPolicy" {
   name   = "AWSLambdaBasicExecutionRole-01b38736-6769-4407-9515-93d653f4db5f"
