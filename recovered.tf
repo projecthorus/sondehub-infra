@@ -69,7 +69,7 @@ resource "aws_lambda_function" "recovered_get" {
   reserved_concurrent_executions = 100
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }
@@ -87,7 +87,7 @@ resource "aws_lambda_function" "recovered_put" {
   reserved_concurrent_executions = 100
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }
@@ -96,17 +96,17 @@ resource "aws_lambda_permission" "recovered_get" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.recovered_get.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/recovered"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/recovered"
 }
 resource "aws_lambda_permission" "recovered_put" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.recovered_put.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/recovered"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/recovered"
 }
 
 resource "aws_apigatewayv2_integration" "recovered_get" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -115,7 +115,7 @@ resource "aws_apigatewayv2_integration" "recovered_get" {
   payload_format_version = "2.0"
 }
 resource "aws_apigatewayv2_integration" "recovered_put" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -124,14 +124,14 @@ resource "aws_apigatewayv2_integration" "recovered_put" {
   payload_format_version = "2.0"
 }
 resource "aws_apigatewayv2_route" "recovered_get" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /recovered"
   target             = "integrations/${aws_apigatewayv2_integration.recovered_get.id}"
 }
 resource "aws_apigatewayv2_route" "recovered_put" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "PUT /recovered"

@@ -85,7 +85,7 @@ resource "aws_lambda_function" "historic_to_s3" {
   reserved_concurrent_executions = 2
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }
@@ -102,7 +102,7 @@ resource "aws_lambda_function" "queue_data_update" {
   reserved_concurrent_executions = 1
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }

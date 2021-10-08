@@ -18,75 +18,7 @@ locals {
 }
 data "aws_caller_identity" "current" {}
 
-resource "aws_iam_role" "IAMRole" {
-  path                 = "/"
-  name                 = "Cognito_sondesAuth_Role"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": "cognito-identity.amazonaws.com"
-        },
-        "Action": "sts:AssumeRoleWithWebIdentity",
-        "Condition": {
-            "StringEquals": {
-                "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.CognitoIdentityPool.id}"
-            },
-            "ForAnyValue:StringLike": {
-                "cognito-identity.amazonaws.com:amr": "authenticated"
-            }
-        }
-    }]
-}
-EOF
-  max_session_duration = 3600
-}
 
-resource "aws_iam_role" "IAMRole2" {
-  path                 = "/"
-  name                 = "Cognito_sondesUnauth_Role"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": "cognito-identity.amazonaws.com"
-        },
-        "Action": "sts:AssumeRoleWithWebIdentity",
-        "Condition": {
-            "StringEquals": {
-                "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.CognitoIdentityPool.id}"
-            },
-            "ForAnyValue:StringLike": {
-                "cognito-identity.amazonaws.com:amr": "unauthenticated"
-            }
-        }
-    }]
-}
-EOF
-  max_session_duration = 3600
-}
-
-resource "aws_iam_role" "IAMRole3" {
-  path                 = "/service-role/"
-  name                 = "CognitoAccessForAmazonES"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "es.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
-  max_session_duration = 3600
-}
 
 resource "aws_iam_role" "IAMRole5" {
   path                 = "/service-role/"
@@ -404,42 +336,8 @@ resource "aws_acm_certificate_validation" "CertificateManagerCertificate" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# resource "aws_route53_record" "Route53RecordSet5" {
-#   name = "api"
-#   type = "CNAME"
-#   ttl  = 60
-#   records = [
-#     "${aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.domain_name_configuration.0.target_domain_name}."
-#   ]
-#   zone_id = aws_route53_zone.Route53HostedZone.zone_id
-# }
 
-resource "aws_cognito_user_pool_domain" "main" {
-  domain          = "auth.${local.domain_name}"
-  user_pool_id    = aws_cognito_user_pool.CognitoUserPool.id
-  certificate_arn = aws_acm_certificate_validation.CertificateManagerCertificate.certificate_arn
-}
 
-resource "aws_route53_record" "Route53RecordSet6" {
-  name = "auth"
-  type = "A"
-  alias {
-    name                   = "${aws_cognito_user_pool_domain.main.cloudfront_distribution_arn}."
-    zone_id                = "Z2FDTNDATAQYW2"
-    evaluate_target_health = false
-  }
-  zone_id = aws_route53_zone.Route53HostedZone.zone_id
-}
-
-resource "aws_route53_record" "Route53RecordSet7" {
-  name = "es"
-  type = "CNAME"
-  ttl  = 300
-  records = [
-    aws_elasticsearch_domain.ElasticsearchDomain.endpoint
-  ]
-  zone_id = aws_route53_zone.Route53HostedZone.zone_id
-}
 
 data "archive_file" "api_to_iot" {
   type        = "zip"
@@ -664,35 +562,35 @@ resource "aws_lambda_permission" "sign_socket" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.sign_socket.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/websocket"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sondes/websocket"
 }
 
 resource "aws_lambda_permission" "history" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.history.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sonde/{serial}"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sonde/{serial}"
 }
 
 resource "aws_lambda_permission" "get_sondes" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_sondes.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sondes"
 }
 
 resource "aws_lambda_permission" "get_sites" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_sites.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sites"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sites"
 }
 
 resource "aws_lambda_permission" "listeners" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.listeners.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners"
 }
 
 
@@ -700,7 +598,7 @@ resource "aws_lambda_permission" "predictions" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.predictions.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/predictions"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/predictions"
 }
 
 
@@ -708,27 +606,27 @@ resource "aws_lambda_permission" "get_telem" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_telem.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/telemetry"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sondes/telemetry"
 }
 resource "aws_lambda_permission" "get_listener_telemetry" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_listener_telemetry.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners/telemetry"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners/telemetry"
 }
 
 resource "aws_lambda_permission" "LambdaPermission2" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.LambdaFunction.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/sondes/telemetry"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sondes/telemetry"
 }
 
 resource "aws_lambda_permission" "station" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.station.arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners"
 }
 
 resource "aws_cloudwatch_log_group" "LogsLogGroup" {
@@ -736,61 +634,14 @@ resource "aws_cloudwatch_log_group" "LogsLogGroup" {
   retention_in_days = 30
 }
 
-resource "aws_apigatewayv2_api" "ApiGatewayV2Api" {
-  name                         = "sondehub-v2"
-  disable_execute_api_endpoint = true
-  api_key_selection_expression = "$request.header.x-api-key"
-  protocol_type                = "HTTP"
-  route_selection_expression   = "$request.method $request.path"
 
-  cors_configuration {
-    allow_credentials = false
-    allow_headers = [
-      "*",
-    ]
-    allow_methods = [
-      "*",
-    ]
-    allow_origins = [
-      "*",
-    ]
-    expose_headers = []
-    max_age        = 0
-  }
 
-}
 
-resource "aws_apigatewayv2_stage" "ApiGatewayV2Stage" {
-  name   = "$default"
-  api_id = aws_apigatewayv2_api.ApiGatewayV2Api.id
-  default_route_settings {
-    detailed_metrics_enabled = false
-  }
-  auto_deploy = true
-  lifecycle {
-    ignore_changes = [deployment_id]
-  }
-}
 
-resource "aws_apigatewayv2_stage" "ApiGatewayV2Stage2" {
-  name          = "prod"
-  api_id        = aws_apigatewayv2_api.ApiGatewayV2Api.id
-  deployment_id = aws_apigatewayv2_deployment.ApiGatewayV2Deployment4.id
-  default_route_settings {
-    detailed_metrics_enabled = false
-  }
-}
 
-resource "aws_apigatewayv2_deployment" "ApiGatewayV2Deployment3" {
-  api_id = aws_apigatewayv2_api.ApiGatewayV2Api.id
-}
-
-resource "aws_apigatewayv2_deployment" "ApiGatewayV2Deployment4" {
-  api_id = aws_apigatewayv2_api.ApiGatewayV2Api.id
-}
 
 resource "aws_apigatewayv2_route" "ApiGatewayV2Route" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "PUT /sondes/telemetry"
@@ -798,7 +649,7 @@ resource "aws_apigatewayv2_route" "ApiGatewayV2Route" {
 }
 
 resource "aws_apigatewayv2_route" "stations" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "PUT /listeners"
@@ -807,14 +658,14 @@ resource "aws_apigatewayv2_route" "stations" {
 
 
 resource "aws_apigatewayv2_route" "sign_socket" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /sondes/websocket"
   target             = "integrations/${aws_apigatewayv2_integration.sign_socket.id}"
 }
 resource "aws_apigatewayv2_route" "history" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /sonde/{serial}"
@@ -822,7 +673,7 @@ resource "aws_apigatewayv2_route" "history" {
 }
 
 resource "aws_apigatewayv2_route" "get_sondes" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /sondes"
@@ -830,7 +681,7 @@ resource "aws_apigatewayv2_route" "get_sondes" {
 }
 
 resource "aws_apigatewayv2_route" "get_sites" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /sites"
@@ -838,7 +689,7 @@ resource "aws_apigatewayv2_route" "get_sites" {
 }
 
 resource "aws_apigatewayv2_route" "listeners" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /listeners"
@@ -848,7 +699,7 @@ resource "aws_apigatewayv2_route" "listeners" {
 
 
 resource "aws_apigatewayv2_route" "predictions" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /predictions"
@@ -856,7 +707,7 @@ resource "aws_apigatewayv2_route" "predictions" {
 }
 
 resource "aws_apigatewayv2_route" "get_telem" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /sondes/telemetry"
@@ -864,7 +715,7 @@ resource "aws_apigatewayv2_route" "get_telem" {
 }
 
 resource "aws_apigatewayv2_route" "get_listener_telemetry" {
-  api_id             = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
   authorization_type = "NONE"
   route_key          = "GET /listeners/telemetry"
@@ -872,7 +723,7 @@ resource "aws_apigatewayv2_route" "get_listener_telemetry" {
 }
 
 resource "aws_apigatewayv2_integration" "sign_socket" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -882,7 +733,7 @@ resource "aws_apigatewayv2_integration" "sign_socket" {
 }
 
 resource "aws_apigatewayv2_integration" "history" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -892,7 +743,7 @@ resource "aws_apigatewayv2_integration" "history" {
 }
 
 resource "aws_apigatewayv2_integration" "get_sondes" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -902,7 +753,7 @@ resource "aws_apigatewayv2_integration" "get_sondes" {
 }
 
 resource "aws_apigatewayv2_integration" "get_sites" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -912,7 +763,7 @@ resource "aws_apigatewayv2_integration" "get_sites" {
 }
 
 resource "aws_apigatewayv2_integration" "listeners" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -923,7 +774,7 @@ resource "aws_apigatewayv2_integration" "listeners" {
 
 
 resource "aws_apigatewayv2_integration" "predictions" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -933,7 +784,7 @@ resource "aws_apigatewayv2_integration" "predictions" {
 }
 
 resource "aws_apigatewayv2_integration" "get_telem" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -943,7 +794,7 @@ resource "aws_apigatewayv2_integration" "get_telem" {
 }
 
 resource "aws_apigatewayv2_integration" "get_listener_telemetry" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -953,7 +804,7 @@ resource "aws_apigatewayv2_integration" "get_listener_telemetry" {
 }
 
 resource "aws_apigatewayv2_integration" "ApiGatewayV2Integration" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -963,7 +814,7 @@ resource "aws_apigatewayv2_integration" "ApiGatewayV2Integration" {
 }
 
 resource "aws_apigatewayv2_integration" "stations" {
-  api_id                 = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
@@ -973,7 +824,7 @@ resource "aws_apigatewayv2_integration" "stations" {
 }
 
 resource "aws_apigatewayv2_api_mapping" "ApiGatewayV2ApiMapping" {
-  api_id          = aws_apigatewayv2_api.ApiGatewayV2Api.id
+  api_id          = aws_apigatewayv2_api.main.id
   domain_name     = aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.id
   stage           = "$default"
   api_mapping_key = ""
@@ -994,173 +845,4 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
     "*.${local.domain_name}"
   ]
   validation_method = "DNS"
-}
-
-resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
-  domain_name           = "sondes-v2"
-  elasticsearch_version = "OpenSearch_1.0"
-  cluster_config {
-    dedicated_master_count   = 3
-    dedicated_master_enabled = false
-    dedicated_master_type    = "t3.small.elasticsearch"
-    instance_count           = 1
-    instance_type            = "r5.xlarge.elasticsearch"
-    zone_awareness_enabled   = false
-  }
-  cognito_options {
-    enabled          = true
-    identity_pool_id = aws_cognito_identity_pool.CognitoIdentityPool.id
-    role_arn         = aws_iam_role.IAMRole3.arn
-    user_pool_id     = aws_cognito_user_pool.CognitoUserPool.id
-  }
-
-  access_policies = <<EOF
-    {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "*"
-            },
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
-        }
-    ]
-}
-EOF
-  encrypt_at_rest {
-    enabled    = true
-    kms_key_id = data.aws_kms_key.es.arn
-  }
-  node_to_node_encryption {
-    enabled = true
-  }
-  advanced_options = {
-    "rest.action.multi.allow_explicit_index" = "true"
-    "override_main_response_version"         = "true"
-  }
-  ebs_options {
-    ebs_enabled = true
-    volume_type = "gp2"
-    volume_size = 250
-  }
-  log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs"
-    enabled                  = true
-    log_type                 = "ES_APPLICATION_LOGS"
-  }
-  log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/index-logs"
-    enabled                  = true
-    log_type                 = "INDEX_SLOW_LOGS"
-  }
-  log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/search-logs"
-    enabled                  = true
-    log_type                 = "SEARCH_SLOW_LOGS"
-  }
-}
-data "aws_kms_key" "es" {
-  key_id = "alias/aws/es"
-}
-
-resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
-  identity_pool_name               = "sondes"
-  allow_unauthenticated_identities = true
-  supported_login_providers = {
-    "accounts.google.com" = "575970424139-vkk7scicbdd1igj04riqjh2bbs0oa6vj.apps.googleusercontent.com"
-  }
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.CognitoUserPoolClient.id
-    provider_name           = aws_cognito_user_pool.CognitoUserPool.endpoint
-    server_side_token_check = false
-  }
-}
-
-resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAttachment" {
-  identity_pool_id = aws_cognito_identity_pool.CognitoIdentityPool.id
-  roles = {
-    authenticated   = aws_iam_role.IAMRole.arn
-    unauthenticated = aws_iam_role.IAMRole2.arn
-  }
-  role_mapping {
-    ambiguous_role_resolution = "AuthenticatedRole"
-    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:62uut02s5ts991uhpf4fbuvrtj"
-    type                      = "Token"
-  }
-}
-
-resource "aws_cognito_user_pool" "CognitoUserPool" {
-  name = "sondes"
-  password_policy {
-    temporary_password_validity_days = 7
-    minimum_length                   = 8
-    require_lowercase                = true
-    require_numbers                  = true
-    require_symbols                  = true
-    require_uppercase                = true
-  }
-
-  schema {
-    attribute_data_type      = "String"
-    developer_only_attribute = false
-    mutable                  = true
-    name                     = "email"
-    string_attribute_constraints {
-      max_length = "2048"
-      min_length = "0"
-    }
-    required = true
-  }
-  username_configuration {
-    case_sensitive = false
-  }
-
-  auto_verified_attributes = [
-    "email"
-  ]
-  alias_attributes = [
-    "email",
-    "preferred_username"
-  ]
-  sms_verification_message   = "Your verification code is {####}. "
-  email_verification_message = "Your verification code is {####}. "
-  email_verification_subject = "Your verification code"
-  sms_authentication_message = "Your authentication code is {####}. "
-  mfa_configuration          = "OFF"
-  device_configuration {
-    challenge_required_on_new_device      = false
-    device_only_remembered_on_user_prompt = false
-  }
-  email_configuration {
-
-  }
-  admin_create_user_config {
-    allow_admin_create_user_only = false
-    invite_message_template {
-      email_message = "Your username is {username} and temporary password is {####}. "
-      email_subject = "Your temporary password"
-      sms_message   = "Your username is {username} and temporary password is {####}. "
-    }
-  }
-  account_recovery_setting {
-    recovery_mechanism {
-      name     = "verified_email"
-      priority = 1
-    }
-  }
-}
-
-resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
-  user_pool_id                         = aws_cognito_user_pool.CognitoUserPool.id
-  name                                 = "AWSElasticsearch-sondes-v2-us-east-1-hiwdpmnjbuckpbwfhhx65mweee"
-  refresh_token_validity               = 30
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes                 = ["email", "openid", "phone", "profile"]
-  callback_urls                        = ["https://es.${local.domain_name}/_dashboards/app/home"]
-  logout_urls                          = ["https://es.${local.domain_name}/_dashboards/app/home"]
-  supported_identity_providers         = ["COGNITO", "Google"]
-  explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
 }

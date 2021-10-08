@@ -80,7 +80,7 @@ resource "aws_lambda_function" "predict_updater" {
   reserved_concurrent_executions = 8
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }
