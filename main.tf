@@ -145,69 +145,6 @@ resource "aws_iam_policy" "IAMManagedPolicy4" {
 EOF
 }
 
-resource "aws_iam_role_policy" "IAMPolicy" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-               {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
-        }
-    ]
-}
-EOF
-  role   = aws_iam_role.IAMRole.name
-}
-
-resource "aws_iam_role_policy" "IAMPolicy2" {
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "mobileanalytics:PutEvents",
-        "cognito-sync:*"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
-}
-EOF
-  role   = aws_iam_role.IAMRole2.name
-}
-
-resource "aws_iam_role_policy" "IAMPolicy3" {
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "mobileanalytics:PutEvents",
-        "cognito-sync:*",
-        "cognito-identity:*"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
-}
-EOF
-  role   = aws_iam_role.IAMRole.name
-}
 
 resource "aws_iam_role_policy" "IAMPolicy4" {
   policy = <<EOF
@@ -409,24 +346,6 @@ resource "aws_lambda_function" "get_sondes" {
   }
 }
 
-resource "aws_lambda_function" "listeners" {
-  function_name    = "listeners"
-  handler          = "lambda_function.get_listeners"
-  filename         = "${path.module}/build/query.zip"
-  source_code_hash = data.archive_file.query.output_base64sha256
-  publish          = true
-  memory_size      = 256
-  role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
-  environment {
-    variables = {
-      "ES" = "es.${local.domain_name}"
-    }
-  }
-}
-
 
 
 
@@ -564,13 +483,6 @@ resource "aws_lambda_permission" "get_sites" {
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sites"
 }
 
-resource "aws_lambda_permission" "listeners" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.listeners.arn
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners"
-}
-
 
 resource "aws_lambda_permission" "predictions" {
   action        = "lambda:InvokeFunction"
@@ -666,14 +578,6 @@ resource "aws_apigatewayv2_route" "get_sites" {
   target             = "integrations/${aws_apigatewayv2_integration.get_sites.id}"
 }
 
-resource "aws_apigatewayv2_route" "listeners" {
-  api_id             = aws_apigatewayv2_api.main.id
-  api_key_required   = false
-  authorization_type = "NONE"
-  route_key          = "GET /listeners"
-  target             = "integrations/${aws_apigatewayv2_integration.listeners.id}"
-}
-
 
 
 resource "aws_apigatewayv2_route" "predictions" {
@@ -736,16 +640,6 @@ resource "aws_apigatewayv2_integration" "get_sites" {
   integration_method     = "POST"
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.get_sites.arn
-  timeout_milliseconds   = 30000
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_integration" "listeners" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  connection_type        = "INTERNET"
-  integration_method     = "POST"
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.listeners.arn
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }

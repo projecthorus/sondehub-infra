@@ -44,14 +44,20 @@ def lambda_handler(event, context):
         payload["user-agent"] = event["headers"]["user-agent"]
     if time_delta:
         payload["upload_time_delta"] = time_delta
-    (payload["uploader_alt"], payload["uploader_position_elk"]) = (
+
+    payload.pop("uploader_contact_email", None)
+
+    # clean up None reports
+
+    if "uploader_position" in payload and None in payload["uploader_position"]:
+        payload.pop("uploader_position", None)
+    
+    if "uploader_position" in payload:
+        (payload["uploader_alt"], payload["uploader_position_elk"]) = (
                 payload["uploader_position"][2],
                 f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
             )
-    payload.pop("uploader_contact_email", None)
     index = datetime.datetime.utcnow().strftime("listeners-%Y-%m")
-    print(payload)
-    print(index)
     payload["ts"] = datetime.datetime.utcnow().isoformat()
 
     es_request(json.dumps(payload),f"{index}/_doc","POST")

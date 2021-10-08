@@ -283,3 +283,68 @@ EOF
 resource "aws_iam_service_linked_role" "IAMServiceLinkedRole" {
   aws_service_name = "es.amazonaws.com"
 }
+
+
+resource "aws_iam_role_policy" "IAMPolicy" {
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+               {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "es:*",
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
+        }
+    ]
+}
+EOF
+  role   = aws_iam_role.auth_role.name
+}
+
+resource "aws_iam_role_policy" "IAMPolicy2" {
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "mobileanalytics:PutEvents",
+        "cognito-sync:*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+EOF
+  role   = aws_iam_role.unauth_role.name
+}
+
+resource "aws_iam_role_policy" "IAMPolicy3" {
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "mobileanalytics:PutEvents",
+        "cognito-sync:*",
+        "cognito-identity:*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+EOF
+  role   = aws_iam_role.auth_role.name
+}
