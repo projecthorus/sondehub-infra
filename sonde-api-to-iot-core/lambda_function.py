@@ -25,12 +25,6 @@ def z_check(data, threshold):
             outliers.append(index) # add to the empty list
     return outliers
 
-# todo
-# we should add some value checking
-# we typically perform version banning here based on user agent
-# error handling - at the moment we bail on a single failure
-# report to the user what's happened
-
 # Earthmaths code by Daniel Richman (thanks!)
 # Copyright 2012 (C) Daniel Richman; GNU GPL 3
 def position_info(listener, balloon):
@@ -264,7 +258,7 @@ def upload(event, context):
             time_delta_header = event["headers"]["date"]
             time_delta = (
                 datetime.datetime(*parsedate(time_delta_header)[:7])
-                - datetime.datetime.utcnow() # TODO we should use the request context datetime here so that timedelta works for chunked requests
+                - datetime.datetime.utcfromtimestamp(event["requestContext"]["timeEpoch"]/1000)
             ).total_seconds()
         except:
             pass

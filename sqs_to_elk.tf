@@ -73,7 +73,7 @@ resource "aws_lambda_function" "sqs_to_elk" {
   reserved_concurrent_executions = 100
   environment {
     variables = {
-      "ES" = aws_route53_record.Route53RecordSet7.fqdn
+      "ES" = aws_route53_record.es.fqdn
     }
   }
 }

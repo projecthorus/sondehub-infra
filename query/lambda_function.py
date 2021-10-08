@@ -259,7 +259,7 @@ def get_listener_telemetry(event, context):
         )
 
     (duration, interval) = durations[duration_query]
-    if "uploader_callsign" in event["queryStringParameters"]:
+    if "queryStringParameters" in event and "uploader_callsign" in event["queryStringParameters"]:
         interval = 1
     lt = requested_time
     gte = requested_time - timedelta(0, duration)
@@ -303,6 +303,7 @@ def get_listener_telemetry(event, context):
             "bool": {
                 "filter": [
                     {"match_all": {}},
+                    {"exists": { "field": "uploader_position"}},
                     {
                         "range": {
                             "ts": {"gte": gte.isoformat(), "lt": lt.isoformat()}
@@ -347,105 +348,53 @@ def get_listener_telemetry(event, context):
             
         }
 
+def get_sites(event, context):
 
-def get_listeners(event, context):
-
-    path = "listeners-*/_search"
+    path = "sites/_search"
     payload = {
-        "timeout": "30s",
-        "aggs": {
-            "2": {
-                "terms": {
-                    "field": "uploader_callsign.keyword",
-                    "order": {"_key": "desc"},
-                    "size": 500,
-                },
-                "aggs": {
-                    "1": {
-                        "top_hits": {
-                            "_source": False,
-                            "size": 1,
-                            "docvalue_fields": [
-                                "uploader_position_elk",
-                                "uploader_alt",
-                                "uploader_antenna.keyword",
-                                "software_name.keyword",
-                                "software_version.keyword",
-                                "ts",
-                            ],
-                            "sort": [{"ts": {"order": "desc"}}],
-                        }
-                    }
-                },
-            }
+        "version": True,
+        "size": 10000,
+        "_source": {
+            "excludes": []
         },
-        "size": 0,
         "query": {
             "bool": {
-                "must": [],
                 "filter": [
-                    {"match_all": {}},
-                    {"exists": {"field": "uploader_position_elk"},},
-                    {"exists": {"field": "uploader_antenna.keyword"},},
-                    {"exists": {"field": "software_name.keyword"},},
-                    {"exists": {"field": "software_version.keyword"},},
-                    {"exists": {"field": "ts"},},
                     {
-                        "range": {
-                            "ts": {
-                                "gte": "now-24h",
-                                "lte": "now+1m",
-                                "format": "strict_date_optional_time",
-                            }
-                        }
-                    },
-                    
-                ],
-                "should": [],
-                "must_not": [
-                    {"match_phrase": {"mobile": "true"}}, 
-                ],
+                    "match_all": {}
+                    }
+                ]
             }
-        },
-    }
-
-    results = es_request(payload, path, "GET")
-
-    output = [
-        {
-            "name": html.escape(listener["key"]),
-            "tdiff_hours": (
-                datetime.now(timezone.utc)
-                - datetime.fromisoformat(
-                    listener["1"]["hits"]["hits"][0]["fields"]["ts"][0].replace(
-                        "Z", "+00:00"
-                    )
-                )
-            ).seconds
-            / 60
-            / 60,
-            "lon": float(
-                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position_elk"][0]
-                .replace(" ", "")
-                .split(",")[1]
-            ),
-            "lat": float(
-                listener["1"]["hits"]["hits"][0]["fields"]["uploader_position_elk"][0]
-                .replace(" ", "")
-                .split(",")[0]
-            ),
-            "alt": float(listener["1"]["hits"]["hits"][0]["fields"]["uploader_alt"][0]) if "uploader_alt" in listener["1"]["hits"]["hits"][0]["fields"] else 0,
-            "description": f"""\n
-                <font size=\"-2\"><BR>\n
-                    <B>Radio: {html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_name.keyword"][0])}-{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["software_version.keyword"][0])}</B><BR>\n
-                    <B>Antenna: </B>{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["uploader_antenna.keyword"][0])}<BR>\n
-                    <B>Last Contact: </B>{html.escape(listener["1"]["hits"]["hits"][0]["fields"]["ts"][0])} <BR>\n
-                </font>\n
-            """,
         }
-        for listener in results["aggregations"]["2"]["buckets"]
-    ]
-    return json.dumps(output)
+    }
+    if "queryStringParameters" in event:
+        if "station" in event["queryStringParameters"]:
+            payload["query"]["bool"]["filter"].append(
+                {
+                    "match_phrase": {
+                        "station": str(event["queryStringParameters"]["station"])
+                    }
+                }
+            )
+    results = es_request(payload, path, "POST")
+    output = {x['_source']['station']: x['_source'] for x in results['hits']['hits']}
+
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(output)
+        f.write(json_response.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
 
 
 def es_request(payload, path, method):
@@ -489,16 +438,17 @@ if __name__ == "__main__":
 #             {},
 #         )
 #     )
-    print(
-        get_telem(
-            {
-                "queryStringParameters": {
-                    "duration": "3d",
-                    "serial": "P4120469"
-                }},{}
+    print(get_sites({},{}))
+    # print(
+    #     get_telem(
+    #         {
+    #             "queryStringParameters": {
+    #                 "duration": "3d",
+    #                 "serial": "P4120469"
+    #             }},{}
             
-        )
-    )
+    #     )
+    # )
     # print (
     #     get_chase(
     #         {"queryStringParameters": {
