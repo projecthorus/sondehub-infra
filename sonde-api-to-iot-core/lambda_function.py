@@ -25,12 +25,6 @@ def z_check(data, threshold):
             outliers.append(index) # add to the empty list
     return outliers
 
-# todo
-# we should add some value checking
-# we typically perform version banning here based on user agent
-# error handling - at the moment we bail on a single failure
-# report to the user what's happened
-
 # Earthmaths code by Daniel Richman (thanks!)
 # Copyright 2012 (C) Daniel Richman; GNU GPL 3
 def position_info(listener, balloon):
