@@ -1,5 +1,5 @@
 # TODO
-# add sns / sqs, AWS IoT actions
+# add sns / sqs
 terraform {
   backend "s3" {
     bucket  = "sondehub-terraform"
@@ -17,10 +17,6 @@ locals {
   domain_name = "v2.sondehub.org"
 }
 data "aws_caller_identity" "current" {}
-
-data "aws_iot_endpoint" "endpoint" {
-  endpoint_type = "iot:Data-ATS"
-}
 
 resource "aws_iam_role" "IAMRole" {
   path                 = "/"
@@ -84,24 +80,6 @@ resource "aws_iam_role" "IAMRole3" {
         "Effect": "Allow",
         "Principal": {
             "Service": "es.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
-  max_session_duration = 3600
-}
-
-resource "aws_iam_role" "IAMRole4" {
-  path                 = "/service-role/"
-  name                 = "iot-es"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "iot.amazonaws.com"
         },
         "Action": "sts:AssumeRole"
     }]
@@ -327,12 +305,6 @@ resource "aws_iam_role_policy" "IAMPolicy4" {
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": "iot:*",
-            "Resource": "*"
-        },
-        {
             "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": "s3:*",
@@ -349,31 +321,6 @@ EOF
   role   = aws_iam_role.IAMRole5.name
 }
 
-resource "aws_iam_role_policy" "sign_socket" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "iot:Connect",
-            "Resource": "*"
-        },
-                {
-            "Effect": "Allow",
-            "Action": "iot:Subscribe",
-            "Resource": "arn:aws:iot:us-east-1:${data.aws_caller_identity.current.account_id}:topicfilter/sondes/*"
-        },
-                {
-            "Effect": "Allow",
-            "Action": "iot:Receive",
-            "Resource": "arn:aws:iot:us-east-1:${data.aws_caller_identity.current.account_id}:topic/sondes/*"
-        }
-    ]
-}
-EOF
-  role   = aws_iam_role.sign_socket.name
-}
 
 
 resource "aws_iam_role_policy" "history" {
@@ -544,7 +491,6 @@ resource "aws_lambda_function" "LambdaFunction" {
   architectures    = ["arm64"]
   environment {
     variables = {
-      "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
       "SNS_TOPIC"    = aws_sns_topic.sonde_telem.arn
     }
   }
@@ -556,19 +502,17 @@ resource "aws_lambda_function" "station" {
   filename         = "${path.module}/build/station-api-to-iot-core.zip"
   source_code_hash = data.archive_file.station_api_to_iot.output_base64sha256
   publish          = true
-  memory_size      = 256
+  memory_size      = 128
   role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.7"
+  runtime          = "python3.9"
   timeout          = 10
+  architectures    = ["arm64"]
   environment {
     variables = {
-      "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
+      "ES" = "es.${local.domain_name}"
     }
   }
-  layers = [
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:xray-python:1",
-    "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:layer:iot:3"
-  ]
+
 }
 
 resource "aws_lambda_function" "get_sondes" {
@@ -693,11 +637,6 @@ resource "aws_lambda_function" "sign_socket" {
   runtime          = "python3.9"
   timeout          = 10
   architectures    = ["arm64"]
-  environment {
-    variables = {
-      "IOT_ENDPOINT" = data.aws_iot_endpoint.endpoint.endpoint_address
-    }
-  }
 }
 
 resource "aws_lambda_function" "history" {
@@ -790,31 +729,6 @@ resource "aws_lambda_permission" "station" {
   function_name = aws_lambda_function.station.arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.ApiGatewayV2Api.id}/*/*/listeners"
-}
-
-resource "aws_lambda_layer_version" "LambdaLayerVersion2" {
-  compatible_runtimes = [
-    "python3.8"
-  ]
-  layer_name       = "iot"
-  s3_bucket        = "sondehub-lambda-layers"
-  s3_key           = "iot.zip"
-  source_code_hash = "sHyE9vXk+BzFphPe8evfiL79fcxsSEYVfpbTVi2IwH0="
-}
-
-
-resource "aws_lambda_layer_version" "LambdaLayerVersion4" {
-  compatible_runtimes = [
-    "python3.8"
-  ]
-  layer_name       = "xray-python"
-  s3_bucket        = "sondehub-lambda-layers"
-  s3_key           = "xray-python.zip"
-  source_code_hash = "ta4o2brS2ZRAeWhZjqrm6MhOc3RlYNgkOuD4dxSonEc="
-}
-
-resource "aws_s3_bucket" "S3Bucket" {
-  bucket = "sondehub-lambda-layers"
 }
 
 resource "aws_cloudwatch_log_group" "LogsLogGroup" {
