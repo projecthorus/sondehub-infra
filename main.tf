@@ -254,17 +254,7 @@ resource "aws_acm_certificate_validation" "CertificateManagerCertificate" {
 
 
 
-data "archive_file" "api_to_iot" {
-  type        = "zip"
-  source_dir  = "sonde-api-to-iot-core/"
-  output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
-}
 
-data "archive_file" "station_api_to_iot" {
-  type        = "zip"
-  source_file = "station-api-to-iot-core/lambda_function.py"
-  output_path = "${path.module}/build/station-api-to-iot-core.zip"
-}
 
 data "archive_file" "query" {
   type        = "zip"
@@ -291,42 +281,9 @@ data "archive_file" "predictions" {
   output_path = "${path.module}/build/predictions.zip"
 }
 
-resource "aws_lambda_function" "LambdaFunction" {
-  function_name    = "sonde-api-to-iot-core"
-  handler          = "lambda_function.lambda_handler"
-  filename         = "${path.module}/build/sonde-api-to-iot-core.zip"
-  source_code_hash = data.archive_file.api_to_iot.output_base64sha256
-  publish          = true
-  memory_size      = 128
-  role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
-  environment {
-    variables = {
-      "SNS_TOPIC"    = aws_sns_topic.sonde_telem.arn
-    }
-  }
-}
 
-resource "aws_lambda_function" "station" {
-  function_name    = "station-api-to-iot-core"
-  handler          = "lambda_function.lambda_handler"
-  filename         = "${path.module}/build/station-api-to-iot-core.zip"
-  source_code_hash = data.archive_file.station_api_to_iot.output_base64sha256
-  publish          = true
-  memory_size      = 128
-  role             = aws_iam_role.IAMRole5.arn
-  runtime          = "python3.9"
-  timeout          = 10
-  architectures    = ["arm64"]
-  environment {
-    variables = {
-      "ES" = "es.${local.domain_name}"
-    }
-  }
 
-}
+
 
 resource "aws_lambda_function" "get_sondes" {
   function_name    = "query"
@@ -505,24 +462,6 @@ resource "aws_lambda_permission" "get_listener_telemetry" {
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners/telemetry"
 }
 
-resource "aws_lambda_permission" "LambdaPermission2" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.LambdaFunction.arn
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sondes/telemetry"
-}
-
-resource "aws_lambda_permission" "station" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.station.arn
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners"
-}
-
-resource "aws_cloudwatch_log_group" "LogsLogGroup" {
-  name              = "/aws/lambda/sonde-api-to-iot-core"
-  retention_in_days = 30
-}
 
 
 
@@ -530,21 +469,9 @@ resource "aws_cloudwatch_log_group" "LogsLogGroup" {
 
 
 
-resource "aws_apigatewayv2_route" "ApiGatewayV2Route" {
-  api_id             = aws_apigatewayv2_api.main.id
-  api_key_required   = false
-  authorization_type = "NONE"
-  route_key          = "PUT /sondes/telemetry"
-  target             = "integrations/${aws_apigatewayv2_integration.ApiGatewayV2Integration.id}"
-}
 
-resource "aws_apigatewayv2_route" "stations" {
-  api_id             = aws_apigatewayv2_api.main.id
-  api_key_required   = false
-  authorization_type = "NONE"
-  route_key          = "PUT /listeners"
-  target             = "integrations/${aws_apigatewayv2_integration.stations.id}"
-}
+
+
 
 
 resource "aws_apigatewayv2_route" "sign_socket" {
@@ -675,41 +602,9 @@ resource "aws_apigatewayv2_integration" "get_listener_telemetry" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_integration" "ApiGatewayV2Integration" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  connection_type        = "INTERNET"
-  integration_method     = "POST"
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.LambdaFunction.arn
-  timeout_milliseconds   = 30000
-  payload_format_version = "2.0"
-}
 
-resource "aws_apigatewayv2_integration" "stations" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  connection_type        = "INTERNET"
-  integration_method     = "POST"
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.station.arn
-  timeout_milliseconds   = 30000
-  payload_format_version = "2.0"
-}
 
-resource "aws_apigatewayv2_api_mapping" "ApiGatewayV2ApiMapping" {
-  api_id          = aws_apigatewayv2_api.main.id
-  domain_name     = aws_apigatewayv2_domain_name.ApiGatewayV2DomainName.id
-  stage           = "$default"
-  api_mapping_key = ""
-}
 
-resource "aws_apigatewayv2_domain_name" "ApiGatewayV2DomainName" {
-  domain_name = "api-raw.${local.domain_name}"
-  domain_name_configuration {
-    certificate_arn = aws_acm_certificate_validation.CertificateManagerCertificate.certificate_arn
-    endpoint_type   = "REGIONAL"
-    security_policy = "TLS_1_2"
-  }
-}
 
 resource "aws_acm_certificate" "CertificateManagerCertificate" {
   domain_name = local.domain_name
