@@ -23,7 +23,7 @@ resource "aws_lambda_function" "upload_telem" {
   architectures    = ["arm64"]
   environment {
     variables = {
-      "SNS_TOPIC"    = aws_sns_topic.sonde_telem.arn
+      "SNS_TOPIC" = aws_sns_topic.sonde_telem.arn
     }
   }
 }

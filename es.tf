@@ -171,7 +171,7 @@ resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
   explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
 
   access_token_validity = 60
-  id_token_validity = 60
+  id_token_validity     = 60
   token_validity_units {
     access_token  = "minutes"
     id_token      = "minutes"
@@ -188,8 +188,8 @@ resource "aws_cognito_user_pool_domain" "main" {
 
 resource "aws_route53_record" "auth" {
   for_each = toset(["A", "AAAA"])
-  name = "auth"
-  type = each.key
+  name     = "auth"
+  type     = each.key
   alias {
     name                   = "${aws_cognito_user_pool_domain.main.cloudfront_distribution_arn}."
     zone_id                = "Z2FDTNDATAQYW2"
