@@ -58,3 +58,8 @@ resource "aws_apigatewayv2_integration" "sign_socket" {
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }
+
+
+
+# TODO subnet for reader
+# padding interfaces

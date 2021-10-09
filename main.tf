@@ -103,14 +103,6 @@ resource "aws_acm_certificate_validation" "CertificateManagerCertificate" {
   certificate_arn         = aws_acm_certificate.CertificateManagerCertificate.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
-
-
-
-
-
-
-
-
 resource "aws_acm_certificate" "CertificateManagerCertificate" {
   domain_name = local.domain_name
   subject_alternative_names = [
