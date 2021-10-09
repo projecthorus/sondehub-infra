@@ -26,8 +26,7 @@ PREDICT_DEFAULTS = {'ascent_rate': 5.0, 'burst_altitude': 26000.0, 'descent_rate
 
 # For some sonde types we can make better assumptions
 SONDE_TYPE_PREDICT_DEFAULTS = {
-    'LMS6-403': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
-    'LMS6-1680': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
+    'LMS6': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
 }
 
 #
