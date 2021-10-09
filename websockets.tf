@@ -62,4 +62,10 @@ resource "aws_apigatewayv2_integration" "sign_socket" {
 
 
 # TODO subnet for reader
+# ecr
 # padding interfaces
+# service, reader, writer
+# task definition
+# s3 config bucket
+# iam roles
+# reader autoscaling

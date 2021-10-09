@@ -114,6 +114,14 @@ resource "aws_apigatewayv2_route" "predictions" {
   target             = "integrations/${aws_apigatewayv2_integration.predictions.id}"
 }
 
+resource "aws_apigatewayv2_route" "reverse_predictions" {
+  api_id             = aws_apigatewayv2_api.main.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /predictions/reverse"
+  target             = "integrations/${aws_apigatewayv2_integration.reverse_predictions.id}"
+}
+
 resource "aws_apigatewayv2_integration" "predictions" {
   api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
@@ -124,10 +132,26 @@ resource "aws_apigatewayv2_integration" "predictions" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "reverse_predictions" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.reverse_predictions.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
 data "archive_file" "predictions" {
   type        = "zip"
   source_file = "predict/lambda_function.py"
   output_path = "${path.module}/build/predictions.zip"
+}
+
+data "archive_file" "reverse_predictions" {
+  type        = "zip"
+  source_file = "reverse-predict/lambda_function.py"
+  output_path = "${path.module}/build/reverse-predict.zip"
 }
 
 resource "aws_lambda_function" "predictions" {
@@ -153,3 +177,29 @@ resource "aws_lambda_permission" "predictions" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/predictions"
 }
+
+
+resource "aws_lambda_function" "reverse_predictions" {
+  function_name    = "reverse-predictions"
+  handler          = "lambda_function.predict"
+  filename         = "${path.module}/build/reverse-predict.zip"
+  source_code_hash = data.archive_file.reverse_predictions.output_base64sha256
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.basic_lambda_role.arn
+  runtime          = "python3.9"
+  timeout          = 30
+  architectures    = ["arm64"]
+  environment {
+    variables = {
+      "ES" = "es.${local.domain_name}"
+    }
+  }
+}
+resource "aws_lambda_permission" "reverse_predictions" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reverse_predictions.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/predictions/reverse"
+}
+
