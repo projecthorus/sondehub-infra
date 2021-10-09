@@ -26,7 +26,8 @@ PREDICT_DEFAULTS = {'ascent_rate': 5.0, 'burst_altitude': 26000.0, 'descent_rate
 
 # For some sonde types we can make better assumptions
 SONDE_TYPE_PREDICT_DEFAULTS = {
-    'LMS6': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
+    'LMS6-403': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
+    'LMS6-1680': {'ascent_rate': 5.0, 'burst_altitude': 32000.0, 'descent_rate': 3.0},
 }
 
 #
@@ -641,9 +642,9 @@ if __name__ == "__main__":
     # _descent = get_standard_prediction(conn, _now, -34.0, 138.0, 24000.0, burst_altitude=24000.5)
     # print(f"Got {len(_descent)} data points for descent prediction.")
 
-    # test = predict(
-    #       {},{}
-    #     )
+    test = predict(
+          {},{}
+        )
 
     # for _serial in test:
     #     print(f"{_serial['serial']}: {len(_serial['data'])}")
@@ -652,19 +653,19 @@ if __name__ == "__main__":
     # print(predict(
     #       {},{}
     #     ))
-    bulk_upload_es("reverse-prediction",[{
-          "datetime" : "2021-10-04",
-          "data" : { },
-          "serial" : "R12341234",
-          "station" : "-2",
-          "subtype" : "RS41-SGM",
-          "ascent_rate" : "5",
-          "alt" : 1000,
-          "position" : [
-            1,
-            2
-          ],
-          "type" : "RS41"
-        }]
-    )
+    # bulk_upload_es("reverse-prediction",[{
+    #       "datetime" : "2021-10-04",
+    #       "data" : { },
+    #       "serial" : "R12341234",
+    #       "station" : "-2",
+    #       "subtype" : "RS41-SGM",
+    #       "ascent_rate" : "5",
+    #       "alt" : 1000,
+    #       "position" : [
+    #         1,
+    #         2
+    #       ],
+    #       "type" : "RS41"
+    #     }]
+    # )
 
