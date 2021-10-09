@@ -1,3 +1,4 @@
+from json.encoder import py_encode_basestring_ascii
 import boto3
 import botocore.credentials
 from botocore.awsrequest import AWSRequest
@@ -34,7 +35,9 @@ SONDE_TYPE_PREDICT_DEFAULTS = {
 #
 # Immediately allocate a launch site if it is within this distance (straight line)
 # of a known launch site.
-LAUNCH_ALLOCATE_RANGE = 4000 # metres
+LAUNCH_ALLOCATE_RANGE_MIN = 4000 # metres
+LAUNCH_ALLOCATE_RANGE_MAX = 30000 # metres
+LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range is min(current alt * this value , launch allocate range max)
 
 # Do not run predictions if the ascent or descent rate is less than this value
 ASCENT_RATE_THRESHOLD = 0.5
@@ -211,6 +214,43 @@ def position_info(listener, balloon):
     }
 
 
+def compare_launch_sites(sites, launch_estimate, altitude=0):
+    """ 
+    Compare a provided launch position estimate with all known launch sites 
+    
+    If a launch site is within a threshold, return the launch site.
+
+    """
+
+    launch_site = None
+    launch_site_range = 999999999999999
+
+    for _site in sites:
+        try:
+            _site_pos = [sites[_site]['position'][1], sites[_site]['position'][0], sites[_site]['alt']]
+            _pos_info = position_info(_site_pos, launch_estimate)
+
+            if _pos_info['straight_distance'] < launch_site_range:
+                launch_site = _site
+                launch_site_range = _pos_info['straight_distance']
+        except Exception as e:
+            logging.error(f"Error comparing launch site with estimate: {str(e)}")
+            print(_site_pos)
+            print(launch_estimate)
+            continue
+
+
+    # print(sites[launch_site])
+    # print(launch_site_range)
+
+    _allocate_range = min(LAUNCH_ALLOCATE_RANGE_MAX, altitude*LAUNCH_ALLOCATE_RANGE_SCALING)
+    
+    if launch_site_range < _allocate_range:
+        return {'site':launch_site, 'range': launch_site_range}
+    else:
+        return None
+
+
 def get_standard_prediction(conn, timestamp, latitude, longitude, altitude, current_rate=5.0, ascent_rate=PREDICT_DEFAULTS['ascent_rate'], burst_altitude=PREDICT_DEFAULTS['burst_altitude'], descent_rate=PREDICT_DEFAULTS['descent_rate']):
     """
     Request a standard flight path prediction from Tawhiri.
@@ -268,7 +308,7 @@ def get_standard_prediction(conn, timestamp, latitude, longitude, altitude, curr
         return None
 
 
-def get_launch_estimate(conn, timestamp, latitude, longitude, altitude, ascent_rate=PREDICT_DEFAULTS['ascent_rate']):
+def get_launch_estimate(conn, timestamp, latitude, longitude, altitude, ascent_rate=PREDICT_DEFAULTS['ascent_rate'], current_rate=5.0):
     """
     Estimate the launch site of a sonde based on a current ascent position.
 
@@ -301,8 +341,27 @@ def get_launch_estimate(conn, timestamp, latitude, longitude, altitude, ascent_r
     
     pred_data = json.loads(data.decode("utf-8"))
 
-    if 'launch_estimate' in pred_data:
-        return pred_data['launch_estimate']
+    path = []
+
+    if 'prediction' in pred_data:
+        for stage in pred_data['prediction']:
+            # Probably don't need to worry about this, it should only result in one or two points
+            # in 'ascent'.
+            if stage['stage'] == 'ascent' and current_rate < 0: # ignore ascent stage if we have already burst
+                continue
+            else:
+                for item in stage['trajectory']:
+                    path.append({
+                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                        "lat": item['latitude'],
+                        "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
+                        "alt": item['altitude'],
+                    })
+        
+        pred_data['path'] = path
+
+        return pred_data
+
     else:
         return None
 
@@ -339,6 +398,15 @@ def get_reverse_predictions():
     results = es_request(json.dumps(payload), path, "POST")
     logging.debug("Finished ES Request")
     return { x['_source']['serial'] : x['_source'] for x in results['hits']['hits']}
+
+
+# Example data structure from get_launch_sites
+# {
+#     '01028': {'station': '01028', 'rs_types': ['23'], 'position': [19.0012, 74.5038], 'alt': 20, 'station_name': 'Bjornoya (Norway)', 'times': ['0:00:00', '0:06:00', '0:12:00', '0:18:00']}, 
+#     '-3': {'station': '-3', 'rs_types': ['17'], 'position': [-1.23813, 44.35714], 'alt': 15, 'station_name': 'DGA Essais de missiles (France)', 'burst_altitude': 20000}, 
+#     '-2': {'station': '-2', 'rs_types': ['63', '77'], 'position': [2.60012, 48.337861], 'alt': 118, 'station_name': 'METEOMODEM Headquarters (France)'},
+#     ...
+# }
 
 def get_launch_sites():
     path = "sites/_search"
@@ -521,27 +589,115 @@ def predict(event, context):
         except:
             pass
 
+    
+    launch_sites = get_launch_sites()
+    reverse_predictions = get_reverse_predictions()
+
+
     conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
     serial_data={}
+    reverse_serial_data = {}
     logging.debug("Start Predict")
     for serial in serials:
 
         value = serials[serial]
 
-        # TODO - If this serial already has a launch site allocated, get the default flight profile for it
-        # 
-        # TODO - If this serial doesn't have a launch site allocated, try and allocate one.
-        #   - Estimate the launch site using a call to tawhiri
-        #   - For each known launch site, calculate the straight-line distance between the estimted launch location
-        #     and the launch site (use position_info function above). Keep the smallest straight-line distance and its corresponding launch site.
-        #   - If the straight-line distance is < LAUNCH_ALLOCATE_RANGE, assign the sonde to that launch site.
-        #   - Otherwise, set the serial's launch site to 'unknown'.
         #
-        # Otherwise, fallback to using a flight profile based on the sonde type.
+        # Flight Profile selection 
+        #
+        # Fallback Option - use flight profile data based on sonde type.
         _flight_profile = flight_profile_by_type(value['type'])
+
+
+        # Check if we have already run a reverse prediction on this serial 
+        if serial in reverse_predictions:
+            logging.debug(f"Found reverse prediction for {serial}.")
+            _rev_pred = reverse_predictions[serial]
+
+            #print(_rev_pred)
+
+            if 'launch_site' in _rev_pred:
+                # This serial number has been assigned to a launch site!
+                # Grab the launch site information
+                _site_info = launch_sites[_rev_pred['launch_site']]
+                
+                # If we have flight profile data, update the default flight profile
+                if 'ascent_rate' in _site_info:
+                    _flight_profile['ascent_rate'] = _site_info['ascent_rate']
+                
+                if 'burst_altitude' in _site_info:
+                    _flight_profile['burst_altitude'] = _site_info['burst_altitude']
+                
+                if 'descent_rate' in _site_info:
+                    _flight_profile['descent_rate'] = _site_info['descent_rate']
+
+                logging.debug(f"{serial} - Using Flight Profile data for Launch site: {_site_info['station_name']}")
+            else:
+                # No launch site was allocated...
+                # TODO - Try again?
+                pass
+
+        else:
+            # No reverse prediction data!
+            # We can only run a reverse prediction with a sonde on ascent.
+            #print(f"{serial}: {value['rate']}")
+            if value['rate'] > 0.5:
+
+                # Try and run a reverse prediction
+                logging.info(f"Running reverse predict for {serial}")
+
+                longitude = float(value['position'][1].strip())
+                latitude = float(value['position'][0].strip())
+
+                _rev_pred = get_launch_estimate(
+                    conn, 
+                    value['time'], 
+                    latitude,
+                    longitude,
+                    value['alt'],
+                    current_rate=value['rate'],
+                    ascent_rate=value['rate'],
+                    )
+                
+                if _rev_pred:
+
+                    # Attempt to find a launch site near to the launch estimate.
+                    _launch_estimate = [_rev_pred['launch_estimate']['latitude'], _rev_pred['launch_estimate']['longitude'], _rev_pred['launch_estimate']['altitude']] 
+                    _alloc_site = compare_launch_sites(launch_sites, _launch_estimate, value['alt'])
+
+                    if _alloc_site:
+                        # We have found the launch site!
+                        # {'site':_site, 'range': launch_site_range}
+                        logging.info(f"Allocated {serial} to launch site {launch_sites[_alloc_site['site']]['station_name']} ({_alloc_site['site']}) with range {_alloc_site['range']:.1f}.")
+
+                        # Add launch site into the prediction data
+                        _rev_pred['launch_site'] = _alloc_site['site']
+                        _rev_pred['launch_site_range_estimate'] = _alloc_site['range']
+
+                        # If we have flight profile data, update the default flight profile
+                        _site_info = launch_sites[_alloc_site['site']]
+                        if 'ascent_rate' in _site_info:
+                            _flight_profile['ascent_rate'] = _site_info['ascent_rate']
+                        
+                        if 'burst_altitude' in _site_info:
+                            _flight_profile['burst_altitude'] = _site_info['burst_altitude']
+                        
+                        if 'descent_rate' in _site_info:
+                            _flight_profile['descent_rate'] = _site_info['descent_rate']
+
+
+                    # Add to dict for upload later.
+                    reverse_serial_data[serial] = _rev_pred
+
+                else:
+                    # Launch estimate prediction failed.
+                    pass
+
+
 
         #print(value)
         #print(_flight_profile)
+        logging.debug(f"Running prediction for {serial} using flight profile {str(_flight_profile)}.")
 
         # Determine current ascent rate
         # If the value is < 0.5 (e.g. we are on descent, or not moving), we just use a default value.
@@ -587,6 +743,8 @@ def predict(event, context):
 
 
     logging.debug("Stop Predict")
+
+    # Collate and upload forward predictions
     output = []
     for serial in serial_data:
         value = serial_data[serial]
@@ -612,7 +770,40 @@ def predict(event, context):
                 }
             )
 
-    bulk_upload_es("predictions", output)
+    # Collate and upload reverse predictions
+    output_reverse = []
+    for serial in reverse_serial_data:
+        value = reverse_serial_data[serial]
+
+        if value is not None:
+
+            _tmp = {
+                    "serial": serial,
+                    "type": serials[serial]['type'],
+                    "subtype": serials[serial]['subtype'],
+                    "datetime": value['request']['launch_datetime'],
+                    "position": [
+                            value['request']['launch_longitude'] - 360 if value['request']['launch_longitude'] > 180 else value['request']['launch_longitude'],
+                            value['request']['launch_latitude']
+                        ],
+                    "altitude": value['request']['launch_altitude'],
+                    "ascent_rate": value['request']['ascent_rate'],
+                    "data": value['path']
+                }
+            if 'launch_site' in value:
+                _tmp['launch_site'] = value['launch_site']
+            
+            if 'launch_site_range_estimate' in value:
+                _tmp['launch_site_range_estimate'] = value['launch_site_range_estimate']
+
+            output_reverse.append(_tmp)
+
+
+    if len(output) > 0:
+        bulk_upload_es("predictions", output)
+
+    if len(output_reverse) > 0:
+        bulk_upload_es("reverse-prediction", output_reverse)
     
     logging.debug("Finished")
     return
@@ -655,14 +846,19 @@ if __name__ == "__main__":
     # test = predict(
     #       {},{}
     #     )
-    print(get_launch_sites())
+    #print(get_launch_sites())
+    #print(get_reverse_predictions())
     # for _serial in test:
     #     print(f"{_serial['serial']}: {len(_serial['data'])}")
 
 
-    # print(predict(
-    #       {},{}
-    #     ))
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s:%(message)s", level=logging.DEBUG
+    )
+
+    print(predict(
+          {},{}
+        ))
     # bulk_upload_es("reverse-prediction",[{
     #       "datetime" : "2021-10-04",
     #       "data" : { },
