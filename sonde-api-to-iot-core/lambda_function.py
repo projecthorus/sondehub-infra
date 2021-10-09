@@ -162,6 +162,9 @@ def telemetry_filter(telemetry):
             
             return (False, f"Sonde {telemetry['serial']} position breached radius cap by {_radius_breach:.1f} km.")
 
+    if "heading" in telemetry and telemetry["heading"] > 360:
+            return (False,f"Heading {telemetry['heading']} is above 360")
+
     # DateTime Check
     
     try:
