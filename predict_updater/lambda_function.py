@@ -243,7 +243,7 @@ def compare_launch_sites(sites, launch_estimate, altitude=0):
     # print(sites[launch_site])
     # print(launch_site_range)
 
-    _allocate_range = min(LAUNCH_ALLOCATE_RANGE_MAX, altitude*LAUNCH_ALLOCATE_RANGE_SCALING)
+    _allocate_range = min(LAUNCH_ALLOCATE_RANGE_MAX, max(LAUNCH_ALLOCATE_RANGE_MIN, altitude*LAUNCH_ALLOCATE_RANGE_SCALING))
     
     if launch_site_range < _allocate_range:
         return {'site':launch_site, 'range': launch_site_range}
