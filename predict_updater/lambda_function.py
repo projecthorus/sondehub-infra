@@ -50,9 +50,9 @@ def flight_profile_by_type(sonde_type):
 
     for _def_type in SONDE_TYPE_PREDICT_DEFAULTS:
         if _def_type in sonde_type:
-            return SONDE_TYPE_PREDICT_DEFAULTS[_def_type]
+            return SONDE_TYPE_PREDICT_DEFAULTS[_def_type].copy()
     
-    return PREDICT_DEFAULTS
+    return PREDICT_DEFAULTS.copy()
 
 
 def getDensity(altitude):
