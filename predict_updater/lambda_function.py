@@ -340,6 +340,17 @@ def get_reverse_predictions():
     logging.debug("Finished ES Request")
     return { x['_source']['serial'] : x['_source'] for x in results['hits']['hits']}
 
+def get_launch_sites():
+    path = "sites/_search"
+    payload = {
+        "size": 10000
+    }
+    logging.debug("Start ES Request")
+    results = es_request(json.dumps(payload), path, "POST")
+    logging.debug("Finished ES Request")
+    return {x['_source']['station']: x['_source'] for x in results['hits']['hits']}
+
+
 def bulk_upload_es(index_prefix,payloads):
     body=""
     for payload in payloads:
@@ -641,10 +652,10 @@ if __name__ == "__main__":
     # _descent = get_standard_prediction(conn, _now, -34.0, 138.0, 24000.0, burst_altitude=24000.5)
     # print(f"Got {len(_descent)} data points for descent prediction.")
 
-    test = predict(
-          {},{}
-        )
-
+    # test = predict(
+    #       {},{}
+    #     )
+    print(get_launch_sites())
     # for _serial in test:
     #     print(f"{_serial['serial']}: {len(_serial['data'])}")
 
