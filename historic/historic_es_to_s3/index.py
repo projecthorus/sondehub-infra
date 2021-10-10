@@ -93,20 +93,111 @@ def fetch_s3(serial):
         else:
             raise
 
-def write_s3(serial, data):
+def fetch_launch_sites():
+    payload = {
+        "aggs": {
+            "2": {
+            "terms": {
+                "field": "serial.keyword",
+                "order": {
+                "_key": "desc"
+                },
+                "size": 10000
+            },
+            "aggs": {
+                "1": {
+                "top_hits": {
+                    "docvalue_fields": [
+                    {
+                        "field": "launch_site.keyword"
+                    }
+                    ],
+                    "_source": "launch_site.keyword",
+                    "size": 1,
+                    "sort": [
+                    {
+                        "datetime": {
+                        "order": "desc"
+                        }
+                    }
+                    ]
+                }
+                },
+                "3": {
+                "top_hits": {
+                    "docvalue_fields": [
+                    {
+                        "field": "launch_site_range_estimate"
+                    }
+                    ],
+                    "_source": "launch_site_range_estimate",
+                    "size": 1,
+                    "sort": [
+                    {
+                        "datetime": {
+                        "order": "desc"
+                        }
+                    }
+                    ]
+                }
+                }
+            }
+            }
+        },
+        "size": 0,
+        "_source": {
+            "excludes": []
+        },
+        "query": {
+            "bool": {
+            "must": [],
+            "filter": [
+                {
+                "match_all": {}
+                },
+                {
+                "range": {
+                    "datetime": {
+                        "gte": "now-24h",
+                        "lte": "now",
+                    "format": "strict_date_optional_time"
+                    }
+                }
+                }
+            ],
+            "should": [],
+            "must_not": []
+            }
+        }
+    } 
+ 
+    response = es_request(json.dumps(payload),
+                          "reverse-prediction-*/_search", "POST")
+    data = { x['key'] : x for x in response['aggregations']['2']['buckets']}
+    output = {}
+    for serial in data:
+        try:
+            output[serial] = {
+                "launch_site": data[serial]['1']['hits']['hits'][0]['fields']['launch_site.keyword'][0],
+                "launch_site_range_estimate": data[serial]['3']['hits']['hits'][0]['fields']['launch_site_range_estimate'][0]
+            }
+        except:
+            continue
+    return output
+
+def write_s3(serial, data, launch_sites):
     #get max alt
+    if serial in launch_sites:
+        for x in data:
+            x["launch_site"] = launch_sites[serial]["launch_site"]
+            x["launch_site_range_estimate"] = launch_sites[serial]["launch_site_range_estimate"]
     max_alt = sorted(data, key=lambda k: int(k['alt']))[-1]
     summary = [
         data[0],
         max_alt,
         data[-1]
     ]
-    dates = set([x['datetime'].split("T")[0].replace("-","/") for x in data])
-    for date in dates:
-        object = s3.Object(BUCKET,f'date/{date}/{serial}.json')
-        object.put(
-            Body=json.dumps(summary).encode("utf-8"),
-            Metadata={
+    metadata = {
                 "first-lat": str(summary[0]['lat']),
                 "first-lon": str(summary[0]['lon']),
                 "first-alt": str(summary[0]['alt']),
@@ -117,29 +208,40 @@ def write_s3(serial, data):
                 "last-lon": str(summary[2]['lon']),
                 "last-alt": str(summary[2]['alt'])
             }
+    if serial in launch_sites:
+        metadata["launch_site"] = launch_sites[serial]["launch_site"]
+
+    dates = set([x['datetime'].split("T")[0].replace("-","/") for x in data])
+
+    for date in dates:
+        object = s3.Object(BUCKET,f'date/{date}/{serial}.json')
+        object.put(
+            Body=json.dumps(summary).encode("utf-8"),
+            Metadata=metadata
         )
+    
+    if serial in launch_sites:
+        object = s3.Object(BUCKET,f'launchsites/{launch_sites[serial]["launch_site"]}/{date}/{serial}.json')
+        object.put(
+            Body=json.dumps(summary).encode("utf-8"),
+            Metadata=metadata
+        )
+    
     gz_data = gzip.compress(json.dumps(data).encode('utf-8'))
     object = s3.Object(BUCKET,f'serial/{serial}.json.gz')
     object.put(
         Body=gz_data,
         ContentType='application/json',
         ContentEncoding='gzip',
-        Metadata={
-            "first-lat": str(summary[0]['lat']),
-            "first-lon": str(summary[0]['lon']),
-            "first-alt": str(summary[0]['alt']),
-            "max-lat": str(summary[1]['lat']),
-            "max-lon": str(summary[1]['lon']),
-            "max-alt": str(summary[1]['alt']),
-            "last-lat": str(summary[2]['lat']),
-            "last-lon": str(summary[2]['lon']),
-            "last-alt": str(summary[2]['alt'])
-        }
+        Metadata=metadata
     )
+
+
 
 def handler(event, context):
     print(json.dumps(event))
     payloads = {}
+    launch_sites = fetch_launch_sites()
     for record in event['Records']:
         serial = record["body"]
         print(f"Getting {serial} S3")
@@ -151,7 +253,7 @@ def handler(event, context):
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
         data = sorted(data, key=lambda k: k['datetime'])  # sort by datetime
         print(f"Writing {serial} to s3")
-        write_s3(serial, data)
+        write_s3(serial, data, launch_sites)
         print(f"{serial} done")
 
 
@@ -162,7 +264,7 @@ if __name__ == "__main__":
         {
             "messageId": "3b5853b3-369c-40bf-8746-130c918fbb5c",
             "receiptHandle": "AQEBg+/MIA2rSNmlrpXvk7pbi26kgIzqhairaHWGSpMgLzf2T54PLUmG+eG6CDOv35e42scDH0gppmS9RTQVu8D161oHYohhd1+0S4LtFJdgXr3At86NBIky5+y1A/wVuUm1FNQSvGKIDRgBhCgcCzLkEMNYIWWeDmg2ez2SCPu/3hmY5sc7eC32uqz5es9PspgQXOTykmoNv/q37iy2RBRDdu51Tq7yIxEr+Us3qkQrddAJ7qsA0l09aRL+/PJe1V/7MMN3CFyBATpRP/G3Gjn0Iuu4i2UhkRx2pF+0Hj8yhhHbqTMcw5sbbGIWMdsMXFQKUCHNx6HPkbuwIWo0TsINQjY7IXeZM/mNq65xC4avSlctJ/9BMzOBtFwbnRPZfHmlS5Al2nF1Vu3RecFGbTm1nQ==",
-            "body": "S2710639",
+            "body": "R0230678",
             "attributes": {
                 "ApproximateReceiveCount": "1",
                 "SentTimestamp": "1627873604999",

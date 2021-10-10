@@ -20,6 +20,47 @@ HOST = os.getenv("ES")
 
 def predict(event, context):
     path = "reverse-prediction-*/_search"
+
+
+    durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
+        "3d": (259200, 1200),  # 3d, 20m
+        "1d": (86400, 600),  # 1d, 10m
+        "12h": (43200, 600),  # 1d, 10m
+        "6h": (21600, 120),  # 6h, 1m
+        "3h": (10800, 60),  # 3h, 10s
+        "1h": (3600, 40),
+        "30m": (1800, 20),
+        "1m": (60, 1),
+        "15s": (15, 1),
+        "0": (0, 1) # for getting a single time point
+    }
+    duration_query = "6h"
+
+    if (
+        "queryStringParameters" in event
+        and "duration" in event["queryStringParameters"]
+    ):
+        if event["queryStringParameters"]["duration"] in durations:
+            duration_query = event["queryStringParameters"]["duration"]
+        else:
+            return f"Duration must be either {', '.join(durations.keys())}"
+
+    if (
+        "queryStringParameters" in event
+        and "datetime" in event["queryStringParameters"]
+    ):
+        requested_time = datetime.fromisoformat(
+            event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
+        )
+    else:
+        requested_time = datetime.now(timezone.utc)
+
+    (duration, interval) = durations[duration_query]
+
+    lt = requested_time + timedelta(0, 1)
+    gte = requested_time - timedelta(0, duration)
+    
+
     payload = {
         "aggs": {
             "2": {
@@ -67,11 +108,7 @@ def predict(event, context):
                 "filter": [
                     {
                         "range": {
-                            "datetime": {
-                                "gte": "now-6h",
-                                "lte": "now",
-                                "format": "strict_date_optional_time"
-                            }
+                            "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
                         }
                     }
                 ],
