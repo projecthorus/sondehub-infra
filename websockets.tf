@@ -60,12 +60,283 @@ resource "aws_apigatewayv2_integration" "sign_socket" {
 }
 
 
+resource "aws_ecr_repository" "wsproxy" {
+  name                 = "wsproxy"
+  image_tag_mutability = "MUTABLE"
 
-# TODO subnet for reader
-# ecr
-# padding interfaces
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+
+// Subnet that is used to make discovery simple for the main ws server
+resource "aws_subnet" "ws_main" {
+  map_public_ip_on_launch = false
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "172.31.134.0/28"
+
+  tags = {
+    Name = "wsmain"
+  }
+}
+
+resource "aws_route_table_association" "ws_main" {
+  subnet_id      = aws_subnet.ws_main.id
+  route_table_id = aws_route_table.main.id
+}
+
+// so we need to ensure there is only as handful of IP addresses avaliable in the subnet, so we assign all the IPs to ENIs
+resource "aws_network_interface" "ws_pad" {
+  count     = 9
+  subnet_id = aws_subnet.ws_main.id
+
+  description = "Do not delete. Padding to limit addresses"
+}
+
+resource "aws_ecs_task_definition" "ws_reader" {
+  family = "ws-reader"
+  container_definitions = jsonencode(
+    [
+      {
+        command = [
+          "s3",
+          "sync",
+          "s3://sondehub-ws-config/",
+          "/config/",
+        ]
+        cpu         = 0
+        environment = []
+        essential   = false
+        image       = "amazon/aws-cli"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name         = "config"
+        portMappings = []
+        volumesFrom  = []
+      },
+      {
+        command = []
+        cpu     = 0
+        dependsOn = [
+          {
+            condition     = "SUCCESS"
+            containerName = "config"
+          },
+          {
+            condition     = "SUCCESS"
+            containerName = "config-move"
+          },
+        ]
+        environment = []
+        essential   = true
+        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/mosquitto/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name = "mqtt"
+        portMappings = [
+          {
+            containerPort = 8080
+            hostPort      = 8080
+            protocol      = "tcp"
+          },
+          {
+            containerPort = 8883
+            hostPort      = 8883
+            protocol      = "tcp"
+          },
+        ]
+        ulimits = [
+          {
+            hardLimit = 50000
+            name      = "nofile"
+            softLimit = 30000
+          },
+        ]
+        volumesFrom = []
+      },
+      {
+        command = [
+          "cp",
+          "/config/mosquitto-reader.conf",
+          "/config/mosquitto.conf",
+        ]
+        cpu = 0
+        dependsOn = [
+          {
+            condition     = "SUCCESS"
+            containerName = "config"
+          },
+        ]
+        environment = []
+        essential   = false
+        image       = "alpine"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws-reader"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name         = "config-move"
+        portMappings = []
+        volumesFrom  = []
+      },
+    ]
+  )
+  cpu                = "256"
+  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  memory             = "512"
+  network_mode       = "awsvpc"
+  requires_compatibilities = [
+    "FARGATE",
+  ]
+
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+
+
+  volume {
+    name = "config"
+  }
+}
+
+resource "aws_ecs_task_definition" "ws" {
+  family = "ws"
+  container_definitions = jsonencode(
+    [
+      {
+        command = [
+          "s3",
+          "sync",
+          "s3://sondehub-ws-config/",
+          "/config/",
+        ]
+        cpu         = 0
+        environment = []
+        essential   = false
+        image       = "amazon/aws-cli"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name         = "config"
+        portMappings = []
+        volumesFrom  = []
+      },
+      {
+        cpu = 0
+        dependsOn = [
+          {
+            condition     = "SUCCESS"
+            containerName = "config"
+          },
+        ]
+        environment = []
+        essential   = true
+        image       = "eclipse-mosquitto:2-openssl"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/mosquitto/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name = "mqtt"
+        portMappings = [
+          {
+            containerPort = 8080
+            hostPort      = 8080
+            protocol      = "tcp"
+          },
+          {
+            containerPort = 8883
+            hostPort      = 8883
+            protocol      = "tcp"
+          },
+          {
+            containerPort = 1883
+            hostPort      = 1883
+            protocol      = "tcp"
+          },
+        ]
+        ulimits = [
+          {
+            hardLimit = 50000
+            name      = "nofile"
+            softLimit = 30000
+          },
+        ]
+        volumesFrom = []
+      },
+    ]
+  )
+  cpu                = "256"
+  execution_role_arn = "arn:aws:iam::143841941773:role/ws"
+  memory             = "512"
+  network_mode       = "awsvpc"
+  requires_compatibilities = [
+    "FARGATE",
+  ]
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+
+
+  volume {
+    name = "config"
+  }
+}
+
 # service, reader, writer
-# task definition
 # s3 config bucket
 # iam roles
+# security group
 # reader autoscaling

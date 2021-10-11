@@ -203,3 +203,217 @@ resource "aws_lambda_permission" "reverse_predictions" {
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/predictions/reverse"
 }
 
+
+
+
+resource "aws_ecs_task_definition" "tawhiri" {
+  family = "tawhiri"
+  container_definitions = jsonencode(
+    [
+      {
+        command     = []
+        cpu         = 0
+        environment = []
+        essential   = true
+        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/tawhiri"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/srv"
+            sourceVolume  = "srv"
+          },
+        ]
+        name = "tawhiri"
+        portMappings = [
+          {
+            containerPort = 8000
+            hostPort      = 8000
+            protocol      = "tcp"
+          },
+        ]
+        volumesFrom = []
+      },
+    ]
+  )
+  cpu                = "512"
+  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  memory             = "1024"
+  network_mode       = "awsvpc"
+  requires_compatibilities = [
+    "FARGATE",
+  ]
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+
+
+  volume {
+    name = "srv"
+
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.tawhiri.id
+      root_directory          = "srv"
+      transit_encryption      = "DISABLED"
+
+      authorization_config {
+        iam = "DISABLED"
+      }
+    }
+  }
+}
+
+resource "aws_ecs_task_definition" "tawhiri_downloader" {
+  family = "tawhiri-downloader"
+  container_definitions = jsonencode(
+    [
+      {
+        command = [
+          "daemon",
+        ]
+        cpu = 0
+        environment = [
+          {
+            name  = "TZ"
+            value = "UTC"
+          },
+        ]
+        essential = true
+        image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/tawhiri-downloader"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/srv"
+            sourceVolume  = "srv"
+          },
+        ]
+        name         = "tawhiri-downloader"
+        portMappings = []
+        volumesFrom  = []
+      },
+    ]
+  )
+  cpu                = "256"
+  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  memory             = "512"
+  network_mode       = "awsvpc"
+  requires_compatibilities = [
+    "FARGATE",
+  ]
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+
+
+  volume {
+    name = "srv"
+
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.tawhiri.id
+      root_directory          = "srv"
+      transit_encryption      = "DISABLED"
+
+      authorization_config {
+        iam = "DISABLED"
+      }
+    }
+  }
+}
+
+resource "aws_ecs_task_definition" "tawhiri_ruaumoko" {
+  family = "tawhiri-ruaumoko"
+  container_definitions = jsonencode(
+    [
+      {
+        cpu = 0
+        entryPoint = [
+          "/root/.local/bin/ruaumoko-download",
+        ]
+        environment = []
+        essential   = true
+        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/tawhiri-ruaumoko"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/srv"
+            sourceVolume  = "srv"
+          },
+        ]
+        name         = "ruaumoko"
+        portMappings = []
+        volumesFrom  = []
+      },
+    ]
+  )
+  cpu                = "1024"
+  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  memory             = "2048"
+  network_mode       = "awsvpc"
+  requires_compatibilities = [
+    "FARGATE",
+  ]
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+
+
+  volume {
+    name = "srv"
+
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.tawhiri.id
+      root_directory          = "srv"
+      transit_encryption      = "DISABLED"
+
+      authorization_config {
+        iam = "DISABLED"
+      }
+    }
+  }
+}
+
+
+
+resource "aws_efs_file_system" "tawhiri" {
+  tags = {
+    Name = "Tawhiri"
+  }
+  lifecycle_policy {
+    transition_to_ia = "AFTER_7_DAYS"
+  }
+}
+
+resource "aws_ecr_repository" "tawhiri" {
+  name                 = "tawhiri"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+resource "aws_ecr_repository" "tawhiri_downloader" {
+  name                 = "tawhiri-downloader"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
