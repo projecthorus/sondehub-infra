@@ -335,8 +335,187 @@ resource "aws_ecs_task_definition" "ws" {
   }
 }
 
-# service, reader, writer
+resource "aws_ecs_cluster" "ws" {
+  name               = "ws"
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+}
+
+resource "aws_lb_target_group" "ws" {
+  name        = "ws"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+  health_check {
+    enabled             = true
+    healthy_threshold   = 5
+    interval            = 30
+    matcher             = "200"
+    path                = "/health"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
+  }
+}
+resource "aws_lb_target_group" "ws_reader" {
+  name        = "ws-reader"
+  port        = 8061
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+  health_check {
+    enabled             = true
+    healthy_threshold   = 5
+    interval            = 30
+    matcher             = "200"
+    path                = "/health"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_ecs_service" "ws_reader" {
+  name                              = "ws-reader"
+  cluster                           = aws_ecs_cluster.ws.id
+  task_definition                   = aws_ecs_task_definition.ws_reader.arn
+  enable_ecs_managed_tags           = true
+  health_check_grace_period_seconds = 60
+  iam_role                          = "aws-service-role"
+  launch_type                       = "FARGATE"
+  platform_version                  = "LATEST"
+  desired_count                     = 1
+
+  load_balancer {
+    container_name   = "mqtt"
+    container_port   = 8080
+    target_group_arn = aws_lb_target_group.ws_reader.arn
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  network_configuration {
+    assign_public_ip = true
+    security_groups = [
+      aws_security_group.ws_reader.id
+    ]
+    subnets = values(aws_subnet.public)[*].id
+  }
+}
+
+resource "aws_ecs_service" "ws_writer" {
+  name                              = "ws-writer"
+  cluster                           = aws_ecs_cluster.ws.id
+  task_definition                   = aws_ecs_task_definition.ws.arn
+  enable_ecs_managed_tags           = true
+  health_check_grace_period_seconds = 60
+  iam_role                          = "aws-service-role"
+  launch_type                       = "FARGATE"
+  platform_version                  = "LATEST"
+  desired_count                     = 1
+
+  load_balancer {
+    container_name   = "mqtt"
+    container_port   = 8080
+    target_group_arn = aws_lb_target_group.ws.arn
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  network_configuration {
+    assign_public_ip = true
+    security_groups = [
+      aws_security_group.ws_writer.id
+    ]
+    subnets = [aws_subnet.ws_main.id]
+  }
+}
+
+resource "aws_security_group" "ws_reader" {
+  ingress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = []
+      ipv6_cidr_blocks = []
+      description      = ""
+      prefix_list_ids  = []
+      self             = true
+      security_groups  = [aws_security_group.ws_writer.id, aws_security_group.lb.id]
+    }
+  ]
+  egress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  vpc_id = aws_vpc.main.id
+
+  lifecycle {
+    ignore_changes = [description, name]
+  }
+
+}
+
+
+resource "aws_security_group" "ws_writer" {
+
+  egress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  vpc_id = aws_vpc.main.id
+
+  lifecycle {
+    ignore_changes = [description, name]
+  }
+
+}
+
+resource "aws_security_group_rule" "ws_writer_reader" {
+  security_group_id        = aws_security_group.ws_writer.id
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  description              = ""
+  source_security_group_id = aws_security_group.ws_reader.id
+}
+resource "aws_security_group_rule" "ws_writer_lb" {
+  security_group_id        = aws_security_group.ws_writer.id
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  description              = ""
+  source_security_group_id = aws_security_group.lb.id
+}
+
+# TODO
 # s3 config bucket
 # iam roles
-# security group
 # reader autoscaling

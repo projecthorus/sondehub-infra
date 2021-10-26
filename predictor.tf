@@ -257,9 +257,9 @@ resource "aws_ecs_task_definition" "tawhiri" {
     name = "srv"
 
     efs_volume_configuration {
-      file_system_id          = aws_efs_file_system.tawhiri.id
-      root_directory          = "srv"
-      transit_encryption      = "DISABLED"
+      file_system_id     = aws_efs_file_system.tawhiri.id
+      root_directory     = "srv"
+      transit_encryption = "DISABLED"
 
       authorization_config {
         iam = "DISABLED"
@@ -320,9 +320,9 @@ resource "aws_ecs_task_definition" "tawhiri_downloader" {
     name = "srv"
 
     efs_volume_configuration {
-      file_system_id          = aws_efs_file_system.tawhiri.id
-      root_directory          = "srv"
-      transit_encryption      = "DISABLED"
+      file_system_id     = aws_efs_file_system.tawhiri.id
+      root_directory     = "srv"
+      transit_encryption = "DISABLED"
 
       authorization_config {
         iam = "DISABLED"
@@ -378,9 +378,9 @@ resource "aws_ecs_task_definition" "tawhiri_ruaumoko" {
     name = "srv"
 
     efs_volume_configuration {
-      file_system_id          = aws_efs_file_system.tawhiri.id
-      root_directory          = "srv"
-      transit_encryption      = "DISABLED"
+      file_system_id     = aws_efs_file_system.tawhiri.id
+      root_directory     = "srv"
+      transit_encryption = "DISABLED"
 
       authorization_config {
         iam = "DISABLED"
