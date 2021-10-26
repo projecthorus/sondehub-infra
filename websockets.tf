@@ -216,7 +216,7 @@ resource "aws_ecs_task_definition" "ws_reader" {
     ]
   )
   cpu                = "256"
-  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  execution_role_arn = aws_iam_role.ecs_execution.arn
   memory             = "512"
   network_mode       = "awsvpc"
   requires_compatibilities = [
@@ -515,7 +515,157 @@ resource "aws_security_group_rule" "ws_writer_lb" {
   source_security_group_id = aws_security_group.lb.id
 }
 
+# resource "aws_s3_bucket" "ws" {
+#   bucket = "sondehub-ws-config"
+#   acl    = "private"
+#   versioning {
+#     enabled = true
+#   }
+#   lifecycle {
+#     ignore_changes = [bucket]
+#   }
+# }
+
+resource "aws_iam_role" "ecs_execution" {
+  name                 = "ecsTaskExecutionRole"
+  assume_role_policy   = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+  max_session_duration = 3600
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution" {
+  role       = aws_iam_role.ecs_execution.id
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy" "efs" {
+  name = "EFS"
+  role = aws_iam_role.ecs_execution.id
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "elasticfilesystem:*",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "kms" {
+  name = "kms"
+  role = aws_iam_role.ecs_execution.id
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "kms:*",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role" "ws" {
+  name                 = "ws"
+  description = "Allows EC2 instances to call AWS services on your behalf."
+  assume_role_policy   = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+  max_session_duration = 3600
+}
+
+resource "aws_iam_role_policy_attachment" "ws" {
+  role       = aws_iam_role.ws.id
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy" "s3_config" {
+  name = "s3-config"
+  role = aws_iam_role.ws.id
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObjectAcl",
+                "s3:GetObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::sondehub-ws-config",
+                "arn:aws:s3:::sondehub-ws-config/*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_appautoscaling_target" "ws_reader" {
+  service_namespace  = "ecs"
+  scalable_dimension = "ecs:service:DesiredCount"
+  resource_id        = "service/ws/ws-reader"
+  min_capacity       = 1
+  max_capacity       = 25
+}
+
+resource "aws_appautoscaling_policy" "ws_reader" {
+  name               = "ws-reader-tt"
+  service_namespace  = aws_appautoscaling_target.ws_reader.service_namespace
+  scalable_dimension = aws_appautoscaling_target.ws_reader.scalable_dimension
+  resource_id        = aws_appautoscaling_target.ws_reader.resource_id
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = 60
+    scale_in_cooldown  = 200
+    scale_out_cooldown = 200
+  }
+}
+
 # TODO
 # s3 config bucket
-# iam roles
-# reader autoscaling
