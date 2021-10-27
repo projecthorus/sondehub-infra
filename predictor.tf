@@ -243,14 +243,14 @@ resource "aws_ecs_task_definition" "tawhiri" {
     ]
   )
   cpu                = "512"
-  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  execution_role_arn = aws_iam_role.ecs_execution.arn
   memory             = "1024"
   network_mode       = "awsvpc"
   requires_compatibilities = [
     "FARGATE",
   ]
   tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  task_role_arn = aws_iam_role.ecs_execution.arn
 
 
   volume {
@@ -306,14 +306,14 @@ resource "aws_ecs_task_definition" "tawhiri_downloader" {
     ]
   )
   cpu                = "256"
-  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  execution_role_arn = aws_iam_role.ecs_execution.arn
   memory             = "512"
   network_mode       = "awsvpc"
   requires_compatibilities = [
     "FARGATE",
   ]
   tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
+  task_role_arn = aws_iam_role.ecs_execution.arn
 
 
   volume {
@@ -417,3 +417,217 @@ resource "aws_ecr_repository" "tawhiri_downloader" {
   }
 }
 
+resource "aws_ecs_cluster" "tawhiri" {
+  name               = "Tawhiri"
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+}
+
+
+resource "aws_lb_target_group" "tawhiri" {
+  name        = "tawhiri"
+  port        = 8000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+  health_check {
+    enabled             = true
+    healthy_threshold   = 5
+    interval            = 30
+    matcher             = "400"
+    path                = "/api/v1/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_ecs_service" "tawhiri" {
+  name                              = "tawhiri"
+  cluster                           = aws_ecs_cluster.tawhiri.id
+  task_definition                   = aws_ecs_task_definition.tawhiri.arn
+  enable_ecs_managed_tags           = true
+  health_check_grace_period_seconds = 60
+  iam_role                          = "aws-service-role"
+  launch_type                       = "FARGATE"
+  platform_version                  = "LATEST"
+  desired_count                     = 1
+
+  load_balancer {
+    container_name   = "tawhiri"
+    container_port   = 8000
+    target_group_arn = aws_lb_target_group.tawhiri.arn
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  network_configuration {
+    assign_public_ip = true
+    security_groups = [
+      aws_security_group.tawhiri_efs.id,
+      aws_security_group.tawhiri.id
+    ]
+    subnets = [aws_subnet.public["us-east-1b"].id]
+  }
+}
+resource "aws_ecs_service" "tawhiri_downloader" {
+  name                              = "tawhiri-downloader"
+  cluster                           = aws_ecs_cluster.tawhiri.id
+  task_definition                   = aws_ecs_task_definition.tawhiri_downloader.arn
+  enable_ecs_managed_tags           = true
+  iam_role                          = "aws-service-role"
+  launch_type                       = "FARGATE"
+  platform_version                  = "LATEST"
+  desired_count                     = 1
+
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  network_configuration {
+    assign_public_ip = true
+    security_groups = [
+      aws_security_group.tawhiri_efs.id
+    ]
+    subnets = [aws_subnet.public["us-east-1b"].id]
+  }
+}
+
+
+resource "aws_appautoscaling_target" "tawhiri" {
+  service_namespace  = "ecs"
+  scalable_dimension = "ecs:service:DesiredCount"
+  resource_id        = "service/Tawhiri/tawhiri"
+  min_capacity       = 1
+  max_capacity       = 5
+}
+
+resource "aws_appautoscaling_policy" "tawhiri" {
+  name               = "cpu"
+  service_namespace  = aws_appautoscaling_target.tawhiri.service_namespace
+  scalable_dimension = aws_appautoscaling_target.tawhiri.scalable_dimension
+  resource_id        = aws_appautoscaling_target.tawhiri.resource_id
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = 80
+    scale_in_cooldown  = 120
+    scale_out_cooldown = 120
+  }
+}
+
+resource "aws_security_group" "tawhiri_efs" {
+  name = "tawhiri-efs"
+  ingress = [
+    {
+      from_port        = 2049
+      to_port          = 2049
+      protocol         = "tcp"
+      cidr_blocks      = []
+      ipv6_cidr_blocks = []
+      description      = ""
+      prefix_list_ids  = []
+      self             = true
+      security_groups  = [aws_vpc.main.default_security_group_id]
+    }
+  ]
+    egress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  vpc_id = aws_vpc.main.id
+
+  lifecycle {
+    ignore_changes = [description, name]
+  }
+
+}
+
+resource "aws_security_group" "tawhiri" {
+  name = "tawhiri"
+  ingress = [
+    {
+      from_port        = 8000
+      to_port          = 8000
+      protocol         = "tcp"
+      cidr_blocks      = []
+      ipv6_cidr_blocks = []
+      description      = ""
+      prefix_list_ids  = []
+      self             = true
+      security_groups  = [aws_security_group.tawhiri_alb.id, aws_security_group.lb.id]
+    }
+  ]
+    egress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  vpc_id = aws_vpc.main.id
+
+  lifecycle {
+    ignore_changes = [description, name]
+  }
+
+}
+
+
+resource "aws_security_group" "tawhiri_alb" {
+  name = "tawhiri-alb"
+  egress = [
+    {
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  ingress = [
+    {
+      from_port        = 443
+      to_port          = 443
+      protocol         = "tcp"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
+      description      = ""
+      prefix_list_ids  = []
+      self             = false
+      security_groups  = []
+    }
+  ]
+  vpc_id = aws_vpc.main.id
+
+  lifecycle {
+    ignore_changes = [description, name]
+  }
+
+}
