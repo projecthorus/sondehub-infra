@@ -198,7 +198,7 @@ def get_telem(event, context):
         sonde["key"]: {
             data["key_as_string"]: dict(data["1"]["hits"]["hits"][0]["_source"],
                 uploaders=[ #add additional uploader information
-                    {key:value for key,value in uploader['_source'].items() if key in ["snr","rssi","uploader_callsign"]}
+                    {key:value for key,value in uploader['_source'].items() if key in ["snr","rssi","uploader_callsign", "frequency"]}
                     for uploader in data["1"]["hits"]["hits"] 
                 ])
             for data in sonde["3"]["buckets"]
