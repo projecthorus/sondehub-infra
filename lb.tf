@@ -45,6 +45,47 @@ resource "aws_security_group" "lb" {
 
 }
 
-# TODO
-# listener
-# lsitener rules
+resource "aws_lb_listener" "lb" {
+  load_balancer_arn = aws_lb.ws.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate_validation.CertificateManagerCertificate.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ws.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "ws_reader" {
+  listener_arn = aws_lb_listener.lb.arn
+  priority     = 1
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ws_reader.arn
+  }
+
+  condition {
+    host_header {
+      values = ["ws-reader.v2.sondehub.org"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "tawhiri" {
+  listener_arn = aws_lb_listener.lb.arn
+  priority     = 2
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tawhiri.arn
+  }
+
+  condition {
+    host_header {
+      values = ["tawhiri.v2.sondehub.org"]
+    }
+  }
+}
