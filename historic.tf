@@ -107,8 +107,16 @@ resource "aws_lambda_function" "queue_data_update" {
   }
 }
 
+resource "aws_sqs_queue" "historic_to_s3" {
+  name                      = "update-history"
+  receive_wait_time_seconds = 0
+  message_retention_seconds = 1209600 # 14 days
+  visibility_timeout_seconds = 300
+}
+
+
 resource "aws_lambda_event_source_mapping" "historic_to_s3" {
-  event_source_arn                   = "arn:aws:sqs:us-east-1:143841941773:update-history"
+  event_source_arn                   = aws_sqs_queue.historic_to_s3.arn
   function_name                      = aws_lambda_function.historic_to_s3.arn
   batch_size                         = 1
   maximum_batching_window_in_seconds = 30
