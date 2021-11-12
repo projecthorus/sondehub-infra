@@ -30,6 +30,13 @@ resource "aws_iam_role" "basic_lambda_role" {
             "Service": "lambda.amazonaws.com"
         },
         "Action": "sts:AssumeRole"
+    },
+    {
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "edgelambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
     }]
 }
 EOF
@@ -105,6 +112,17 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
   domain_name = local.domain_name
   subject_alternative_names = [
     "*.${local.domain_name}"
+  ]
+  validation_method = "DNS"
+}
+
+
+resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
+  domain_name = local.domain_name
+  subject_alternative_names = [
+    "*.${local.domain_name}",
+    "sondehub.org",
+    "*.sondehub.org"
   ]
   validation_method = "DNS"
 }

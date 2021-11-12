@@ -211,7 +211,16 @@ resource "aws_ecs_task_definition" "tawhiri" {
   container_definitions = jsonencode(
     [
       {
-        command     = []
+        command     = [
+          "/root/.local/bin/gunicorn",
+          "-b",
+          "0.0.0.0:8000",
+          "--workers=20",
+          "--timeout=30",
+          "--keep-alive=65",
+          "--threads=1",
+          "tawhiri.api:app"
+        ]
         cpu         = 0
         environment = []
         essential   = true
@@ -229,6 +238,10 @@ resource "aws_ecs_task_definition" "tawhiri" {
             containerPath = "/srv"
             sourceVolume  = "srv"
           },
+          {
+            containerPath = "/srv/tawhiri-datasets"
+            sourceVolume  = "downloader"
+          }
         ]
         name = "tawhiri"
         portMappings = [
@@ -238,6 +251,34 @@ resource "aws_ecs_task_definition" "tawhiri" {
             protocol      = "tcp"
           },
         ]
+        volumesFrom = []
+      },
+      {
+        command     = ["daemon"]
+        cpu         = 0
+        environment = [
+          {
+            name  = "TZ"
+            value = "UTC"
+          }
+        ]
+        essential   = true
+        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/tawhiri"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/srv/tawhiri-datasets"
+            sourceVolume  = "downloader"
+          },
+        ]
+        name = "downloader"
         volumesFrom = []
       },
     ]
@@ -251,6 +292,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
   ]
   tags          = {}
   task_role_arn = aws_iam_role.ecs_execution.arn
+ 
 
 
   volume {
@@ -266,69 +308,11 @@ resource "aws_ecs_task_definition" "tawhiri" {
       }
     }
   }
-}
 
-resource "aws_ecs_task_definition" "tawhiri_downloader" {
-  family = "tawhiri-downloader"
-  container_definitions = jsonencode(
-    [
-      {
-        command = [
-          "daemon",
-        ]
-        cpu = 0
-        environment = [
-          {
-            name  = "TZ"
-            value = "UTC"
-          },
-        ]
-        essential = true
-        image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/tawhiri-downloader"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
-        mountPoints = [
-          {
-            containerPath = "/srv"
-            sourceVolume  = "srv"
-          },
-        ]
-        name         = "tawhiri-downloader"
-        portMappings = []
-        volumesFrom  = []
-      },
-    ]
-  )
-  cpu                = "256"
-  execution_role_arn = aws_iam_role.ecs_execution.arn
-  memory             = "512"
-  network_mode       = "awsvpc"
-  requires_compatibilities = [
-    "FARGATE",
-  ]
-  tags          = {}
-  task_role_arn = aws_iam_role.ecs_execution.arn
-
-
-  volume {
-    name = "srv"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.tawhiri.id
-      root_directory     = "srv"
-      transit_encryption = "DISABLED"
-
-      authorization_config {
-        iam = "DISABLED"
-      }
-    }
+    volume {
+    name = "downloader"
   }
+
 }
 
 resource "aws_ecs_task_definition" "tawhiri_ruaumoko" {
@@ -431,10 +415,10 @@ resource "aws_lb_target_group" "tawhiri" {
   target_type = "ip"
   health_check {
     enabled             = true
-    healthy_threshold   = 5
-    interval            = 30
-    matcher             = "400"
-    path                = "/api/v1/"
+    healthy_threshold   = 2
+    interval            = 10
+    matcher             = "200"
+    path                = "/api/datasetcheck"
     port                = "traffic-port"
     protocol            = "HTTP"
     timeout             = 5
@@ -447,7 +431,7 @@ resource "aws_ecs_service" "tawhiri" {
   cluster                           = aws_ecs_cluster.tawhiri.id
   task_definition                   = aws_ecs_task_definition.tawhiri.arn
   enable_ecs_managed_tags           = true
-  health_check_grace_period_seconds = 60
+  health_check_grace_period_seconds = 600
   iam_role                          = "aws-service-role"
   launch_type                       = "FARGATE"
   platform_version                  = "LATEST"
@@ -468,29 +452,6 @@ resource "aws_ecs_service" "tawhiri" {
     security_groups = [
       aws_security_group.tawhiri_efs.id,
       aws_security_group.tawhiri.id
-    ]
-    subnets = [aws_subnet.public["us-east-1b"].id]
-  }
-}
-resource "aws_ecs_service" "tawhiri_downloader" {
-  name                              = "tawhiri-downloader"
-  cluster                           = aws_ecs_cluster.tawhiri.id
-  task_definition                   = aws_ecs_task_definition.tawhiri_downloader.arn
-  enable_ecs_managed_tags           = true
-  iam_role                          = "aws-service-role"
-  launch_type                       = "FARGATE"
-  platform_version                  = "LATEST"
-  desired_count                     = 1
-
-
-  lifecycle {
-    ignore_changes = [desired_count]
-  }
-
-  network_configuration {
-    assign_public_ip = true
-    security_groups = [
-      aws_security_group.tawhiri_efs.id
     ]
     subnets = [aws_subnet.public["us-east-1b"].id]
   }
@@ -630,4 +591,28 @@ resource "aws_security_group" "tawhiri_alb" {
     ignore_changes = [description, name]
   }
 
+}
+
+
+
+resource "aws_route53_record" "tawhiri_A" {
+    name = "tawhiri"
+    type = "A"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+}
+
+resource "aws_route53_record" "tawhiri_AAAA" {
+    name = "tawhiri"
+    type = "AAAA"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }

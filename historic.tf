@@ -78,10 +78,10 @@ resource "aws_lambda_function" "historic_to_s3" {
   filename                       = "${path.module}/build/historic_to_s3.zip"
   source_code_hash               = data.archive_file.historic_to_s3.output_base64sha256
   publish                        = true
-  memory_size                    = 2048
+  memory_size                    = 3096
   role                           = aws_iam_role.historic.arn
   runtime                        = "python3.9"
-  timeout                        = 60
+  timeout                        = 120
   reserved_concurrent_executions = 2
   environment {
     variables = {

@@ -669,3 +669,49 @@ resource "aws_appautoscaling_policy" "ws_reader" {
 
 # TODO
 # s3 config bucket
+
+
+
+resource "aws_route53_record" "ws_reader_A" {
+    name = "ws-reader"
+    type = "A"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+}
+
+resource "aws_route53_record" "ws_reader_AAAA" {
+    name = "ws-reader"
+    type = "AAAA"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+}
+
+resource "aws_route53_record" "ws_A" {
+    name = "ws"
+    type = "A"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+}
+
+resource "aws_route53_record" "ws_AAAA" {
+    name = "ws"
+    type = "AAAA"
+    alias {
+        name = "dualstack.${aws_lb.ws.dns_name}."
+        zone_id = aws_lb.ws.zone_id
+        evaluate_target_health = true
+    }
+    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+}
