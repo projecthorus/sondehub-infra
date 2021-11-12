@@ -37,5 +37,5 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply
+        run: terraform apply -input=false -auto-approve
         continue-on-error: true
