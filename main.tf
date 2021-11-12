@@ -1,12 +1,12 @@
 terraform {
   backend "s3" {
-    bucket  = "sondehub-terraform"
-    key     = "sondehub-main"
-    region  = "us-east-1"
+    bucket = "sondehub-terraform"
+    key    = "sondehub-main"
+    region = "us-east-1"
   }
 }
 provider "aws" {
-  region  = "us-east-1"
+  region = "us-east-1"
 }
 
 locals {
