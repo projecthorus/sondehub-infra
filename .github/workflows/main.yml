@@ -6,9 +6,6 @@ on:
 env:
   tf_version: 'latest'
   tf_working_dir: '.'
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 jobs:
   terraform:
     environment: main
@@ -18,12 +15,24 @@ jobs:
       - uses: hashicorp/setup-terraform@v1
       - name: 'Checkout'
         uses: actions/checkout@master
-      - run: terraform fmt
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
       - uses: EndBug/add-and-commit@v7
         with:
           message: Terraform fmt [skip ci]
           committer_name: GitHub Actions
           committer_email: actions@github.com
-      - run: terraform init
-      - run: terraform validate
-      - run: terraform plan
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply
+        continue-on-error: true
