@@ -124,6 +124,3 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
   ]
   validation_method = "DNS"
 }
-
-resource "aws_s3_bucket" "test123" {
-}
