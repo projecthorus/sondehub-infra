@@ -3,12 +3,10 @@ terraform {
     bucket  = "sondehub-terraform"
     key     = "sondehub-main"
     region  = "us-east-1"
-    profile = "sondes"
   }
 }
 provider "aws" {
   region  = "us-east-1"
-  profile = "sondes"
 }
 
 locals {
