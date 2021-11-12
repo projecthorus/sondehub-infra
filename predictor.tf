@@ -211,7 +211,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
   container_definitions = jsonencode(
     [
       {
-        command     = [
+        command = [
           "/root/.local/bin/gunicorn",
           "-b",
           "0.0.0.0:8000",
@@ -254,16 +254,16 @@ resource "aws_ecs_task_definition" "tawhiri" {
         volumesFrom = []
       },
       {
-        command     = ["daemon"]
-        cpu         = 0
+        command = ["daemon"]
+        cpu     = 0
         environment = [
           {
             name  = "TZ"
             value = "UTC"
           }
         ]
-        essential   = true
-        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
+        essential = true
+        image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
         logConfiguration = {
           logDriver = "awslogs"
           options = {
@@ -278,7 +278,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
             sourceVolume  = "downloader"
           },
         ]
-        name = "downloader"
+        name        = "downloader"
         volumesFrom = []
       },
     ]
@@ -292,7 +292,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
   ]
   tags          = {}
   task_role_arn = aws_iam_role.ecs_execution.arn
- 
+
 
 
   volume {
@@ -309,7 +309,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
     }
   }
 
-    volume {
+  volume {
     name = "downloader"
   }
 
@@ -499,7 +499,7 @@ resource "aws_security_group" "tawhiri_efs" {
       security_groups  = [aws_vpc.main.default_security_group_id]
     }
   ]
-    egress = [
+  egress = [
     {
       from_port        = 0
       to_port          = 0
@@ -535,7 +535,7 @@ resource "aws_security_group" "tawhiri" {
       security_groups  = [aws_security_group.tawhiri_alb.id, aws_security_group.lb.id]
     }
   ]
-    egress = [
+  egress = [
     {
       from_port        = 0
       to_port          = 0
@@ -596,23 +596,23 @@ resource "aws_security_group" "tawhiri_alb" {
 
 
 resource "aws_route53_record" "tawhiri_A" {
-    name = "tawhiri"
-    type = "A"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "tawhiri"
+  type = "A"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
 resource "aws_route53_record" "tawhiri_AAAA" {
-    name = "tawhiri"
-    type = "AAAA"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "tawhiri"
+  type = "AAAA"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }

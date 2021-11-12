@@ -1,14 +1,12 @@
 terraform {
   backend "s3" {
-    bucket  = "sondehub-terraform"
-    key     = "sondehub-main"
-    region  = "us-east-1"
-    profile = "sondes"
+    bucket = "sondehub-terraform"
+    key    = "sondehub-main"
+    region = "us-east-1"
   }
 }
 provider "aws" {
-  region  = "us-east-1"
-  profile = "sondes"
+  region = "us-east-1"
 }
 
 locals {
@@ -125,4 +123,7 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
     "*.sondehub.org"
   ]
   validation_method = "DNS"
+}
+
+resource "aws_s3_bucket" "test123" {
 }

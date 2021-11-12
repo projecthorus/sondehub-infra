@@ -591,7 +591,7 @@ EOF
 
 resource "aws_iam_role" "ws" {
   name                 = "ws"
-  description = "Allows EC2 instances to call AWS services on your behalf."
+  description          = "Allows EC2 instances to call AWS services on your behalf."
   assume_role_policy   = <<EOF
 {
   "Version": "2012-10-17",
@@ -673,45 +673,45 @@ resource "aws_appautoscaling_policy" "ws_reader" {
 
 
 resource "aws_route53_record" "ws_reader_A" {
-    name = "ws-reader"
-    type = "A"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "ws-reader"
+  type = "A"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
 resource "aws_route53_record" "ws_reader_AAAA" {
-    name = "ws-reader"
-    type = "AAAA"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "ws-reader"
+  type = "AAAA"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
 resource "aws_route53_record" "ws_A" {
-    name = "ws"
-    type = "A"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "ws"
+  type = "A"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
 resource "aws_route53_record" "ws_AAAA" {
-    name = "ws"
-    type = "AAAA"
-    alias {
-        name = "dualstack.${aws_lb.ws.dns_name}."
-        zone_id = aws_lb.ws.zone_id
-        evaluate_target_health = true
-    }
-    zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  name = "ws"
+  type = "AAAA"
+  alias {
+    name                   = "dualstack.${aws_lb.ws.dns_name}."
+    zone_id                = aws_lb.ws.zone_id
+    evaluate_target_health = true
+  }
+  zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }

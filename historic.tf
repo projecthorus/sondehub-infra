@@ -108,9 +108,9 @@ resource "aws_lambda_function" "queue_data_update" {
 }
 
 resource "aws_sqs_queue" "historic_to_s3" {
-  name                      = "update-history"
-  receive_wait_time_seconds = 0
-  message_retention_seconds = 1209600 # 14 days
+  name                       = "update-history"
+  receive_wait_time_seconds  = 0
+  message_retention_seconds  = 1209600 # 14 days
   visibility_timeout_seconds = 300
 }
 
