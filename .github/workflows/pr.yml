@@ -18,6 +18,7 @@ jobs:
           tf_actions_subcommand: 'fmt'
           tf_actions_working_dir: ${{ env.tf_working_dir }}
           tf_actions_comment: true
+          tf_actions_fmt_write: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Terraform Init'
