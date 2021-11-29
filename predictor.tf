@@ -309,7 +309,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.tawhiri.id
-      root_directory     = "/"
+      root_directory     = "/srv"
       transit_encryption = "DISABLED"
       
       authorization_config {
@@ -317,7 +317,9 @@ resource "aws_ecs_task_definition" "tawhiri" {
       }
     }
   }
-
+  lifecycle {
+    ignore_changes = [volume] # terraform has a bug that doesn't correctly deal with root_directory because I don't know why - so we ignore it
+  }
 }
 
 resource "aws_ecs_task_definition" "tawhiri_ruaumoko" {
