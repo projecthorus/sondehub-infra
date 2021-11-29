@@ -17,6 +17,18 @@ import base64
 
 HOST = os.getenv("ES")
 
+from multiprocessing import Process
+http_session = URLLib3Session()
+
+
+def mirror(path,params):
+    session = boto3.Session()
+    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
+    request = AWSRequest(
+        method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
+    )
+    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+    r = http_session.send(request.prepare())
 
 def predict(event, context):
     path = "reverse-prediction-*/_search"
@@ -173,6 +185,7 @@ def es_request(payload, path, method):
     SigV4Auth(boto3.Session().get_credentials(),
               "es", "us-east-1").add_auth(request)
 
+    p = Process(target=mirror, args=(path,params)).start()
     session = URLLib3Session()
     r = session.send(request.prepare())
     return json.loads(r.text)

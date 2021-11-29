@@ -9,6 +9,7 @@ from io import BytesIO
 import gzip
 null = None
 HOST = os.getenv("ES")
+http_session = URLLib3Session()
 
 def es_request(payload, path, method):
     # get aws creds
@@ -23,8 +24,7 @@ def es_request(payload, path, method):
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
 
-    session = URLLib3Session()
-    r = session.send(request.prepare())
+    r = http_session.send(request.prepare())
     if r.status_code != 200:
         raise RuntimeError
     return json.loads(r.text)

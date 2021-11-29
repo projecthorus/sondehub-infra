@@ -1,8 +1,8 @@
 
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
-  domain_name           = "sondes-v2"
-  elasticsearch_version = "OpenSearch_1.0"
+  domain_name           = "sondes-v2-7-9"
+  elasticsearch_version = "7.9"
   cluster_config {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
@@ -17,7 +17,13 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     role_arn         = aws_iam_role.IAMRole3.arn
     user_pool_id     = aws_cognito_user_pool.CognitoUserPool.id
   }
-
+  domain_endpoint_options {
+    enforce_https = true
+    tls_security_policy = "Policy-Min-TLS-1-2-2019-07"
+    custom_endpoint                 = "es.v2.sondehub.org"
+    custom_endpoint_certificate_arn = "arn:aws:acm:us-east-1:143841941773:certificate/a7da821c-bdbc-404b-aa12-bce28d86cdeb"
+    custom_endpoint_enabled         = true
+  }
   access_policies = <<EOF
     {
     "Version": "2012-10-17",
@@ -28,7 +34,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
                 "AWS": "*"
             },
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
         }
     ]
 }
@@ -39,6 +45,12 @@ EOF
   }
   node_to_node_encryption {
     enabled = true
+  }
+  advanced_security_options {
+    enabled = true
+    master_user_options {
+      master_user_arn = "arn:aws:iam::143841941773:role/es-admin"
+    }
   }
   advanced_options = {
     "rest.action.multi.allow_explicit_index" = "true"
@@ -71,7 +83,7 @@ data "aws_kms_key" "es" {
 
 resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
   identity_pool_name               = "sondes"
-  allow_unauthenticated_identities = true
+  allow_unauthenticated_identities = false
 
   supported_login_providers = {
     "accounts.google.com" = "575970424139-vkk7scicbdd1igj04riqjh2bbs0oa6vj.apps.googleusercontent.com"
@@ -80,6 +92,17 @@ resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
     client_id               = aws_cognito_user_pool_client.CognitoUserPoolClient.id
     provider_name           = aws_cognito_user_pool.CognitoUserPool.endpoint
     server_side_token_check = false
+  }
+
+  cognito_identity_providers {
+    client_id               = "4uvts41d75b2r2cmsdgff47pec"
+    provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+    server_side_token_check = false
+  }
+  cognito_identity_providers {
+      client_id               = "7v892rnrta8ms785pl0aaqo8ke"
+      provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+      server_side_token_check = false
   }
 
 }
@@ -92,7 +115,17 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
   }
   role_mapping {
     ambiguous_role_resolution = "AuthenticatedRole"
+    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:4uvts41d75b2r2cmsdgff47pec"
+    type                      = "Token"
+  }
+  role_mapping {
+    ambiguous_role_resolution = "AuthenticatedRole"
     identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:62uut02s5ts991uhpf4fbuvrtj"
+    type                      = "Token"
+  }
+  role_mapping {
+    ambiguous_role_resolution = "AuthenticatedRole" 
+    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:7v892rnrta8ms785pl0aaqo8ke"
     type                      = "Token"
   }
 }
@@ -293,12 +326,12 @@ resource "aws_iam_role_policy" "IAMPolicy" {
                {
             "Effect": "Allow",
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"
         },
         {
             "Effect": "Allow",
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"
         }
     ]
 }

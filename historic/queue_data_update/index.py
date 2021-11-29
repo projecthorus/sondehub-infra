@@ -12,6 +12,20 @@ import os
 import gzip
 from io import BytesIO
 
+from multiprocessing import Process
+
+http_session = URLLib3Session()
+
+def mirror(path,params):
+    session = boto3.Session()
+    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
+    request = AWSRequest(
+        method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
+    )
+    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+    session = URLLib3Session()
+    r = session.send(request.prepare())
+
 HOST = os.getenv("ES")
 
 sqs = boto3.client('sqs', region_name="us-east-1")
@@ -38,9 +52,8 @@ def es_request(payload, path, method):
     )
     SigV4Auth(boto3.Session().get_credentials(),
               "es", "us-east-1").add_auth(request)
-
-    session = URLLib3Session()
-    r = session.send(request.prepare())
+    p = Process(target=mirror, args=(path,params)).start()
+    r = http_session.send(request.prepare())
     return json.loads(r.text)
 
 

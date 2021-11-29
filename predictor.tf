@@ -72,12 +72,12 @@ resource "aws_lambda_function" "predict_updater" {
   filename                       = "${path.module}/build/predict_updater.zip"
   source_code_hash               = data.archive_file.predict_updater.output_base64sha256
   publish                        = true
-  memory_size                    = 256
+  memory_size                    = 1024
   role                           = aws_iam_role.predict_updater.arn
   runtime                        = "python3.9"
   architectures                  = ["arm64"]
-  timeout                        = 60
-  reserved_concurrent_executions = 8
+  timeout                        = 300
+  reserved_concurrent_executions = 1
   environment {
     variables = {
       "ES" = aws_route53_record.es.fqdn
@@ -221,6 +221,12 @@ resource "aws_ecs_task_definition" "tawhiri" {
           "--threads=1",
           "tawhiri.api:app"
         ]
+        dependsOn = [
+          {
+            containerName = "downloader"
+            condition = "SUCCESS"
+          }
+        ]
         cpu         = 0
         environment = []
         essential   = true
@@ -254,7 +260,6 @@ resource "aws_ecs_task_definition" "tawhiri" {
         volumesFrom = []
       },
       {
-        command = ["daemon"]
         cpu     = 0
         environment = [
           {
@@ -262,7 +267,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
             value = "UTC"
           }
         ]
-        essential = true
+        essential = false
         image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri-downloader:latest"
         logConfiguration = {
           logDriver = "awslogs"
@@ -296,21 +301,21 @@ resource "aws_ecs_task_definition" "tawhiri" {
 
 
   volume {
+    name = "downloader"
+  }
+
+  volume {
     name = "srv"
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.tawhiri.id
-      root_directory     = "srv"
+      root_directory     = "/"
       transit_encryption = "DISABLED"
-
+      
       authorization_config {
         iam = "DISABLED"
       }
     }
-  }
-
-  volume {
-    name = "downloader"
   }
 
 }
@@ -616,3 +621,69 @@ resource "aws_route53_record" "tawhiri_AAAA" {
   }
   zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
+
+resource "aws_iam_role" "predictor_update_trigger_lambda" {
+  path                 = "/service-role/"
+  assume_role_policy   = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+    }]
+}
+EOF
+  max_session_duration = 3600
+}
+
+resource "aws_iam_role_policy" "predictor_update_trigger_lambda" {
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "ecs:UpdateService",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+  role   = aws_iam_role.predictor_update_trigger_lambda.name
+}
+
+data "archive_file" "predictor_update_trigger_lambda" {
+  type        = "zip"
+  source_file = "tawhiri-updater/index.py"
+  output_path = "${path.module}/build/tawhiri-updater.zip"
+}
+
+resource "aws_lambda_function" "predictor_update_trigger_lambda" {
+  function_name    = "tawhiri-updater"
+  handler          = "index.handler"
+  filename         = "${path.module}/build/tawhiri-updater.zip"
+  source_code_hash = data.archive_file.predictor_update_trigger_lambda.output_base64sha256
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.predictor_update_trigger_lambda.arn
+  runtime          = "python3.9"
+  timeout          = 3
+}
+
+resource "aws_lambda_permission" "predictor_update_trigger_lambda" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.predictor_update_trigger_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = "arn:aws:sns:us-east-1:123901341784:NewGFSObject"
+}
+
+resource "aws_sns_topic_subscription" "predictor_update_trigger_lambda" {
+  topic_arn = "arn:aws:sns:us-east-1:123901341784:NewGFSObject"
+  protocol = "lambda"
+  endpoint = aws_lambda_function.predictor_update_trigger_lambda.arn
+}
+
+# sns subscription

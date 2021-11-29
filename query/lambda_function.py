@@ -13,6 +13,19 @@ import base64
 import gzip
 from io import BytesIO
 
+from multiprocessing import Process
+
+http_session = URLLib3Session()
+
+def mirror(path,params):
+    session = boto3.Session()
+    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
+    request = AWSRequest(
+        method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
+    )
+    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+    session = URLLib3Session()
+    r = session.send(request.prepare())
 
 HOST = os.getenv("ES")
 # get current sondes, filter by date, location
@@ -412,9 +425,8 @@ def es_request(payload, path, method):
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
-
-    session = URLLib3Session()
-    r = session.send(request.prepare())
+    p = Process(target=mirror, args=(path,params)).start()
+    r = http_session.send(request.prepare())
     return json.loads(r.text)
 
 
@@ -438,17 +450,17 @@ if __name__ == "__main__":
 #             {},
 #         )
 #     )
-    print(get_sites({},{}))
-    # print(
-    #     get_telem(
-    #         {
-    #             "queryStringParameters": {
-    #                 "duration": "3d",
-    #                 "serial": "P4120469"
-    #             }},{}
+  #  print(get_sites({},{}))
+    print(
+        get_telem(
+            {
+                "queryStringParameters": {
+                    "duration": "3d",
+                    "serial": "P4120469"
+                }},{}
             
-    #     )
-    # )
+         )
+     )
     # print (
     #     get_chase(
     #         {"queryStringParameters": {

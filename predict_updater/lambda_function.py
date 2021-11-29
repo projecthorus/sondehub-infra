@@ -16,6 +16,19 @@ from io import BytesIO
 from math import radians, degrees, sin, cos, atan2, sqrt, pi
 
 HOST = os.getenv("ES")
+http_session = URLLib3Session()
+
+from multiprocessing import Process
+
+def mirror(path,params):
+    session = boto3.Session()
+    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
+    request = AWSRequest(
+        method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
+    )
+    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+    session = URLLib3Session()
+    r = session.send(request.prepare())
 
 
 #
@@ -274,7 +287,7 @@ def get_standard_prediction(conn, timestamp, latitude, longitude, altitude, curr
 
     # Generate the prediction URL
     url = f"/api/v1/?launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&launch_altitude={altitude:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
-    
+    logging.debug(url)
     conn.request("GET", url)
     res = conn.getresponse()
     data = res.read()
@@ -330,7 +343,7 @@ def get_launch_estimate(conn, timestamp, latitude, longitude, altitude, ascent_r
 
     # Generate the prediction URL
     url = f"/api/v1/?profile=reverse_profile&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&launch_altitude={altitude:.2f}&ascent_rate={ascent_rate:.2f}"
-    
+    logging.debug(url)
     conn.request("GET", url)
     res = conn.getresponse()
     data = res.read()
@@ -823,9 +836,8 @@ def es_request(params, path, method):
         method=method, url=f"https://{HOST}/{path}", data=params, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
-
-    session = URLLib3Session()
-    r = session.send(request.prepare())
+    p = Process(target=mirror, args=(path,params)).start()
+    r = http_session.send(request.prepare())
 
     if r.status_code != 200:
         raise RuntimeError

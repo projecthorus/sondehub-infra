@@ -203,12 +203,12 @@ resource "aws_iam_role_policy" "history" {
                        {
             "Effect": "Allow",
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2"
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
         },
         {
             "Effect": "Allow",
             "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2/*"
+            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
         }
     ]
 }
