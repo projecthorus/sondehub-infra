@@ -836,7 +836,7 @@ def es_request(params, path, method):
         method=method, url=f"https://{HOST}/{path}", data=params, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
-    p = Process(target=mirror, args=(path,params)).start()
+    #p = Process(target=mirror, args=(path,params)).start()
     r = http_session.send(request.prepare())
 
     if r.status_code != 200:

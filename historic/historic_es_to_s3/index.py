@@ -44,7 +44,7 @@ def es_request(payload, path, method, params=None):
     )
     SigV4Auth(boto3.Session().get_credentials(),
               "es", "us-east-1").add_auth(request)
-    p = Process(target=mirror, args=(path,params)).start()
+    #p = Process(target=mirror, args=(path,params)).start()
     r = http_session.send(request.prepare())
     return json.loads(r.text)
 

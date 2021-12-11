@@ -425,7 +425,7 @@ def es_request(payload, path, method):
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
-    p = Process(target=mirror, args=(path,params)).start()
+    #p = Process(target=mirror, args=(path,params)).start()
     r = http_session.send(request.prepare())
     return json.loads(r.text)
 
@@ -455,8 +455,8 @@ if __name__ == "__main__":
         get_telem(
             {
                 "queryStringParameters": {
-                    "duration": "3d",
-                    "serial": "P4120469"
+                    "duration": "1d",
+                    "serial": "S4430086"
                 }},{}
             
          )

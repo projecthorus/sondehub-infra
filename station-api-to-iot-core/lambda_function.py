@@ -92,7 +92,7 @@ def es_request(payload, path, method):
         method="POST", url=f"https://{HOST}/{path}", data=payload, headers=headers
     )
     SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
-    p = Process(target=mirror, args=(path,payload)).start()
+    #p = Process(target=mirror, args=(path,payload)).start()
     session = URLLib3Session()
     r = session.send(request.prepare())
     if r.status_code != 200 and r.status_code != 201:
