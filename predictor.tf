@@ -224,7 +224,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
         dependsOn = [
           {
             containerName = "downloader"
-            condition = "SUCCESS"
+            condition     = "SUCCESS"
           }
         ]
         cpu         = 0
@@ -260,7 +260,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
         volumesFrom = []
       },
       {
-        cpu     = 0
+        cpu = 0
         environment = [
           {
             name  = "TZ"
@@ -311,7 +311,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
       file_system_id     = aws_efs_file_system.tawhiri.id
       root_directory     = "/srv"
       transit_encryption = "DISABLED"
-      
+
       authorization_config {
         iam = "DISABLED"
       }
@@ -701,8 +701,8 @@ resource "aws_lambda_permission" "predictor_update_trigger_lambda" {
 
 resource "aws_sns_topic_subscription" "predictor_update_trigger_lambda" {
   topic_arn = "arn:aws:sns:us-east-1:123901341784:NewGFSObject"
-  protocol = "lambda"
-  endpoint = aws_lambda_function.predictor_update_trigger_lambda.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.predictor_update_trigger_lambda.arn
 }
 
 # sns subscription

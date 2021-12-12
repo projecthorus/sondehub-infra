@@ -18,8 +18,8 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     user_pool_id     = aws_cognito_user_pool.CognitoUserPool.id
   }
   domain_endpoint_options {
-    enforce_https = true
-    tls_security_policy = "Policy-Min-TLS-1-2-2019-07"
+    enforce_https                   = true
+    tls_security_policy             = "Policy-Min-TLS-1-2-2019-07"
     custom_endpoint                 = "es.v2.sondehub.org"
     custom_endpoint_certificate_arn = "arn:aws:acm:us-east-1:143841941773:certificate/a7da821c-bdbc-404b-aa12-bce28d86cdeb"
     custom_endpoint_enabled         = true
@@ -100,9 +100,9 @@ resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
     server_side_token_check = false
   }
   cognito_identity_providers {
-      client_id               = "7v892rnrta8ms785pl0aaqo8ke"
-      provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
-      server_side_token_check = false
+    client_id               = "7v892rnrta8ms785pl0aaqo8ke"
+    provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+    server_side_token_check = false
   }
 
 }
@@ -124,7 +124,7 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
     type                      = "Token"
   }
   role_mapping {
-    ambiguous_role_resolution = "AuthenticatedRole" 
+    ambiguous_role_resolution = "AuthenticatedRole"
     identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:7v892rnrta8ms785pl0aaqo8ke"
     type                      = "Token"
   }
