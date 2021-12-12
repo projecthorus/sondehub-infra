@@ -20,6 +20,21 @@ exports.handler = (event, context, callback) => {
         callback(null, specific_response);
         return;
     }
+    if (request.uri.startsWith('/site/')) {
+        var site = request.uri.replace(/^\/site\//, "");
+        var specific_response = {
+            status: '302',
+            statusDescription: 'Found',
+            headers: {
+                location: [{
+                    key: 'Location',
+                    value: 'https://sondehub.org/#!site=' + site
+                }],
+            },
+        };
+        callback(null, specific_response);
+        return;
+    }
     if (request.uri.startsWith('/go/')) {
         var name = request.uri.replace(/^\/go\//, "");
         if (name == "donate") {
