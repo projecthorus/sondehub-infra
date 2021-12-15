@@ -13,12 +13,18 @@ jobs:
     name: 'Terraform'
     runs-on: ubuntu-latest
     steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: arn:aws:iam::143841941773:role/github
+          role-session-name: Terraform
       - uses: hashicorp/setup-terraform@v1
       - name: 'Checkout'
         uses: actions/checkout@master
       - name: Terraform fmt
         id: fmt
-        run: terraform fmt -check
+        run: terraform fmt
         continue-on-error: true
       - uses: EndBug/add-and-commit@v7
         with:
