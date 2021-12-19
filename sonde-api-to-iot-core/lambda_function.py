@@ -331,10 +331,10 @@ def upload(event, context):
                     )
             to_sns.append(payload)
 
-    if to_sns:
-        last = to_sns.pop()
-        to_sns = to_sns[::3]
-        to_sns.append(last)
+    # if to_sns:
+    #     last = to_sns.pop()
+    #     to_sns = to_sns[::3]
+    #     to_sns.append(last)
     post(to_sns)
     return errors
 def lambda_handler(event, context):
