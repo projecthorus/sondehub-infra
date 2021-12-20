@@ -51,7 +51,10 @@ def lambda_handler(event, context):
             ).total_seconds()
         except:
             pass
-    payload = json.loads(event["body"])
+    try:
+        payload = json.loads(event["body"])
+    except:
+        return {"statusCode": 400, "body": "JSON decode issue"}
     print(payload)
     if "user-agent" in event["headers"]:
         event["time_server"] = datetime.datetime.now().isoformat()
@@ -63,7 +66,7 @@ def lambda_handler(event, context):
 
     # clean up None reports
 
-    if "uploader_position" in payload and None in payload["uploader_position"]:
+    if "uploader_position" in payload and None == payload["uploader_position"]:
         payload.pop("uploader_position", None)
     
     if "uploader_position" in payload:
@@ -137,19 +140,7 @@ if __name__ == "__main__":
             "timeEpoch": 1612051825409,
         },
         "body": """
-        {
-    "software_name": "radiosonde_auto_rx",
-    "software_version": "1.5.5",
-    "uploader_callsign": "mwheeler",
-    "uploader_position": [
-        -37.8136,
-        144.9631,
-        90
-    ],
-    "uploader_antenna": "mwheeler",
-    "uploader_contact_email": "none@none.com",
-    "mobile": false
-}
+        {"software_name": "radiosonde_auto_rx", "software_version": "1.5.8-beta2", "uploader_callsign": "LZ3DJ-18", "uploader_position": null, "uploader_antenna": "Dipole", "uploader_contact_email": "none@none.com", "mobile": false}
         """,
         "isBase64Encoded": False,
     }

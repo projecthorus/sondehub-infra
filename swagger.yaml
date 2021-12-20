@@ -279,6 +279,40 @@ paths:
           description: Returns a list of recovery objects
           schema:
             $ref: "#/definitions/recovery_results_format"    
+  /recovered/stats:
+    get:
+      summary: Request Recovery Stats
+      description: >
+        Use this to get the recovery stats
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: lat
+          type: number
+          description:  "Latitude - if specified, lon and distance are required. Eg: -34.9285"
+        - in: query
+          name: lon
+          description: "Longitude - if specified, lat and distance are required Eg:  138.6007"
+          type: number
+        - in: query
+          name: distance
+          description: "Distance in meters - if specified, lat and lon are required"
+          type: number
+        - in: query
+          name: duration
+          description: "How far back to search in seconds. Defaults to foreverl"
+          type: number
+        - in: query
+          name: datetime
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          type: string
+          format: date-time
+      responses:
+        200:
+          description: Returns a list of recovery objects
+          schema:
+            $ref: "#/definitions/recovery_stats"
   /sites:
     get:
       description: Radiosonde launch sites
@@ -423,6 +457,30 @@ definitions:
       description:
         description: Description of the recovery effort
         type: string
+  recovery_stats:
+    type: object
+    required:
+      - total
+      - recovered
+      - failed
+      - chaser_count
+      - top_chasers
+    properties:
+      total:
+        type: number
+        description: Total number of serial numbers that have had at least one attempt
+      recovered:
+        description: Total number of serial numbers that have been recovered
+        type: number
+      failed:
+        description: Total number of serial numbers that have a failed recovered attempt
+        type: number
+      chaser_count:
+        description: Total number of unique recovery names
+        type: number
+      top_chasers:
+        description: "chaser name : number of attempted recoveries"
+        type: object
   sonde_query_results_format:
     type: object
     properties:
