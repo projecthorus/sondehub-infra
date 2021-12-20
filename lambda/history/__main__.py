@@ -1,6 +1,6 @@
 from . import *
 print(
     history(
-        {"pathParameters": {"serial": "T1510227"}}, {}
+        {"pathParameters": {"serial": "T1510227a"}}, {}
     )
 )

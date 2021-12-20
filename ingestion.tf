@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "upload_telem" {
   function_name    = "sonde-api-to-iot-core"
-  handler          = "sonde-api-to-iot-core.lambda_handler"
+  handler          = "sonde_api_to_iot_core.lambda_handler"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
@@ -18,7 +18,7 @@ resource "aws_lambda_function" "upload_telem" {
 
 resource "aws_lambda_function" "station" {
   function_name    = "station-api-to-iot-core"
-  handler          = "station-api-to-iot-core.lambda_handler"
+  handler          = "station_api_to_iot_core.lambda_handler"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true

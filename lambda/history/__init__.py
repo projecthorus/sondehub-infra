@@ -1,5 +1,6 @@
 import boto3
 import json
+import botocore.exceptions
 from datetime import datetime, timedelta, timezone
 import uuid
 import es

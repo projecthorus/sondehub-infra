@@ -25,7 +25,7 @@ EOF
 
 resource "aws_lambda_function" "sign_socket" {
   function_name    = "sign-websocket"
-  handler          = "sign-websocket.lambda_handler"
+  handler          = "sign_websocket.lambda_handler"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true

@@ -163,7 +163,7 @@ resource "aws_lambda_permission" "predictions" {
 
 resource "aws_lambda_function" "reverse_predictions" {
   function_name    = "reverse-predictions"
-  handler          = "reverse-predict.predict"
+  handler          = "reverse_predict.predict"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
@@ -658,7 +658,7 @@ EOF
 
 resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   function_name    = "tawhiri-updater"
-  handler          = "tawhiri-updater.handler"
+  handler          = "tawhiri_updater.handler"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true

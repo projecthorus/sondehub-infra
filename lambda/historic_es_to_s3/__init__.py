@@ -49,9 +49,12 @@ def fetch_es(serial):
         scroll_ids.append(scroll_id)
         data += [x["_source"] for x in response['hits']['hits']]
     for scroll_id in scroll_ids:
-        scroll_delete = es.request(json.dumps({"scroll_id": scroll_id }),
-                            "_search/scroll", "DELETE")
-        print(scroll_delete)                
+        try:
+            scroll_delete = es.request(json.dumps({"scroll_id": scroll_id }),
+                                "_search/scroll", "DELETE")
+            print(scroll_delete)
+        except RuntimeError:
+            pass                
     return data
 
 def fetch_s3(serial):

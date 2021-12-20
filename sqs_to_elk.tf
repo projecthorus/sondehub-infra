@@ -56,7 +56,7 @@ EOF
 
 resource "aws_lambda_function" "sqs_to_elk" {
   function_name                  = "sqs-to-elk"
-  handler                        = "sqs-to-elk.lambda_handler"
+  handler                        = "sqs_to_elk.lambda_handler"
   filename                       = data.archive_file.lambda.output_path
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
