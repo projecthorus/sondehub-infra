@@ -74,6 +74,26 @@ resource "aws_lambda_function" "recovered_get" {
   }
 }
 
+
+resource "aws_lambda_function" "recovered_stats" {
+  function_name                  = "recovered_stats"
+  handler                        = "lambda_function.stats"
+  filename                       = "${path.module}/build/recovered.zip"
+  source_code_hash               = data.archive_file.recovered.output_base64sha256
+  publish                        = true
+  memory_size                    = 128
+  role                           = aws_iam_role.recovered.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
+  reserved_concurrent_executions = 100
+  environment {
+    variables = {
+      "ES" = aws_route53_record.es.fqdn
+    }
+  }
+}
+
+
 resource "aws_lambda_function" "recovered_put" {
   function_name                  = "recovered_put"
   handler                        = "lambda_function.put"
@@ -98,6 +118,14 @@ resource "aws_lambda_permission" "recovered_get" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/recovered"
 }
+
+resource "aws_lambda_permission" "recovered_stats" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.recovered_stats.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/recovered/stats"
+}
+
 resource "aws_lambda_permission" "recovered_put" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.recovered_put.arn
@@ -114,6 +142,17 @@ resource "aws_apigatewayv2_integration" "recovered_get" {
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }
+
+resource "aws_apigatewayv2_integration" "recovered_stats" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  connection_type        = "INTERNET"
+  integration_method     = "POST"
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.recovered_stats.arn
+  timeout_milliseconds   = 30000
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_integration" "recovered_put" {
   api_id                 = aws_apigatewayv2_api.main.id
   connection_type        = "INTERNET"
@@ -130,6 +169,15 @@ resource "aws_apigatewayv2_route" "recovered_get" {
   route_key          = "GET /recovered"
   target             = "integrations/${aws_apigatewayv2_integration.recovered_get.id}"
 }
+
+resource "aws_apigatewayv2_route" "recovered_stats" {
+  api_id             = aws_apigatewayv2_api.main.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /recovered/stats"
+  target             = "integrations/${aws_apigatewayv2_integration.recovered_stats.id}"
+}
+
 resource "aws_apigatewayv2_route" "recovered_put" {
   api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false

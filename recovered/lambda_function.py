@@ -1,3 +1,4 @@
+from multiprocessing import Process
 import json
 import boto3
 import botocore.credentials
@@ -7,7 +8,7 @@ from botocore.auth import SigV4Auth
 
 import zlib
 import base64
-import datetime
+from datetime import datetime, timedelta
 import os
 from io import BytesIO
 import gzip
@@ -18,19 +19,20 @@ http_session = URLLib3Session()
 # get aws creds
 aws_session = boto3.Session()
 
-from multiprocessing import Process
 
-def mirror(path,params):
-    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
+def mirror(path, params):
+    headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com",
+               "Content-Type": "application/json", "Content-Encoding": "gzip"}
     request = AWSRequest(
         method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
     )
-    SigV4Auth(aws_session.get_credentials(), "es", "us-east-1").add_auth(request)
+    SigV4Auth(aws_session.get_credentials(),
+              "es", "us-east-1").add_auth(request)
     session = URLLib3Session()
     r = session.send(request.prepare())
 
-def es_request(payload, path, method):
 
+def es_request(payload, path, method):
 
     params = json.dumps(payload)
     compressed = BytesIO()
@@ -38,7 +40,8 @@ def es_request(payload, path, method):
         f.write(params.encode('utf-8'))
     params = compressed.getvalue()
 
-    headers = {"Host": HOST, "Content-Type": "application/json", "Content-Encoding":"gzip"}
+    headers = {"Host": HOST, "Content-Type": "application/json",
+               "Content-Encoding": "gzip"}
 
     request = AWSRequest(
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
@@ -146,8 +149,8 @@ def put(event, context):
         try:
             time_delta_header = event["headers"]["date"]
             time_delta = (
-                datetime.datetime(*parsedate(time_delta_header)[:7])
-                - datetime.datetime.utcnow()
+                datetime(*parsedate(time_delta_header)[:7])
+                - datetime.utcnow()
             ).total_seconds()
         except:
             pass
@@ -155,7 +158,7 @@ def put(event, context):
     recovered = json.loads(event["body"])
 
     if "datetime" not in recovered:
-        recovered["datetime"] = datetime.datetime.now().isoformat()
+        recovered["datetime"] = datetime.now().isoformat()
 
     sonde_last_data = getSonde(recovered["serial"])
 
@@ -285,15 +288,153 @@ def get(event, context):
     return {"statusCode": 200, "body": json.dumps(output)}
 
 
+def stats(event, context):
+    filters = []
+    should = []
+    duration = 0
+    serials = None
+    lat = None
+    lon = None
+    distance = None
+    requested_time = None
+
+    # grab query parameters
+    if "queryStringParameters" in event:
+        if "duration" in event["queryStringParameters"]:
+            duration = int(event['queryStringParameters']['duration'])
+        if "lat" in event["queryStringParameters"]:
+            lat = float(event["queryStringParameters"]['lat'])
+        if "lon" in event["queryStringParameters"]:
+            lon = float(event["queryStringParameters"]['lon'])
+        if "distance" in event["queryStringParameters"]:
+            distance = int(event["queryStringParameters"]['distance'])
+        if "datetime" in event["queryStringParameters"]:
+            requested_time = datetime.fromisoformat(
+                event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
+            )
+    if duration != 0:
+        if requested_time:
+            lt = requested_time + timedelta(0, 1)
+            gte = requested_time - timedelta(0, duration)           
+            filters.append(
+                {
+                    "range": {
+                        "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                    }
+                }
+            )
+    if lat and lon and distance:
+        filters.append(
+            {
+                "geo_distance": {
+                    "distance": f"{distance}m",
+                    "position": {
+                        "lat": lat,
+                        "lon": lon,
+                    },
+                }
+            }
+        )
+
+    query = {
+        "query": {
+            "bool": {
+                "filter": filters,
+                "should": should,
+            }
+        },
+        "aggs": {
+            "chaser_count": {
+                "cardinality": {
+                    "field": "recovered_by.keyword"
+                }
+            },  
+            "breakdown": {
+                "terms": {
+                    "field": "recovered",
+                    "order": {
+                        "counts": "desc"
+                    },
+                    "size": 5
+                },
+                "aggs": {
+                    "counts": {
+                        "cardinality": {
+                            "field": "serial.keyword"
+                        }
+                    }
+                }
+            },
+            "top_recovered": {
+                "terms": {
+                    "field": "recovered_by.keyword",
+                    "order": {
+                        "recovered_by": "desc"
+                    },
+                    "size": 5
+                },
+                "aggs": {
+                    "recovered_by": {
+                        "cardinality": {
+                            "field": "serial.keyword"
+                        }
+                    }
+                }
+            },
+            "total_count": {
+                "cardinality": {
+                    "field": "serial.keyword"
+                }
+            }
+        }
+    }
+    results = es_request(query, "recovered*/_search", "POST")
+
+    output = {
+        "total": 0,
+        "recovered": 0,
+        "failed": 0,
+        "chaser_count": 0,
+        "top_chasers": {}
+    }
+    try:
+        output['total'] = results['aggregations']['total_count']['value']
+    except:
+        output['total'] = 0
+    stats = { x['key_as_string'] : x['counts']['value'] for x in results['aggregations']['breakdown']['buckets']}
+    try:
+        output['recovered'] = stats['true']
+    except:
+        pass
+
+    try:
+        output['failed'] = stats['false']
+    except:
+        pass    
+
+    try:
+        output['chaser_count'] = results['aggregations']['chaser_count']['value']
+    except:
+        output['chaser_count'] = 0
+
+    try:
+        output['top_chasers'] = { x['key'] : x['recovered_by']['value'] for x in results['aggregations']['top_recovered']['buckets']}
+    except:
+        pass
+
+    return {"statusCode": 200, "body": json.dumps(output)}
+
+
 if __name__ == "__main__":
     payload = {
         "version": "2.0",
         "routeKey": "PUT /recovered",
         "rawPath": "/recovered",
         "rawQueryString": "",
-        # "queryStringParameters": {
-        #     "serial": "S1321065,010-2-12771"
-        # },
+        "queryStringParameters": {
+            "datetime": "2021-12-20T00:00",
+            "duration": 100000
+        },
         "headers": {
             "accept": "*/*",
             "accept-encoding": "deflate",
@@ -339,4 +480,4 @@ if __name__ == "__main__":
         "isBase64Encoded": False,
     }
     # print(put(payload, {}))
-    print(get(payload, {}))
+    print(stats(payload, {}))
