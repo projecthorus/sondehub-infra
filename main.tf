@@ -130,3 +130,13 @@ data "archive_file" "lambda" {
   source_dir  = "lambda/"
   output_path = "${path.module}/build/lambda.zip"
 }
+
+resource "aws_s3_bucket" "lambda_functions" {
+}
+
+resource "aws_s3_bucket_object" "lambda" {
+  bucket = aws_s3_bucket.lambda_functions.bucket
+  key = "lambda.zip"
+  source = data.archive_file.lambda.output_path
+  etag = data.archive_file.lambda.output_md5
+}

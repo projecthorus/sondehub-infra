@@ -63,7 +63,8 @@ EOF
 resource "aws_lambda_function" "predict_updater" {
   function_name                  = "predict_updater"
   handler                        = "predict_updater.predict"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 1024
@@ -139,7 +140,8 @@ resource "aws_apigatewayv2_integration" "reverse_predictions" {
 resource "aws_lambda_function" "predictions" {
   function_name    = "predictions"
   handler          = "predict.predict"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -164,7 +166,8 @@ resource "aws_lambda_permission" "predictions" {
 resource "aws_lambda_function" "reverse_predictions" {
   function_name    = "reverse-predictions"
   handler          = "reverse_predict.predict"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -659,7 +662,8 @@ EOF
 resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   function_name    = "tawhiri-updater"
   handler          = "tawhiri_updater.handler"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128

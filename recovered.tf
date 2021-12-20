@@ -54,7 +54,8 @@ EOF
 resource "aws_lambda_function" "recovered_get" {
   function_name                  = "recovered_get"
   handler                        = "recovered.get"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
@@ -73,7 +74,8 @@ resource "aws_lambda_function" "recovered_get" {
 resource "aws_lambda_function" "recovered_stats" {
   function_name                  = "recovered_stats"
   handler                        = "recovered.stats"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
@@ -92,7 +94,8 @@ resource "aws_lambda_function" "recovered_stats" {
 resource "aws_lambda_function" "recovered_put" {
   function_name                  = "recovered_put"
   handler                        = "recovered.put"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128

@@ -2,7 +2,8 @@
 resource "aws_lambda_function" "get_sondes" {
   function_name    = "query"
   handler          = "query.get_sondes"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -25,7 +26,8 @@ resource "aws_lambda_function" "get_sondes" {
 resource "aws_lambda_function" "get_telem" {
   function_name    = "get_telem"
   handler          = "query.get_telem"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -43,7 +45,8 @@ resource "aws_lambda_function" "get_telem" {
 resource "aws_lambda_function" "get_sites" {
   function_name    = "get_sites"
   handler          = "query.get_sites"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -61,7 +64,8 @@ resource "aws_lambda_function" "get_sites" {
 resource "aws_lambda_function" "get_listener_telemetry" {
   function_name    = "get_listener_telemetry"
   handler          = "query.get_listener_telemetry"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256

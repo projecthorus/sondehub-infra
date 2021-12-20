@@ -1,7 +1,8 @@
 resource "aws_lambda_function" "upload_telem" {
   function_name    = "sonde-api-to-iot-core"
   handler          = "sonde_api_to_iot_core.lambda_handler"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -19,7 +20,8 @@ resource "aws_lambda_function" "upload_telem" {
 resource "aws_lambda_function" "station" {
   function_name    = "station-api-to-iot-core"
   handler          = "station_api_to_iot_core.lambda_handler"
-  filename                       = data.archive_file.lambda.output_path
+  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
+  s3_key                          = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
