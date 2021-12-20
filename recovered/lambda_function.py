@@ -323,6 +323,16 @@ def stats(event, context):
                     }
                 }
             )
+        else:
+            lt = datetime.now() + timedelta(0, 1)
+            gte = datetime.now() - timedelta(0, duration)           
+            filters.append(
+                {
+                    "range": {
+                        "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                    }
+                }
+            )
     if lat and lon and distance:
         filters.append(
             {
@@ -432,8 +442,8 @@ if __name__ == "__main__":
         "rawPath": "/recovered",
         "rawQueryString": "",
         "queryStringParameters": {
-            "datetime": "2021-12-20T00:00",
-            "duration": 100000
+          #  "datetime": "2021-12-20T00:00",
+            "duration": 1000000
         },
         "headers": {
             "accept": "*/*",
