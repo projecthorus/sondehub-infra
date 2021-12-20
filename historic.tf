@@ -65,8 +65,8 @@ EOF
 resource "aws_lambda_function" "historic_to_s3" {
   function_name                  = "historic_to_s3"
   handler                        = "historic_es_to_s3.handler"
-  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
-  s3_key                          = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 3096
@@ -83,8 +83,8 @@ resource "aws_lambda_function" "historic_to_s3" {
 resource "aws_lambda_function" "queue_data_update" {
   function_name                  = "queue_data_update"
   handler                        = "queue_data_update.handler"
-  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
-  s3_key                          = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 256
@@ -212,8 +212,8 @@ EOF
 resource "aws_lambda_function" "history" {
   function_name                  = "history"
   handler                        = "history.history"
-  s3_bucket                       = aws_s3_bucket_object.lambda.bucket
-  s3_key                          = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 512
