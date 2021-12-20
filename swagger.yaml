@@ -130,40 +130,6 @@ paths:
             items:
               $ref: "#/definitions/telemetry_format" 
   /listeners:
-    get:
-      deprecated: true
-      summary: Requests a list of stations that have reported to Sondehub in the last 3 days. Used as a legacy endpoint for tracker.sondehub.org
-      produces:
-        - "application/json"
-      responses:
-        200:
-          description: List of stations receiving radiosonde data
-          schema:
-            type: array
-            description: Returns an array of objects containing listener data.
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Callsign of the station.
-                tdiff_hours:
-                  type: number
-                  description: Number of hours since the station was last heard from.
-                lon:
-                  type: number
-                  format: double
-                  description: Longitude of the station
-                lat:
-                  type: number
-                  format: double
-                  description: Latitude of the station
-                alt:
-                  type: number
-                  description: Altitude of the station, in metres ASL.
-                description:
-                  description: Text Description of the station, with HTML formatting.
-                  type: string
     put:
       summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
       consumes:
