@@ -223,7 +223,6 @@ paths:
           description: A presigned URL for connecting to the websocket MQTT feed.
   /predictions:
     get:
-      deprecated: true
       description: Radiosonde landing predictions
       produces:
         - "application/json"
@@ -237,7 +236,21 @@ paths:
           description: Prediction results
           schema:
             $ref: "#/definitions/predictions" 
-
+  /predictions/reverse:
+    get:
+      description: Radiosonde launch site predictions
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: vehicles
+          type: string
+          description: If provided, filters predictions to a single provided serial number. Should be provided, but left blank if no filtering is required.
+      responses:
+        200:
+          description: Prediction results
+          schema:
+            $ref: "#/definitions/predictions" 
   /recovered:
     put:
       summary: Adds a recovery object to the SondeHub database to indicate if a radiosonde was recovered
@@ -299,7 +312,20 @@ paths:
         200:
           description: Returns a list of recovery objects
           schema:
-            $ref: "#/definitions/recovery_results_format"      
+            $ref: "#/definitions/recovery_results_format"    
+  /sites:
+    get:
+      description: Radiosonde launch sites
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: Prediction results
+          schema:
+            type: object
+            additionalProperties:
+              $ref: "#/definitions/site" 
+            
 parameters:
   input_payloads:
     in: body
@@ -319,6 +345,64 @@ parameters:
         $ref: "#/definitions/recovery_object"
 
 definitions:
+  site:
+    type: object
+    description: "Site"
+    properties:
+      position:
+        type: "array"
+        description: Lat Lng
+        items:
+          type: number
+          format: double
+      station:
+        description: Station ID number
+        type: string
+      station_name:
+        description: Name of the station
+        type: "string"
+      alt:
+        description: Altitude of the station in meters
+        type: "number"
+        format: "double"
+      times:
+        description: launch times for the site
+        type: array
+        items:
+          type: string
+      rs_types:
+        description: The radiosonde types for this site
+        type: array
+        items:
+          type: string
+      burst_altitude:
+        description: Average burst altitude for this site. Used for predictions
+        type: number
+        format: "double"
+      ascent_rate:
+        description: Typical ascent rate in m/s
+        type: number
+        format: "double"
+      descent_rate:
+        description: Typical descent rate in m/s
+        type: number
+        format: "double"
+      burst_std:
+        description: Standard deviation from analytics of burst
+        type: number
+        format: "double"
+      descent_std:
+        description: Standard deviation from analytics of descent rate
+        type: number
+        format: "double"
+      burst_samples:
+        description: Number of samples used to calculate the burst altitude
+        type: number
+        format: "double"
+      descent_samples:
+        description: Number of samples used to calculate the descent rate
+        type: number
+        format: "double"
   recovery_object:
     type: object
     required:
