@@ -15,21 +15,22 @@ import gzip
 HOST = os.getenv("ES")
 http_session = URLLib3Session()
 
+# get aws creds
+aws_session = boto3.Session()
+
 from multiprocessing import Process
 
 def mirror(path,params):
-    session = boto3.Session()
     headers = {"Host": "search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com", "Content-Type": "application/json", "Content-Encoding":"gzip"}
     request = AWSRequest(
         method="POST", url=f"https://search-sondes-v2-hiwdpmnjbuckpbwfhhx65mweee.us-east-1.es.amazonaws.com/{path}", data=params, headers=headers
     )
-    SigV4Auth(boto3.Session().get_credentials(), "es", "us-east-1").add_auth(request)
+    SigV4Auth(aws_session.get_credentials(), "es", "us-east-1").add_auth(request)
     session = URLLib3Session()
     r = session.send(request.prepare())
 
 def es_request(payload, path, method):
-    # get aws creds
-    session = boto3.Session()
+
 
     params = json.dumps(payload)
     compressed = BytesIO()
@@ -42,7 +43,7 @@ def es_request(payload, path, method):
     request = AWSRequest(
         method="POST", url=f"https://{HOST}/{path}", data=params, headers=headers
     )
-    SigV4Auth(boto3.Session().get_credentials(),
+    SigV4Auth(aws_session.get_credentials(),
               "es", "us-east-1").add_auth(request)
     #p = Process(target=mirror, args=(path,params)).start()
     r = http_session.send(request.prepare())
@@ -179,8 +180,9 @@ def put(event, context):
 
 def get(event, context):
     filters = []
+    should = []
     last = 259200
-    serial = None
+    serials = None
     lat = None
     lon = None
     distance = None
@@ -190,7 +192,7 @@ def get(event, context):
         if "last" in event["queryStringParameters"]:
             last = int(event['queryStringParameters']['last'])
         if "serial" in event["queryStringParameters"]:
-            serial = event['queryStringParameters']['serial']
+            serials = event['queryStringParameters']['serial'].split(",")
         if "lat" in event["queryStringParameters"]:
             lat = float(event["queryStringParameters"]['lat'])
         if "lon" in event["queryStringParameters"]:
@@ -209,14 +211,15 @@ def get(event, context):
                 }
             }
         )
-    if serial:
-        filters.append(
-            {
-                "match_phrase": {
-                    "serial.keyword": serial
+    if serials:
+        for serial in serials:
+            should.append(
+                {
+                    "match_phrase": {
+                        "serial.keyword": serial
+                    }
                 }
-            }
-        )
+            )
     if lat and lon and distance:
         filters.append(
             {
@@ -233,7 +236,8 @@ def get(event, context):
     query = {
         "query": {
             "bool": {
-                "filter": filters
+                "filter": filters,
+                "should": should,
             }
         },
         "aggs": {
@@ -273,6 +277,8 @@ def get(event, context):
             }
         }
     }
+    if serials:
+        query["query"]["bool"]["minimum_should_match"] = 1
     results = es_request(query, "recovered*/_search", "POST")
     output = [x['1']['hits']['hits'][0]["_source"]
               for x in results['aggregations']['2']['buckets']]
@@ -285,6 +291,9 @@ if __name__ == "__main__":
         "routeKey": "PUT /recovered",
         "rawPath": "/recovered",
         "rawQueryString": "",
+        # "queryStringParameters": {
+        #     "serial": "S1321065,010-2-12771"
+        # },
         "headers": {
             "accept": "*/*",
             "accept-encoding": "deflate",

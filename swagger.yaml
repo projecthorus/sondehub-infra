@@ -277,7 +277,7 @@ paths:
         - in: query
           name: serial
           type: string
-          description: radiosonde serial number to filter on. If none provided all serials will be presented
+          description: radiosonde serial number (or multiple serial numbers separated by a comma) to filter on. If none provided all serials will be presented.
         - in: query
           name: lat
           type: number
