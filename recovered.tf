@@ -1,8 +1,3 @@
-data "archive_file" "recovered" {
-  type        = "zip"
-  source_file = "recovered/lambda_function.py"
-  output_path = "${path.module}/build/recovered.zip"
-}
 
 resource "aws_iam_role" "recovered" {
   path                 = "/service-role/"
@@ -58,9 +53,9 @@ EOF
 
 resource "aws_lambda_function" "recovered_get" {
   function_name                  = "recovered_get"
-  handler                        = "lambda_function.get"
-  filename                       = "${path.module}/build/recovered.zip"
-  source_code_hash               = data.archive_file.recovered.output_base64sha256
+  handler                        = "recovered.get"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.recovered.arn
@@ -77,9 +72,9 @@ resource "aws_lambda_function" "recovered_get" {
 
 resource "aws_lambda_function" "recovered_stats" {
   function_name                  = "recovered_stats"
-  handler                        = "lambda_function.stats"
-  filename                       = "${path.module}/build/recovered.zip"
-  source_code_hash               = data.archive_file.recovered.output_base64sha256
+  handler                        = "recovered.stats"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.recovered.arn
@@ -96,9 +91,9 @@ resource "aws_lambda_function" "recovered_stats" {
 
 resource "aws_lambda_function" "recovered_put" {
   function_name                  = "recovered_put"
-  handler                        = "lambda_function.put"
-  filename                       = "${path.module}/build/recovered.zip"
-  source_code_hash               = data.archive_file.recovered.output_base64sha256
+  handler                        = "recovered.put"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.recovered.arn

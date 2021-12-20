@@ -1,9 +1,3 @@
-data "archive_file" "predict_updater" {
-  type        = "zip"
-  source_file = "predict_updater/lambda_function.py"
-  output_path = "${path.module}/build/predict_updater.zip"
-}
-
 resource "aws_iam_role" "predict_updater" {
   path                 = "/service-role/"
   name                 = "predict-updater"
@@ -68,9 +62,9 @@ EOF
 
 resource "aws_lambda_function" "predict_updater" {
   function_name                  = "predict_updater"
-  handler                        = "lambda_function.predict"
-  filename                       = "${path.module}/build/predict_updater.zip"
-  source_code_hash               = data.archive_file.predict_updater.output_base64sha256
+  handler                        = "predict_updater.predict"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 1024
   role                           = aws_iam_role.predict_updater.arn
@@ -142,23 +136,11 @@ resource "aws_apigatewayv2_integration" "reverse_predictions" {
   payload_format_version = "2.0"
 }
 
-data "archive_file" "predictions" {
-  type        = "zip"
-  source_file = "predict/lambda_function.py"
-  output_path = "${path.module}/build/predictions.zip"
-}
-
-data "archive_file" "reverse_predictions" {
-  type        = "zip"
-  source_file = "reverse-predict/lambda_function.py"
-  output_path = "${path.module}/build/reverse-predict.zip"
-}
-
 resource "aws_lambda_function" "predictions" {
   function_name    = "predictions"
-  handler          = "lambda_function.predict"
-  filename         = "${path.module}/build/predictions.zip"
-  source_code_hash = data.archive_file.predictions.output_base64sha256
+  handler          = "predict.predict"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
@@ -181,9 +163,9 @@ resource "aws_lambda_permission" "predictions" {
 
 resource "aws_lambda_function" "reverse_predictions" {
   function_name    = "reverse-predictions"
-  handler          = "lambda_function.predict"
-  filename         = "${path.module}/build/reverse-predict.zip"
-  source_code_hash = data.archive_file.reverse_predictions.output_base64sha256
+  handler          = "reverse-predict.predict"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
@@ -674,17 +656,11 @@ EOF
   role   = aws_iam_role.predictor_update_trigger_lambda.name
 }
 
-data "archive_file" "predictor_update_trigger_lambda" {
-  type        = "zip"
-  source_file = "tawhiri-updater/index.py"
-  output_path = "${path.module}/build/tawhiri-updater.zip"
-}
-
 resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   function_name    = "tawhiri-updater"
-  handler          = "index.handler"
-  filename         = "${path.module}/build/tawhiri-updater.zip"
-  source_code_hash = data.archive_file.predictor_update_trigger_lambda.output_base64sha256
+  handler          = "tawhiri-updater.handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.predictor_update_trigger_lambda.arn

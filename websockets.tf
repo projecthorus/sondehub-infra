@@ -23,17 +23,11 @@ EOF
   max_session_duration = 3600
 }
 
-data "archive_file" "sign_socket" {
-  type        = "zip"
-  source_file = "sign-websocket/lambda_function.py"
-  output_path = "${path.module}/build/sign_socket.zip"
-}
-
 resource "aws_lambda_function" "sign_socket" {
   function_name    = "sign-websocket"
-  handler          = "lambda_function.lambda_handler"
-  filename         = "${path.module}/build/sign_socket.zip"
-  source_code_hash = data.archive_file.sign_socket.output_base64sha256
+  handler          = "sign-websocket.lambda_handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.sign_socket.arn

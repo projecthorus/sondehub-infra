@@ -1,0 +1,42 @@
+from . import *
+payload = {
+    "version": "2.0",
+    "routeKey": "PUT /sondes/telemetry",
+    "rawPath": "/sondes/telemetry",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate",
+        "content-encoding": "gzip",
+        "content-length": "2135",
+        "content-type": "application/json",
+        "host": "api.v2.sondehub.org",
+        "user-agent": "autorx-1.4.1-beta4",
+        "x-amzn-trace-id": "Root=1-6015f571-6aef2e73165042d53fcc317a",
+        "x-forwarded-for": "103.107.130.22",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https",
+        "date": "Sun, 31 Jan 2021 00:21:45 GMT",
+    },
+    "requestContext": {
+        "accountId": "143841941773",
+        "apiId": "r03szwwq41",
+        "domainName": "api.v2.sondehub.org",
+        "domainPrefix": "api",
+        "http": {
+            "method": "PUT",
+            "path": "/sondes/telemetry",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "103.107.130.22",
+            "userAgent": "autorx-1.4.1-beta4",
+        },
+        "requestId": "Z_NJvh0RoAMEJaw=",
+        "routeKey": "PUT /sondes/telemetry",
+        "stage": "$default",
+        "time": "31/Jan/2021:00:10:25 +0000",
+        "timeEpoch": 1612051825409,
+    },
+    "body": "H4sIAFsEMmEAA+XaS2/jNhAA4Pv+CiNnh+X74fOiLYr2UvTUojC0MbMRYEuuLDtdFP3vHWlFKiapmMAaEFAtkMOOKVkjfiGHZP74sFr9Az+r1cOpfm5fi8Zuq+JgHzarh6bYlfWprnZ2W5zbetv8/bAOml5scyrrqmtNkEACGnz42uR83NfFzjbbp2K/P5Wf+zYffyY//fjrI+nbXTcrqtZWVdHf6Tu+ei0udnWoq/pY76372rY82G1jn2x5sbuuJcWUPGLziNlvWG4E3giOhDBaqt/dNbuitd116eYM4f6fb34oqvNz8dSeG9t0l/zQFK/+678c+9t8/P4X/yLOn95EsfFx25TFvk9GY40Zx+6T5+br2yWMMGYIFmz4YF+0EOYKaUYUd8H+3RKMtGGaDMFi37UkUmvEqXs2ezhCUCE5BC52v71AhCLC34ReIAT9pIfQi4U+rj5DUENDd7NT0Z4gZIb/firatr+MuTu9nA/lrmy/QPSR+MTsX2dbPXVBjikS2F1/qpo+Yf9sx/pUtgMbn7BL0r2oUUafruAC4v+u/2deBeKSSZzrlc/vlae8imuvtO9KE3g1GBl+2ytLeFWRV6UQY7leb9qEb522KZxNsyybCmwaTmSmTTm/TZmyqa9tdl3JsQptSsQjmyKyyWObOLapCSL6bjYZItM29doltCCbZIMZvCcqlcixCc3p7DYlTdjUKmFTBDYVjE5c3rYpTGCTI8oimwpn2KS5NumkTEjNpbMsmfAM0NtaZ8qcf0aXqRndJGD6qtTDVMiwECaPYZIAph4JXg2avuG3w2TvTOhm7fJZlkyY4qDQNlm1Zg95dpkiJZMkaGoW0KQYMXKbJglpCkRjmhKqdHM3mgSpaZpk7RJals1uKauFzJ3P1fw2VcqmiG2KUKZAMkOmkIFMPRafbwZNjPDNVXv+bO6fIyFzWAWJZbk0SDAmNcl0qed3qVMuE3Xm2PtephrVTcqEbqGBTIFimJIgKu4I850hcyg0BV7S8pxsYB4RHLPcQhPe0dw0FY5p0gRMGg6ZjCA/jL4D04QLIIlMos5Uo+B7bBxNLs7p2qWzLJfdLglXima6JPO7JAmXOFFmChaugBgfdyG9TBbIpIiJSGZi20gBpptl5l1k4qHMhISWZZMjLnH2EojMfzykEsdDFMuETT+oeZsaaZ1hk0U2ZcImLIzU3WxOrs271Fw6y5IJi3NFlOSZMudfnKvE4pzixL6R8CWpk8kZ0tHBZSyThIUmLIFIJFOYsTj4dpnYb6wmbA4bR5DQsmxC5yiuOM60Of9BkEocBFGSqjVVZFMmNo5imyIcNRXyo/LVjK7veUg5uQrqknMJLcsmjAnKYJa5cUTm3zhSwcaR7ruPJWzq8CCIG/hFvG3ThIeUciwErv7gQ93P5vSMDh+5dN6X+ed/QRi1DYwkAAA=",
+    "isBase64Encoded": True,
+}
+print(lambda_handler(payload, {}))

@@ -1,25 +1,9 @@
 
-
-data "archive_file" "query" {
-  type        = "zip"
-  source_file = "query/lambda_function.py"
-  output_path = "${path.module}/build/query.zip"
-}
-
-
-
-
-
-
-
-
-
-
 resource "aws_lambda_function" "get_sondes" {
   function_name    = "query"
-  handler          = "lambda_function.get_sondes"
-  filename         = "${path.module}/build/query.zip"
-  source_code_hash = data.archive_file.query.output_base64sha256
+  handler          = "query.get_sondes"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
@@ -40,9 +24,9 @@ resource "aws_lambda_function" "get_sondes" {
 
 resource "aws_lambda_function" "get_telem" {
   function_name    = "get_telem"
-  handler          = "lambda_function.get_telem"
-  filename         = "${path.module}/build/query.zip"
-  source_code_hash = data.archive_file.query.output_base64sha256
+  handler          = "query.get_telem"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
@@ -58,9 +42,9 @@ resource "aws_lambda_function" "get_telem" {
 
 resource "aws_lambda_function" "get_sites" {
   function_name    = "get_sites"
-  handler          = "lambda_function.get_sites"
-  filename         = "${path.module}/build/query.zip"
-  source_code_hash = data.archive_file.query.output_base64sha256
+  handler          = "query.get_sites"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
@@ -76,9 +60,9 @@ resource "aws_lambda_function" "get_sites" {
 
 resource "aws_lambda_function" "get_listener_telemetry" {
   function_name    = "get_listener_telemetry"
-  handler          = "lambda_function.get_listener_telemetry"
-  filename         = "${path.module}/build/query.zip"
-  source_code_hash = data.archive_file.query.output_base64sha256
+  handler          = "query.get_listener_telemetry"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn

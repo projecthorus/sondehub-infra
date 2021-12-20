@@ -1,20 +1,8 @@
-data "archive_file" "api_to_iot" {
-  type        = "zip"
-  source_dir  = "sonde-api-to-iot-core/"
-  output_path = "${path.module}/build/sonde-api-to-iot-core.zip"
-}
-
-data "archive_file" "station_api_to_iot" {
-  type        = "zip"
-  source_file = "station-api-to-iot-core/lambda_function.py"
-  output_path = "${path.module}/build/station-api-to-iot-core.zip"
-}
-
 resource "aws_lambda_function" "upload_telem" {
   function_name    = "sonde-api-to-iot-core"
-  handler          = "lambda_function.lambda_handler"
-  filename         = "${path.module}/build/sonde-api-to-iot-core.zip"
-  source_code_hash = data.archive_file.api_to_iot.output_base64sha256
+  handler          = "sonde-api-to-iot-core.lambda_handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
@@ -30,9 +18,9 @@ resource "aws_lambda_function" "upload_telem" {
 
 resource "aws_lambda_function" "station" {
   function_name    = "station-api-to-iot-core"
-  handler          = "lambda_function.lambda_handler"
-  filename         = "${path.module}/build/station-api-to-iot-core.zip"
-  source_code_hash = data.archive_file.station_api_to_iot.output_base64sha256
+  handler          = "station-api-to-iot-core.lambda_handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn

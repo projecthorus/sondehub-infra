@@ -1,14 +1,4 @@
-data "archive_file" "historic_to_s3" {
-  type        = "zip"
-  source_file = "historic/historic_es_to_s3/index.py"
-  output_path = "${path.module}/build/historic_to_s3.zip"
-}
 
-data "archive_file" "queue_data_update" {
-  type        = "zip"
-  source_file = "historic/queue_data_update/index.py"
-  output_path = "${path.module}/build/queue_data_update.zip"
-}
 
 resource "aws_iam_role" "historic" {
   path                 = "/service-role/"
@@ -74,9 +64,9 @@ EOF
 
 resource "aws_lambda_function" "historic_to_s3" {
   function_name                  = "historic_to_s3"
-  handler                        = "index.handler"
-  filename                       = "${path.module}/build/historic_to_s3.zip"
-  source_code_hash               = data.archive_file.historic_to_s3.output_base64sha256
+  handler                        = "historic_es_to_s3.handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 3096
   role                           = aws_iam_role.historic.arn
@@ -91,9 +81,9 @@ resource "aws_lambda_function" "historic_to_s3" {
 }
 resource "aws_lambda_function" "queue_data_update" {
   function_name                  = "queue_data_update"
-  handler                        = "index.handler"
-  filename                       = "${path.module}/build/queue_data_update.zip"
-  source_code_hash               = data.archive_file.queue_data_update.output_base64sha256
+  handler                        = "queue_data_update.handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 256
   role                           = aws_iam_role.historic.arn
@@ -216,17 +206,12 @@ EOF
   role   = aws_iam_role.history.name
 }
 
-data "archive_file" "history" {
-  type        = "zip"
-  source_file = "history/lambda_function.py"
-  output_path = "${path.module}/build/history.zip"
-}
 
 resource "aws_lambda_function" "history" {
   function_name                  = "history"
-  handler                        = "lambda_function.history"
-  filename                       = "${path.module}/build/history.zip"
-  source_code_hash               = data.archive_file.history.output_base64sha256
+  handler                        = "history.history"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 512
   role                           = aws_iam_role.basic_lambda_role.arn

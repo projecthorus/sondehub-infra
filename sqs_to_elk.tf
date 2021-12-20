@@ -1,9 +1,3 @@
-data "archive_file" "sqs_to_elk" {
-  type        = "zip"
-  source_file = "sqs-to-elk/lambda_function.py"
-  output_path = "${path.module}/build/sqs-to-elk.zip"
-}
-
 resource "aws_iam_role" "sqs_to_elk" {
   path                 = "/service-role/"
   name                 = "sqs-to-elk"
@@ -62,9 +56,9 @@ EOF
 
 resource "aws_lambda_function" "sqs_to_elk" {
   function_name                  = "sqs-to-elk"
-  handler                        = "lambda_function.lambda_handler"
-  filename                       = "${path.module}/build/sqs-to-elk.zip"
-  source_code_hash               = data.archive_file.sqs_to_elk.output_base64sha256
+  handler                        = "sqs-to-elk.lambda_handler"
+  filename                       = data.archive_file.lambda.output_path
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.sqs_to_elk.arn

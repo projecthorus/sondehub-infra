@@ -124,3 +124,9 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
   ]
   validation_method = "DNS"
 }
+
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_dir  = "lambda/"
+  output_path = "${path.module}/build/lambda.zip"
+}
