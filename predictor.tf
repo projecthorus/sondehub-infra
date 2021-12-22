@@ -78,6 +78,9 @@ resource "aws_lambda_function" "predict_updater" {
       "ES" = aws_route53_record.es.fqdn
     }
   }
+  tags = {
+    Name = "predict_updater"
+  }
 }
 
 
@@ -154,6 +157,9 @@ resource "aws_lambda_function" "predictions" {
       "ES" = "es.${local.domain_name}"
     }
   }
+  tags = {
+    Name = "predictions"
+  }
 }
 resource "aws_lambda_permission" "predictions" {
   action        = "lambda:InvokeFunction"
@@ -179,6 +185,9 @@ resource "aws_lambda_function" "reverse_predictions" {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
+  }
+  tags = {
+    Name = "reverse_predictions"
   }
 }
 resource "aws_lambda_permission" "reverse_predictions" {
@@ -670,6 +679,9 @@ resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   role             = aws_iam_role.predictor_update_trigger_lambda.arn
   runtime          = "python3.9"
   timeout          = 3
+  tags = {
+    Name = "tawhiri-updater"
+  }
 }
 
 resource "aws_lambda_permission" "predictor_update_trigger_lambda" {

@@ -68,6 +68,9 @@ resource "aws_lambda_function" "recovered_get" {
       "ES" = aws_route53_record.es.fqdn
     }
   }
+  tags = {
+    Name = "recovered_get"
+  }
 }
 
 
@@ -88,6 +91,9 @@ resource "aws_lambda_function" "recovered_stats" {
       "ES" = aws_route53_record.es.fqdn
     }
   }
+  tags = {
+    Name = "recovered_stats"
+  }
 }
 
 
@@ -107,6 +113,9 @@ resource "aws_lambda_function" "recovered_put" {
     variables = {
       "ES" = aws_route53_record.es.fqdn
     }
+  }
+  tags = {
+    Name = "recovered_put"
   }
 }
 

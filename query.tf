@@ -16,6 +16,9 @@ resource "aws_lambda_function" "get_sondes" {
       "ES" = "es.${local.domain_name}"
     }
   }
+  tags = {
+    Name = "query"
+  }
 }
 
 
@@ -40,6 +43,9 @@ resource "aws_lambda_function" "get_telem" {
       "ES" = "es.${local.domain_name}"
     }
   }
+  tags = {
+    Name = "get_telem"
+  }
 }
 
 resource "aws_lambda_function" "get_sites" {
@@ -59,6 +65,9 @@ resource "aws_lambda_function" "get_sites" {
       "ES" = "es.${local.domain_name}"
     }
   }
+  tags = {
+    Name = "get_sites"
+  }
 }
 
 resource "aws_lambda_function" "get_listener_telemetry" {
@@ -77,6 +86,9 @@ resource "aws_lambda_function" "get_listener_telemetry" {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
+  }
+  tags = {
+    Name = "get_listener_telemetry"
   }
 }
 

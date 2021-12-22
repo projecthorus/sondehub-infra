@@ -34,7 +34,9 @@ resource "aws_lambda_function" "station" {
       "ES" = "es.${local.domain_name}"
     }
   }
-
+  tags = {
+    Name = "station-api-to-iot-core"
+  }
 }
 
 resource "aws_lambda_permission" "station" {
@@ -122,6 +124,9 @@ resource "aws_lambda_function" "sns_to_mqtt" {
   architectures = ["arm64"]
   lifecycle {
     ignore_changes = [environment]
+  }
+  tags = {
+    Name = "sns-to-mqtt"
   }
 
 }

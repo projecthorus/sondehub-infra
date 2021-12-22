@@ -71,6 +71,9 @@ resource "aws_lambda_function" "sqs_to_elk" {
       "ES" = aws_route53_record.es.fqdn
     }
   }
+  tags = {
+    Name = "sqs_to_elk"
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_to_elk" {

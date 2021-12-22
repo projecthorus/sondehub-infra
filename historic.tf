@@ -79,6 +79,9 @@ resource "aws_lambda_function" "historic_to_s3" {
       "ES" = aws_route53_record.es.fqdn
     }
   }
+  tags = {
+    Name = "historic_to_s3"
+  }
 }
 resource "aws_lambda_function" "queue_data_update" {
   function_name                  = "queue_data_update"
@@ -96,6 +99,9 @@ resource "aws_lambda_function" "queue_data_update" {
     variables = {
       "ES" = aws_route53_record.es.fqdn
     }
+  }
+  tags = {
+    Name = "queue_data_update"
   }
 }
 
@@ -226,6 +232,10 @@ resource "aws_lambda_function" "history" {
     variables = {
       "ES" = "es.${local.domain_name}"
     }
+  }
+
+  tags = {
+    Name = "history"
   }
 
 
