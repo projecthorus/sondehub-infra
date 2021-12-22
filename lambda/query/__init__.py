@@ -8,6 +8,7 @@ import es
 def get_sondes(event, context):
     path = "telm-*/_search"
     payload = {
+        "size": 0,
         "aggs": {
             "2": {
                 "terms": {
@@ -253,6 +254,7 @@ def get_listener_telemetry(event, context):
 
     path = "listeners-*/_search"
     payload = {
+        "size": 0,
         "timeout": "30s",
         "aggs": {
             "2": {

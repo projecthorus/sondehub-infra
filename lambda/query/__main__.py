@@ -1,6 +1,6 @@
 from . import *
 
-#print(get_sondes({"queryStringParameters":{"lat":"-32.7933","lon":"151.8358","distance":"5000", "last":"604800"}}, {}))
+print(get_listener_telemetry({"queryStringParameters":{}}, {}))
 # mode: 6hours
 # type: positions
 # format: json
@@ -20,16 +20,16 @@ from . import *
 #         )
 #     )
 #  print(get_sites({},{}))
-print(
-    get_telem(
-        {
-            "queryStringParameters": {
-                "duration": "1d",
-                # "serial": "S4430086"
-            }},{}
+# print(
+#     get_telem(
+#         {
+#             "queryStringParameters": {
+#                 "duration": "1d",
+#                 # "serial": "S4430086"
+#             }},{}
         
-        )
-    )
+#         )
+#     )
 # print (
 #     get_chase(
 #         {"queryStringParameters": {
