@@ -322,11 +322,14 @@ def upload(event, context):
             if "uploader_position" in payload:
                 if not payload["uploader_position"]:
                     payload.pop("uploader_position")
+                elif payload['uploader_position'][0] == None or payload['uploader_position'][1] == None:
+                    payload.pop("uploader_position")
                 else:
                     (payload["uploader_alt"], payload["uploader_position"]) = (
                         payload["uploader_position"][2],
                         f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
                     )
+
             to_sns.append(payload)
 
     # if to_sns:
