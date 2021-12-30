@@ -28,8 +28,8 @@ def lambda_handler(event, context):
         result = es.request(body, f"telm-{index}/_doc/_bulk", "POST")
         if 'errors' in result and result['errors'] == True:
             error_types = [x['index']['error']['type'] for x in result['items'] if 'error' in x['index']] # get all the error types
+            print(event)
+            print(result)
             error_types = [a for a in error_types if a != 'mapper_parsing_exception'] # filter out mapper failures since they will never succeed
             if error_types:
-                print(event)
-                print(result)
                 raise RuntimeError
