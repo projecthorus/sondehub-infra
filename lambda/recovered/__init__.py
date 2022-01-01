@@ -120,17 +120,12 @@ def put(event, context):
     if len(sonde_last_data) == 0:
         return {"statusCode": 400, "body":  json.dumps({"message": "serial not found in db"})}
 
-    already_recovered = getRecovered(recovered["serial"])
-    if len(already_recovered) != 0:
-        recovered_by = already_recovered[0]['fields']['recovered_by.keyword'][0]
-        return {"statusCode": 400, "body": json.dumps({"message": f"Already recovered by {recovered_by}"})}
-
     recovered['position'] = [recovered['lon'], recovered['lat']]
 
     result = es.request(json.dumps(recovered), "recovered/_doc", "POST")
 
     # add in elasticsearch extra position field
-    return {"statusCode": 200, "body": json.dumps({"message": "telm logged. Have a good day ^_^"})}
+    return {"statusCode": 200, "body": json.dumps({"message": "Recovery logged. Have a good day ^_^"})}
 
 
 def get(event, context):
