@@ -10,13 +10,13 @@ data "archive_file" "redirect" {
 
 resource "aws_lambda_function" "redirect" {
   function_name    = "sondehub-redirect"
-  handler          = "index.handler"
-  filename         = "${path.module}/build/redirect.zip"
-  source_code_hash = data.archive_file.redirect.output_base64sha256
+  handler          = "redirect.handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "nodejs14.x"
+  runtime          = "python3.9"
   timeout          = 3
 }
 
