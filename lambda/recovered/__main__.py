@@ -46,7 +46,7 @@ payload = {
     },
     "body": json.dumps({
         "datetime": "2021-06-06T01:10:07.629Z",
-        "serial": "string",
+        "serial": "S4631407",
         "lat": 0,
         "lon": 0,
         "alt": 0,
@@ -57,4 +57,4 @@ payload = {
     "isBase64Encoded": False,
 }
 # print(put(payload, {}))
-print(get(payload, {}))
+print(put(payload, {}))

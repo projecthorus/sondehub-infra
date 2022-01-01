@@ -4,8 +4,10 @@ import zlib
 import base64
 from datetime import datetime, timedelta
 import es
+import boto3
+import botocore.exceptions
 
-def getSonde(serial):
+def sondeExists(serial):
     query = {
         "aggs": {
             "1": {
@@ -43,7 +45,22 @@ def getSonde(serial):
         }
     }
     results = es.request(json.dumps(query), "telm-*/_search", "POST")
-    return results["aggregations"]["1"]["hits"]["hits"]
+    if len(results["aggregations"]["1"]["hits"]["hits"]) > 0:
+        return True
+    
+    # if there's a historic file created for this sonde, use that instead
+    try:
+        s3 = boto3.resource('s3')
+        object = s3.Object('sondehub-history', f'serial/{serial}.json.gz')
+        
+        object.load()
+        return True
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            return False
+        else:
+            # Something else has gone wrong.
+            raise
 
 
 def getRecovered(serial):
@@ -112,12 +129,10 @@ def put(event, context):
     if "datetime" not in recovered:
         recovered["datetime"] = datetime.now().isoformat()
 
-    sonde_last_data = getSonde(recovered["serial"])
-
     if recovered["serial"] == "":
         return {"statusCode": 400, "body":  json.dumps({"message": "serial cannot be empty"})}
 
-    if len(sonde_last_data) == 0:
+    if not sondeExists(recovered["serial"]):
         return {"statusCode": 400, "body":  json.dumps({"message": "serial not found in db"})}
 
     recovered['position'] = [recovered['lon'], recovered['lat']]
