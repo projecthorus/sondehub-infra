@@ -1,12 +1,5 @@
 # manages the short codes
 
-data "archive_file" "redirect" {
-  type        = "zip"
-  source_file = "redirect/index.js"
-  output_path = "${path.module}/build/redirect.zip"
-}
-
-
 
 resource "aws_lambda_function" "redirect" {
   function_name = "sondehub-redirect"
