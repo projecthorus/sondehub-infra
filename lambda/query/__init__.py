@@ -36,7 +36,7 @@ def get_sondes(event, context):
                 {
                     "range": {
                         "datetime": {
-                            "gte": f"now-{int(event['queryStringParameters']['last'])}s",
+                            "gte": f"now-{abs(int(event['queryStringParameters']['last']))}s",
                             "lte": "now+1m",
                         }
                     }
