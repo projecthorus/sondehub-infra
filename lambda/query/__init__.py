@@ -67,8 +67,11 @@ def get_sondes(event, context):
         payload["query"]["bool"]["filter"].append(
                 {"range": {"datetime": {"gte": "now-1d", "lte": "now+1m"}}}
         )
-        
-    results = es.request(json.dumps(payload), path, "POST")
+    try:
+        results = es.request(json.dumps(payload), path, "POST")
+    except:
+        print(json.dumps(event))
+        raise
     buckets = results["aggregations"]["2"]["buckets"]
     sondes = {
         bucket["1"]["hits"]["hits"][0]["_source"]["serial"]: bucket["1"]["hits"][
