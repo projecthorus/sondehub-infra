@@ -135,7 +135,7 @@ def put(event, context):
     if not sondeExists(recovered["serial"]):
         return {"statusCode": 400, "body":  json.dumps({"message": "serial not found in db"})}
 
-    recovered['position'] = [recovered['lon'], recovered['lat']]
+    recovered['position'] = [float(recovered['lon']), float(recovered['lat'])]
 
     result = es.request(json.dumps(recovered), "recovered/_doc", "POST")
 
