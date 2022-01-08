@@ -254,7 +254,7 @@ paths:
         - "application/json"
       parameters:
         - in: query
-          name: serials
+          name: serial
           type: string
           description: radiosonde serial number (or multiple serial numbers separated by a comma) to filter on. If none provided all serials will be presented.
         - in: query

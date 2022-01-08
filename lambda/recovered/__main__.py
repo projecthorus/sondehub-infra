@@ -8,9 +8,10 @@ payload = {
     "queryStringParameters": {
         #  "datetime": "2021-12-20T00:00",
         #   "duration": 1000000
-        "lat": "-32.7933",
-        "lon": "151.835",
-        "distance": "30000000"
+        # "lat": "-32.7933",
+        # "lon": "151.835",
+        # "distance": "30000000"
+        "serial": "S5031499"
     },
     "headers": {
         "accept": "*/*",
@@ -57,4 +58,4 @@ payload = {
     "isBase64Encoded": False,
 }
 # print(put(payload, {}))
-print(put(payload, {}))
+print(get(payload, {}))

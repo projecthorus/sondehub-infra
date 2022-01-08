@@ -158,6 +158,8 @@ def get(event, context):
             last = int(event['queryStringParameters']['last'])
         if "serial" in event["queryStringParameters"]:
             serials = event['queryStringParameters']['serial'].split(",")
+        if "last" not in event["queryStringParameters"] and "serial" in event["queryStringParameters"]:
+            last = 0
         if "lat" in event["queryStringParameters"]:
             lat = float(event["queryStringParameters"]['lat'])
         if "lon" in event["queryStringParameters"]:
