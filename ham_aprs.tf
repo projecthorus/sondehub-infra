@@ -1,6 +1,6 @@
 
 resource "aws_ecs_task_definition" "aprsgw" {
-  family           = "aprsgw"
+  family = "aprsgw"
   runtime_platform {
     cpu_architecture = "ARM64"
   }
@@ -8,14 +8,14 @@ resource "aws_ecs_task_definition" "aprsgw" {
     [
       {
         cpu = 0
-        "environment": [
-            {"name": "AWS_REGION", "value": "us-east-1"},
-            {"name": "AWS_DEFAULT_REGION", "value": "us-east-1"},
-            {"name": "CALLSIGN", "value": "VK3FUR"},
-            {"name": "SNS", "value": aws_sns_topic.ham_telem.arn}
+        "environment" : [
+          { "name" : "AWS_REGION", "value" : "us-east-1" },
+          { "name" : "AWS_DEFAULT_REGION", "value" : "us-east-1" },
+          { "name" : "CALLSIGN", "value" : "VK3FUR" },
+          { "name" : "SNS", "value" : aws_sns_topic.ham_telem.arn }
         ],
-        essential   = true
-        image       = "143841941773.dkr.ecr.us-east-1.amazonaws.com/aprsgw:latest"
+        essential = true
+        image     = "143841941773.dkr.ecr.us-east-1.amazonaws.com/aprsgw:latest"
         logConfiguration = {
           logDriver = "awslogs"
           options = {
@@ -24,11 +24,11 @@ resource "aws_ecs_task_definition" "aprsgw" {
             awslogs-stream-prefix = "ecs"
           }
         }
-        mountPoints = []
-        name = "aprsgw"
-        portMappings = [ ]
-        ulimits = []
-        volumesFrom = []
+        mountPoints  = []
+        name         = "aprsgw"
+        portMappings = []
+        ulimits      = []
+        volumesFrom  = []
       },
     ]
   )
@@ -96,18 +96,18 @@ resource "aws_ecs_cluster" "aprsgw" {
 
 
 resource "aws_ecs_service" "aprsgw" {
-  name                              = "aprsgw"
-  cluster                           = aws_ecs_cluster.aprsgw.id
-  task_definition                   = aws_ecs_task_definition.aprsgw.arn
-  enable_ecs_managed_tags           = true
-  launch_type                       = "FARGATE"
-  platform_version                  = "LATEST"
-  desired_count                     = 1
+  name                    = "aprsgw"
+  cluster                 = aws_ecs_cluster.aprsgw.id
+  task_definition         = aws_ecs_task_definition.aprsgw.arn
+  enable_ecs_managed_tags = true
+  launch_type             = "FARGATE"
+  platform_version        = "LATEST"
+  desired_count           = 1
 
 
   network_configuration {
     assign_public_ip = true
-    security_groups = []
-    subnets = [aws_subnet.public["us-east-1b"].id]
+    security_groups  = []
+    subnets          = [aws_subnet.public["us-east-1b"].id]
   }
 }
