@@ -1,0 +1,42 @@
+from . import *
+payload = {
+    "version": "2.0",
+    "routeKey": "PUT /sondes/telemetry",
+    "rawPath": "/sondes/telemetry",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate",
+        "content-encoding": "gzip",
+        "content-length": "2135",
+        "content-type": "application/json",
+        "host": "api.v2.sondehub.org",
+        "user-agent": "autorx-1.4.1-beta4",
+        "x-amzn-trace-id": "Root=1-6015f571-6aef2e73165042d53fcc317a",
+        "x-forwarded-for": "103.107.130.22",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https",
+        "date": "Sun, 31 Jan 2021 00:21:45 GMT",
+    },
+    "requestContext": {
+        "accountId": "143841941773",
+        "apiId": "r03szwwq41",
+        "domainName": "api.v2.sondehub.org",
+        "domainPrefix": "api",
+        "http": {
+            "method": "PUT",
+            "path": "/sondes/telemetry",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "103.107.130.22",
+            "userAgent": "autorx-1.4.1-beta4",
+        },
+        "requestId": "Z_NJvh0RoAMEJaw=",
+        "routeKey": "PUT /sondes/telemetry",
+        "stage": "$default",
+        "time": "31/Jan/2021:00:10:25 +0000",
+        "timeEpoch": 1612051825409,
+    },
+    "body": "H4sIAOItzWEAA42STVPCMBCG7/wKhjPEpGlty1nx4HhR9CDDdJZ2gc6kSU3TIuP4300qqQxczCGHd5/9eDdZjcb2fPX3pFFbcwCNmYQKJ/PxRENRqkbJAjNojcr052R6gXaom1JJRzMSkcgDbS0UFKizHIRoyl1PvD3yxevzbHn/srziQBqUEvpCN+H4AB2OKyVVrQR62JQVZhpzLDssHBnQgM1YMON0Sfk8iubUjsDobZK8+5wCDLq8f+IVyHYLuWk1apfyoOEwtD/WfZm7xdOwh3ZzptJ00FGXIJxMT8dHtvp3uYwzzlPbPDwFBBgrhzFJOEu91m+WUZKkYexBEA5kMYtJyv1oWNVWjImHOhRZZ5XAGjyT9lZKCEtO0h7tC8udE9kf2IBprOSH2IBxDSPCg8EDfrQo86MbmNoW1LON1L034gerVVOa0wfx3ryf6z/QO4vC6DJwVmUlWyGmw7W25Pdo/QMTMaTbyAIAAA==",
+    "isBase64Encoded": True,
+}
+print(lambda_handler(payload, {}))
