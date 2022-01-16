@@ -13,10 +13,13 @@ def lambda_handler(event, context):
             incoming_payloads = json.loads(sns_message["Message"])
         for payload in incoming_payloads:
             index = payload['datetime'][:7]
-            
+            try:
+                payload['position'] = f'{payload["lat"]},{payload["lon"]}' # make elk happy location
+            except:
+                pass
             if index not in payloads: # create index if not exists
                 payloads[index] = []
-                
+
             payloads[index].append(payload)
         
     for index in payloads:
