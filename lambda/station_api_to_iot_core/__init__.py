@@ -4,6 +4,7 @@ import base64
 import datetime
 from email.utils import parsedate
 
+CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO"]
 
 import es
 
@@ -48,6 +49,8 @@ def lambda_handler(event, context):
                 payload["uploader_position"][2],
                 f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
             )
+    if payload["uploader_callsign"] in CALLSIGN_BLOCK_LIST:
+        return  {"statusCode": 403, "body": "callsign blocked or invalid"}
     index = datetime.datetime.utcnow().strftime("listeners-%Y-%m")
     payload["ts"] = datetime.datetime.utcnow().isoformat()
 

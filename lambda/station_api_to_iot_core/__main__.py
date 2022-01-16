@@ -36,7 +36,7 @@ payload = {
         "timeEpoch": 1612051825409,
     },
     "body": """
-    {"software_name": "radiosonde_auto_rx", "software_version": "1.5.8-beta2", "uploader_callsign": "LZ3DJ-18", "uploader_position": [null,null,null], "uploader_antenna": "Dipole", "uploader_contact_email": "none@none.com", "mobile": false}
+    {"software_name": "radiosonde_auto_rx", "software_version": "1.5.8-beta2", "uploader_callsign": "CHANGEME_RDZTTGO", "uploader_position": [null,null,null], "uploader_antenna": "Dipole", "uploader_contact_email": "none@none.com", "mobile": false}
     """,
     "isBase64Encoded": False,
 }
