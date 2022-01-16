@@ -211,3 +211,39 @@ resource "aws_apigatewayv2_integration" "ham_upload_telem" {
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
 }
+
+// SNS to MQTT
+
+resource "aws_lambda_function" "ham_sns_to_mqtt" {
+  function_name = "ham-sns-to-mqtt"
+  handler       = "sns_to_mqtt.lambda_handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  publish       = true
+  memory_size   = 128
+  role          = aws_iam_role.basic_lambda_role.arn
+  runtime       = "python3.9"
+  timeout       = 3
+  architectures = ["arm64"]
+  lifecycle {
+    ignore_changes = [environment]
+  }
+  tags = {
+    Name = "sns-to-mqtt"
+  }
+
+}
+
+resource "aws_lambda_permission" "ham_sns_to_mqtt" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ham_sns_to_mqtt.arn
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.ham_telem.arn
+}
+
+resource "aws_sns_topic_subscription" "ham_sns_to_mqtt" {
+  topic_arn = aws_sns_topic.ham_telem.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.ham_sns_to_mqtt.arn
+}

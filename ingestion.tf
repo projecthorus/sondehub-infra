@@ -114,8 +114,10 @@ EOF
 
 resource "aws_lambda_function" "sns_to_mqtt" {
   function_name = "sns-to-mqtt"
-  handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/sns-to-mqtt/Archive.zip" # this should get replaced out when we make a proper build chain
+  handler       = "sns_to_mqtt.lambda_handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  source_code_hash = data.archive_file.lambda.output_base64sha256
   publish       = true
   memory_size   = 128
   role          = aws_iam_role.basic_lambda_role.arn

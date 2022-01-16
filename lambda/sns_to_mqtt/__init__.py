@@ -1,5 +1,5 @@
 import sys
-sys.path.append("vendor")
+sys.path.append("sns_to_mqtt/vendor")
 import json
 import os
 import paho.mqtt.client as mqtt
@@ -52,11 +52,11 @@ def lambda_handler(event, context):
             
             body = json.dumps(payload)
 
-            serial = payload['serial']
+            serial = payload[os.getenv("MQTT_ID")]
             while not connected_flag:
                 time.sleep(0.01) # wait until connected
             client.publish(
-                topic=f'sondes/{serial}',
+                topic=f'{os.getenv("MQTT_PREFIX")}/{serial}',
                 payload=body,
                 qos=0,
                 retain=False
