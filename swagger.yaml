@@ -14,6 +14,24 @@ basePath: "/"
 schemes:
 - "https"
 paths:
+  /amateur/telemetry:
+    put:
+      summary: Upload Radiosonde Telemetry to Sondehub amateur database.
+      consumes:
+        - "application/json"
+      produces:
+        - "text/plain"
+      parameters:
+        - in: header
+          name: User-Agent
+          type: string
+          description: "The software and version performing the telemetry upload, eg:  `autorx-1.4.1-beta5`"
+        - $ref: "#/parameters/input_amateur_payloads"
+      responses:
+        200:
+          description: Telemetry Saved into Database Successfuly
+        500:
+          description: Other Server error (including malformed data submissions)
   /sondes/telemetry:
     put:
       summary: Upload Radiosonde Telemetry to Sondehub database.
@@ -335,6 +353,14 @@ parameters:
       description: SondeHub telemetry format
       items:
         $ref: "#/definitions/telemetry_format"
+  input_amateur_payloads:
+    in: body
+    required: true
+    name: body
+    schema:
+      description: SondeHub amateur telemetry format
+      items:
+        $ref: "#/definitions/amateur_telemetry_format"
   recovery_object:
     in: body
     required: true
@@ -671,6 +697,133 @@ definitions:
       uploader_antenna:
         type: string
         description: Station antenna/receiver information, free-text string.
+
+  amateur_telemetry_format:
+    description: SondeHub amateur balloon telemetry format
+    type: "object"
+    required:
+      - software_name
+      - software_version
+      - uploader_callsign
+      - time_received
+      - payload_callsign
+      - datetime
+      - lat
+      - lon
+      - alt
+      - upload_time
+    properties:
+      dev:
+        description: >
+          If this field is set then the payload will not be uploaded to the database. This is useful for development and testing.
+        type: "string"
+      software_name:
+        description: >
+          Name of the decoding software
+          
+          e.g. 'horusgui'
+        type: "string"
+      software_version:
+        description: >
+          Version of the decoding software
+
+          e.g. '1.4.0', '20210115'
+        type: "string"
+      uploader_callsign:
+        type: "string"
+        description: >
+          Callsign of the uploader
+
+          Arbitrary string. Uploader position information and other metadata will be handled separately, but will need to match this callsign to enable calculation of listener statistics.
+      time_received:
+        description: >
+          The time the telemetry packet was received. UTC time in YYYY-MM-DDTHH:MM:SS.SSSSSSZ format.
+        type: "string"
+        format: "date-time"
+      payload_callsign:
+        type: "string"
+        description: >
+          Callsign for the payload
+
+      datetime:
+        type: "string"
+        format: "date-time"
+        description: >
+          Date/Time from the sonde's GPS, provided in YYYY-MM-DDTHH:MM:SS.SSSSSSZ format
+
+          Some sondes (e.g. iMet, LMS6) do not provide the date portion of the timestamp. In this situation, the date portion should be added on by the receiver. An example of how to handle this problem is [available here](https://github.com/projecthorus/radiosonde_auto_rx/blob/master/auto_rx/autorx/sonde_specific.py#L13).
+      
+      lat:
+        description: Latitude (decimal degrees)
+        type: "number"
+        format: "double"
+      lon:
+        description: Longitude (decimal degrees)
+        type: "number"
+        format: "double"
+      alt:
+        description: Altitude (metres)  
+        type: "number"
+        format: "double"
+
+      frequency:
+        type: "number"
+        format: "float"
+        description: Transmit frequency of the radiosonde in MHz.
+      temp:
+        type: "number"
+        format: "float"
+        description: Measured Temperature (deg C)  
+      humidity:
+        type: "number"
+        format: "float"
+        description: Measured Relative Humidity (%)
+      vel_h:
+        type: "number"
+        format: "float"
+        description: Horizontal Velocity (m/s)  
+      vel_v:
+        type: "number"
+        format: "float"
+        description: Horizontal Velocity (m/s)  
+      pressure:
+        description: Measured Pressure (hPa)  
+        type: "number"
+        format: "float"
+
+      heading:
+        type: "number"
+        format: "float"
+        description: Heading (degrees True)  
+      batt:
+        type: "number"
+        format: "float"
+        description: Battery Voltage (volts)  
+      sats:
+        type: "number"
+        format: "integer"
+        description: Number of SVs used in position solution  
+      
+      snr:
+        type: number
+        format: float
+        description: Signal-to-Noise ratio of the received signal, in dB  
+      rssi:
+        type: number
+        format: float
+        description: Received-Signal-Strength-Indication of the radiosonde signal, nominally in dBm  
+      uploader_position:
+        type: array
+        items:
+          type: number
+          format: double
+        minItems: 3
+        maxItems: 3
+        description: Station position, as a list [lat, lon, alt].
+      uploader_antenna:
+        type: string
+        description: Station antenna/receiver information, free-text string.
+
   listener:
     type: object
     properties:
