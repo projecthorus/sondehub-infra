@@ -197,6 +197,18 @@ paths:
           description: Returns a dictionary keyed by uploader_callsign of a dictionary of times with listener data.
           schema:
             $ref: "#/definitions/listener"
+  /listeners/stats:
+    get:
+      summary: Basic version stats
+      description: >
+        Use this to get stats on how many users are using specific software
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: Returns a dictionary of softwares and versions
+          schema:
+            $ref: "#/definitions/listener_stats"
   /sondes/websocket:
     get:
       description: Gets a presigned URL for use in connecting to the MQTT websocket endpoint.
@@ -823,7 +835,19 @@ definitions:
       uploader_antenna:
         type: string
         description: Station antenna/receiver information, free-text string.
-
+  listener_stats:
+    type: object
+    additionalProperties:
+      description: softwareName
+      type: object
+    example:
+      radiosonde_auto_rx:
+        telemetry_count: 500
+        unique_callsigns: 10
+        versions:
+          "1.5.8":  
+            telemetry_count: 25463802
+            unique_callsigns: 327
   listener:
     type: object
     properties:

@@ -544,6 +544,32 @@ resource "aws_cloudfront_distribution" "api" {
     target_origin_id       = "Custom-api.${local.domain_name}"
     viewer_protocol_policy = "redirect-to-https"
   }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 300
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      headers = [
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers"
+      ]
+      query_string = false
+    }
+    max_ttl                = 300
+    min_ttl                = 300
+    path_pattern           = "listener/stats"
+    smooth_streaming       = false
+    target_origin_id       = "Custom-api.${local.domain_name}"
+    viewer_protocol_policy = "redirect-to-https"
+  }
   comment     = ""
   price_class = "PriceClass_100"
   enabled     = true

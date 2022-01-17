@@ -391,3 +391,96 @@ def get_sites(event, context):
 
 
 
+def telm_stats(event, context):
+
+    path = "telm-*/_search"
+    payload = {
+        "aggs": {
+            "software_name": {
+            "terms": {
+                "field": "software_name.keyword",
+                "order": {
+                "unique_callsigns": "desc"
+                },
+                "size": 10
+            },
+            "aggs": {
+                "unique_callsigns": {
+                "cardinality": {
+                    "field": "uploader_callsign.keyword"
+                }
+                },
+                "software_version": {
+                "terms": {
+                    "field": "software_version.keyword",
+                    "order": {
+                    "unique_callsigns": "desc"
+                    },
+                    "size": 10
+                },
+                "aggs": {
+                    "unique_callsigns": {
+                    "cardinality": {
+                        "field": "uploader_callsign.keyword"
+                    }
+                    }
+                }
+                }
+            }
+            }
+        },
+        "size": 0,
+        "query": {
+            "bool": {
+            "must": [],
+            "filter": [
+                {
+                "range": {
+                    "datetime": {
+                    "gte": "now-7d",
+                    "lte": "now",
+                    "format": "strict_date_optional_time"
+                    }
+                }
+                }
+            ]
+            }
+        }
+    }
+   
+    results = es.request(json.dumps(payload), path, "POST")
+    output = {
+                x['key']: {
+                    "telemetry_count": x["doc_count"],
+                    "unique_callsigns": x["unique_callsigns"]["value"],
+                    "versions": {
+                        y["key"]: {
+                            "telemetry_count": y["doc_count"],
+                            "unique_callsigns": y["unique_callsigns"]["value"]
+                        }
+                        for y in x['software_version']['buckets']
+                    }
+                } 
+                for x in results['aggregations']['software_name']['buckets']
+            }
+
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(output)
+        f.write(json_response.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
+
+
+
+

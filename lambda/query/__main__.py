@@ -1,7 +1,7 @@
 from . import *
 
 #print(get_listener_telemetry({"queryStringParameters":{}}, {}))
-print(get_sondes({
+print(telm_stats({
     "version": "2.0",
     "routeKey": "GET /sondes",
     "rawPath": "/sondes",
