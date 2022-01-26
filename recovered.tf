@@ -192,3 +192,46 @@ resource "aws_apigatewayv2_route" "recovered_put" {
   route_key          = "PUT /recovered"
   target             = "integrations/${aws_apigatewayv2_integration.recovered_put.id}"
 }
+
+
+resource "aws_lambda_function" "recovery_ingest" {
+  function_name                  = "recovery_ingest"
+  handler                        = "recovery_ingest.handler"
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
+  publish                        = true
+  memory_size                    = 128
+  role                           = aws_iam_role.recovered.arn
+  runtime                        = "python3.9"
+  timeout                        = 300
+
+  tags = {
+    Name = "recovered_get"
+  }
+
+  lifecycle {
+    ignore_changes = [environment]
+  }
+}
+
+
+resource "aws_cloudwatch_event_rule" "recovery_ingest" {
+  name        = "recovery_ingest"
+  description = "recovery_ingest"
+
+  schedule_expression = "cron(*/5 * * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "recovery_ingest" {
+  rule      = aws_cloudwatch_event_rule.recovery_ingest.name
+  target_id = "recovery_ingest"
+  arn       = aws_lambda_function.recovery_ingest.arn
+}
+
+resource "aws_lambda_permission" "recovery_ingest" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.recovery_ingest.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.recovery_ingest.arn
+}
