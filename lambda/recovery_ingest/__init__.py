@@ -14,7 +14,7 @@ searchUrl = "https://api.v2.sondehub.org/sondes"
 def handler(event,context):
     response = urllib.request.urlopen(url)
     data = json.load(response)
-    processReports()
+    processReports(data)
 
 # Check exisiting SondeHub recovery reports
 def checkExisting(serial, recovered):
@@ -62,7 +62,7 @@ def findSonde(recovery, lat, lon):
     return serial
 
 # Process each recovery report from Radiosondy.info
-def processReports():
+def processReports(data):
     for recovery in data["results"]:
 
         # Get recovery status
@@ -116,4 +116,3 @@ def processReports():
         # Upload data
         recoveryPutRequest = urllib.request.Request(recoveryUrl, data=recoveryPutData, method="PUT")
         print("{}: {}".format(serial, urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8')))
-    
