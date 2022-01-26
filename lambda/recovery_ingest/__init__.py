@@ -95,20 +95,20 @@ for recovery in data["results"]:
     else:
         serial = findSonde(recovery, lat, lon)
         if serial is None:
-            print(recovery["sonde_number"] + ": could not match to SondeHub serial")
+            print("{}: could not match to SondeHub serial".format(recovery["sonde_number"]))
             continue
 
     # Check if a valid recovery already exists
     if checkExisting(serial, recovered) == False:
-        print(serial + ": recovery already exists")
+        print("{}: recovery already exists".format(serial))
         continue
 
     # Format data for upload
     recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description}
     recoveryPutData = str(json.dumps(recoveryPutData)).encode('utf-8')
-    print(serial + ": " + recoveryPutData)
+    print("{}: {}".format(serial, recoveryPutData))
     
     # Upload data
     recoveryPutRequest = urllib.request.Request(recoveryUrl, data=recoveryPutData, method="PUT")
-    print(serial + ": " + urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8'))
+    print("{}: {}".format(serial, urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8')))
     
