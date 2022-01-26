@@ -1,14 +1,18 @@
-from datetime import datetime,timezone
+from datetime import datetime
 import urllib.request
 import json
+import os
 
-params = "?token=eZNqv6dLjzFzv2bseAQTxDS3pER5uSh8&period=2"
+apiKey = os.environ["radiosondy-apikey"]
+
+params = "?token={}&period=2".format(apiKey)
 url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
 recoveryUrl = "https://api.v2.sondehub.org/recovered"
 searchUrl = "https://api.v2.sondehub.org/sondes"
 response = urllib.request.urlopen(url)
 data = json.load(response)
 
+# Check exisiting SondeHub recovery reports
 def checkExisting(serial, recovered):
     # Get SondeHub recoveries for serial
     recoveryCheckParams = "?serial={}".format(serial)
@@ -27,6 +31,7 @@ def checkExisting(serial, recovered):
     # Valid recovery report already exists
     return False
 
+# Attempt to find SondeHub serial for a Radiosony.info serial
 def findSonde(recovery, lat, lon):
     # Get facts to compare against
     launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%d %H:%M:%S")
@@ -52,6 +57,7 @@ def findSonde(recovery, lat, lon):
 
     return serial
 
+# Process each recovery report from Radiosondy.info
 for recovery in data["results"]:
 
     # Get recovery status
@@ -89,18 +95,20 @@ for recovery in data["results"]:
     else:
         serial = findSonde(recovery, lat, lon)
         if serial is None:
+            print(recovery["sonde_number"] + ": could not match to SondeHub serial")
             continue
 
     # Check if a valid recovery already exists
     if checkExisting(serial, recovered) == False:
+        print(serial + ": recovery already exists")
         continue
 
     # Format data for upload
     recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description}
     recoveryPutData = str(json.dumps(recoveryPutData)).encode('utf-8')
-    print(recoveryPutData)
+    print(serial + ": " + recoveryPutData)
     
     # Upload data
     recoveryPutRequest = urllib.request.Request(recoveryUrl, data=recoveryPutData, method="PUT")
-    print(urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8'))
+    print(serial + ": " + urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8'))
     
