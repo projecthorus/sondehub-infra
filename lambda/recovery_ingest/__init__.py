@@ -3,7 +3,7 @@ import urllib.request
 import json
 import os
 
-apiKey = os.environ["radiosondy_apikey"]
+apiKey = os.environ["radiosondy-apikey"]
 
 params = "?token={}&period=2".format(apiKey)
 url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
@@ -39,11 +39,16 @@ def checkExisting(serial, recovered):
 def findSonde(recovery, lat, lon):
     # Get facts to compare against
     launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%d %H:%M:%S")
-    sondeType = recovery["type"]
-    sondeFrequency = recovery["qrg"]
+    sondeType = recovery["radiosonde"]["type"]
+    sondeFrequency = recovery["radiosonde"]["qrg"]
+
+    # Determine how far back to query
+    nowTime = datetime.utcnow()
+    searchDifference = nowTime - launchTime
+    searchSeconds = round(searchDifference.total_seconds()) + 10800 # Search from 3 hours before reported launch
 
     # Geographical SondeHub search
-    searchParams = "?lat={}&lon={}&distance=1000&last=259200".format(lat, lon)
+    searchParams = "?lat={}&lon={}&distance=2000&last={}".format(lat, lon, searchSeconds)
     searchCompletedUrl = searchUrl + searchParams
     searchResponse = urllib.request.urlopen(searchCompletedUrl)
     searchData = json.load(searchResponse)
@@ -54,7 +59,7 @@ def findSonde(recovery, lat, lon):
     for key, value in searchData.items():
         receivedTime = datetime.strptime(value["datetime"], "%Y-%m-%dT%H:%M:%S.%fZ")
         timeDifference = receivedTime - launchTime
-        if timeDifference.seconds < 10800: # 3 Hours or less
+        if timeDifference.total_seconds() < 10800: # 3 Hours or less
             if value["type"] in sondeType: # Type matches
                 if abs(float(sondeFrequency) - float(value["frequency"])) < 0.05: # 0.05 MHz or less
                     serial = key
@@ -66,9 +71,11 @@ def processReports(data):
     for recovery in data["results"]:
 
         # Get recovery status
-        if recovery["status"] == "FOUND":
+        if recovery["log_info"]["status"] == "FOUND":
             recovered = True
-        elif recovery["status"] == "NEED ATTENTION":
+        elif recovery["log_info"]["status"] == "NEED ATTENTION":
+            recovered = False
+        elif recovery["log_info"]["status"] == "LOST":
             recovered = False
         else:
             continue
@@ -76,6 +83,8 @@ def processReports(data):
         # Get finder if available
         if recovery["log_info"]["finder"] is not None:
             recovered_by = recovery["log_info"]["finder"]
+        elif "[BOT]" not in recovery["log_info"]["added_by"]:
+            recovered_by = recovery["log_info"]["added_by"]
         else:
             continue
 
@@ -94,13 +103,16 @@ def processReports(data):
             continue
 
         # Use the reported serial number for RS41/RS92
-        if "RS41" in recovery["type"] or "RS92" in recovery["type"]:
-            serial = recovery["sonde_number"]
+        if "RS41" in recovery["radiosonde"]["type"] or "RS92" in recovery["radiosonde"]["type"]:
+            serial = recovery["radiosonde"]["number"]
+        # Remove D prefix for DFM
+        elif "DFM" in recovery["radiosonde"]["type"]:
+            serial = recovery["radiosonde"]["number"][1:]
         # Try to find serial in SondeHub database for others
         else:
             serial = findSonde(recovery, lat, lon)
             if serial is None:
-                print("{}: could not match to SondeHub serial".format(recovery["sonde_number"]))
+                print("{}: could not match to SondeHub serial".format(recovery["radiosonde"]["number"]))
                 continue
 
         # Check if a valid recovery already exists
