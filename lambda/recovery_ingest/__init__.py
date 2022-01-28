@@ -5,7 +5,7 @@ import os
 
 apiKey = os.environ["radiosondy-apikey"]
 
-params = "?token={}&period=48".format(apiKey)
+params = "?token={}&period=2".format(apiKey)
 url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
 recoveryUrl = "https://api.v2.sondehub.org/recovered"
 searchUrl = "https://api.v2.sondehub.org/sondes"
