@@ -30,11 +30,7 @@ jobs:
         id: fmt
         run: terraform fmt
         continue-on-error: true
-      - uses: EndBug/add-and-commit@v7
-        with:
-          message: Terraform fmt [skip ci]
-          committer_name: GitHub Actions
-          committer_email: actions@github.com
+   
       - name: Terraform Init
         id: init
         run: terraform init
