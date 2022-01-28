@@ -69,7 +69,6 @@ def findSonde(recovery, lat, lon):
 # Process each recovery report from Radiosondy.info
 def processReports(data):
     for recovery in data["results"]:
-        #print(recovery)
 
         # Get recovery status
         if recovery["log_info"]["status"] == "FOUND":
