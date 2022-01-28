@@ -106,6 +106,10 @@ def processReports(data):
         # Use the reported serial number for RS41/RS92
         if "RS41" in recovery["radiosonde"]["type"] or "RS92" in recovery["radiosonde"]["type"]:
             serial = recovery["radiosonde"]["number"]
+        # Remove D prefix for DFM
+        elif "DFM" in recovery["radiosonde"]["type"]:
+            serial = recovery["radiosonde"]["number"][1:]
+            print(serial)
         # Try to find serial in SondeHub database for others
         else:
             serial = findSonde(recovery, lat, lon)
