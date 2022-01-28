@@ -3,7 +3,7 @@ import urllib.request
 import json
 import os
 
-apiKey = os.environ["radiosondy-apikey"]
+apiKey = os.environ["radiosondy_apikey"]
 
 params = "?token={}&period=2".format(apiKey)
 url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
