@@ -15,7 +15,7 @@ jobs:
     # These permissions are needed to interact with GitHub's OIDC Token endpoint.
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -30,7 +30,11 @@ jobs:
         id: fmt
         run: terraform fmt
         continue-on-error: true
-   
+      - uses: EndBug/add-and-commit@v7
+        with:
+          message: Terraform fmt [skip ci]
+          committer_name: GitHub Actions
+          committer_email: actions@github.com   
       - name: Terraform Init
         id: init
         run: terraform init

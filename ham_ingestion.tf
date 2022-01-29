@@ -215,17 +215,17 @@ resource "aws_apigatewayv2_integration" "ham_upload_telem" {
 // SNS to MQTT
 
 resource "aws_lambda_function" "ham_sns_to_mqtt" {
-  function_name = "ham-sns-to-mqtt"
-  handler       = "sns_to_mqtt.lambda_handler"
+  function_name    = "ham-sns-to-mqtt"
+  handler          = "sns_to_mqtt.lambda_handler"
   s3_bucket        = aws_s3_bucket_object.lambda.bucket
   s3_key           = aws_s3_bucket_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
-  publish       = true
-  memory_size   = 128
-  role          = aws_iam_role.basic_lambda_role.arn
-  runtime       = "python3.9"
-  timeout       = 3
-  architectures = ["arm64"]
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.basic_lambda_role.arn
+  runtime          = "python3.9"
+  timeout          = 3
+  architectures    = ["arm64"]
   lifecycle {
     ignore_changes = [environment]
   }

@@ -195,16 +195,16 @@ resource "aws_apigatewayv2_route" "recovered_put" {
 
 
 resource "aws_lambda_function" "recovery_ingest" {
-  function_name                  = "recovery_ingest"
-  handler                        = "recovery_ingest.handler"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
-  source_code_hash               = data.archive_file.lambda.output_base64sha256
-  publish                        = true
-  memory_size                    = 128
-  role                           = aws_iam_role.recovered.arn
-  runtime                        = "python3.9"
-  timeout                        = 300
+  function_name    = "recovery_ingest"
+  handler          = "recovery_ingest.handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.recovered.arn
+  runtime          = "python3.9"
+  timeout          = 300
 
   tags = {
     Name = "recovered_get"
