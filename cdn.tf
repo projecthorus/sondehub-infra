@@ -2,7 +2,7 @@
 
 
 resource "aws_lambda_function" "redirect" {
-   function_name = "sondehub-redirect"
+  function_name = "sondehub-redirect"
   handler       = "redirect.handler"
   s3_bucket     = aws_s3_bucket_object.lambda.bucket
   s3_key        = aws_s3_bucket_object.lambda.key
