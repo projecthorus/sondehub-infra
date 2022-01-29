@@ -56,11 +56,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Format and Style 🖌
+
             <details><summary>Show Formatted Files</summary>
+
             \`\`\`\n
             ${{ steps.fmt.outputs.stdout }}
             \`\`\`
+
             </details>
+            
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖 ${{ steps.validate.outputs.stdout }} 
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
