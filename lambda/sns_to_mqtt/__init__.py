@@ -47,7 +47,7 @@ def lambda_handler(event, context):
             incoming_payloads = json.loads(sns_message["Message"])
         
         #send only the first, last and every 5th packet
-        payloads = [incoming_payloads[0]] + incoming_payloads[1:-1:5][1:] + [incoming_payloads[-1]]
+        payloads = [incoming_payloads[-1]]
         for payload in payloads:
             
             body = json.dumps(payload)
