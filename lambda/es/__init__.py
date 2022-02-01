@@ -1,3 +1,4 @@
+import zlib
 import boto3
 import gzip
 from botocore.awsrequest import AWSRequest
@@ -6,6 +7,7 @@ from botocore.auth import SigV4Auth
 from io import BytesIO
 import json
 import os
+import zlib
 
 es_session = URLLib3Session()
 ES_HOST = os.getenv("ES")
@@ -18,7 +20,7 @@ def request(payload, path, method, params=None):
     payload = compressed.getvalue()
 
     headers = {"Host": ES_HOST, "Content-Type": "application/json",
-               "Content-Encoding": "gzip"}
+               "Content-Encoding": "gzip", 'Accept-Encoding': 'gzip'}
 
     request = AWSRequest(
         method=method, url=f"https://{ES_HOST}/{path}", data=payload, headers=headers, params=params
@@ -30,5 +32,11 @@ def request(payload, path, method, params=None):
 
     if r.status_code != 200 and r.status_code != 201:
         raise RuntimeError
-
-    return json.loads(r.text)
+    
+    if (
+       'Content-Encoding' in r.headers
+        and r.headers['Content-Encoding'] == 'gzip'
+    ):
+        return json.loads(zlib.decompress(r.content, 16 + zlib.MAX_WBITS))
+    else:
+        return json.loads(r.text)
