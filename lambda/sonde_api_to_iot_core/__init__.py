@@ -291,13 +291,26 @@ def upload(event, context):
                 payload_serials[serial][index]["lon_outliers"] = True
             for index in alt_outliers:
                 payload_serials[serial][index]["alt_outliers"] = True
-        
+        elif "DFM" in check_data[0]["type"]: # if the sonde is a DFM and there's not enough payloads to perform z check then bail out
+            fail_dfm = False
+            for data in check_data:
+                if data['alt'] > 1000:
+                    fail_dfm = True
+            if fail_dfm == True:
+                [x.update(dfm_failure=True) for x in payload_serials[serial]]
+
+
 
         #generate error messages and regenerate payload list of bad data removed
         for payload in payload_serials[serial]:
             if "alt_outliers" in payload or "lon_outliers" in payload or "lat_outlier" in payload:
                 errors.append({
                     "error_message": f"z-check failed - payload GPS may not be valid for {payload['serial']}.",
+                    "payload": payload
+                })
+            elif "dfm_failure" in payload:
+                errors.append({
+                    "error_message": f"DFM radiosonde above 1000 and not enough data to perform z-check. Not adding DB to protect against double frequency usage.",
                     "payload": payload
                 })
             else:
