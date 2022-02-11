@@ -343,9 +343,9 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
       },
     ]
   )
-  cpu                = "1024"
+  cpu                = "512"
   execution_role_arn = aws_iam_role.ecs_execution.arn
-  memory             = "800"
+  memory             = "400"
   network_mode       = "bridge"
   requires_compatibilities = [
     "EC2",

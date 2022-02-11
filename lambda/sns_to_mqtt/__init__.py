@@ -4,18 +4,24 @@ import json
 import os
 import paho.mqtt.client as mqtt
 import time
-
+import random
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
+
+import socket
+socket.setdefaulttimeout(1)
 
 def connect():
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.on_publish = on_publish
-    client.tls_set()
+    #client.tls_set()
     client.username_pw_set(username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD"))
-    client.connect(os.getenv("MQTT_HOST"), 443, 5)
+    HOSTS = os.getenv("MQTT_HOST").split(",")
+    HOST = random.choice(HOSTS)
+    print(f"Connecting to {HOST}")
+    client.connect(HOST, 8080, 5)
     client.loop_start()
     print("loop started")
 
@@ -68,5 +74,3 @@ def lambda_handler(event, context):
             retain=False
         )
     time.sleep(0.05) # give paho mqtt 100ms to send messages this could be improved on but paho mqtt is a pain to interface with
-    
-

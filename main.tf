@@ -73,7 +73,19 @@ resource "aws_iam_role_policy" "basic_lambda_role" {
             "Resource": [
                 "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
             ]
+        },
+        {
+            "Action": [
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeInstances",
+                "ec2:AttachNetworkInterface"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
         }
+                    
     ]
 }
 EOF
