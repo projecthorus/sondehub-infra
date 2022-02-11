@@ -58,22 +58,6 @@ resource "aws_lb_listener" "lb" {
   }
 }
 
-resource "aws_lb_listener_rule" "ws_reader" {
-  listener_arn = aws_lb_listener.lb.arn
-  priority     = 1
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.ws_reader.arn
-  }
-
-  condition {
-    host_header {
-      values = ["ws-reader.v2.sondehub.org"]
-    }
-  }
-}
-
 resource "aws_lb_listener_rule" "tawhiri" {
   listener_arn = aws_lb_listener.lb.arn
   priority     = 2

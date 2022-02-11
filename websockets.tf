@@ -227,6 +227,139 @@ resource "aws_ecs_task_definition" "ws_reader" {
   }
 }
 
+resource "aws_ecs_task_definition" "ws_reader_ec2" {
+  family = "ws_reader_ec2"
+  container_definitions = jsonencode(
+    [
+      {
+        command = [
+          "s3",
+          "sync",
+          "s3://sondehub-ws-config/",
+          "/config/",
+        ]
+        cpu         = 0
+        environment = []
+        essential   = false
+        image       = "amazon/aws-cli"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name         = "config"
+        portMappings = []
+        volumesFrom  = []
+      },
+      {
+        command = []
+        cpu     = 0
+        dependsOn = [
+          {
+            condition     = "SUCCESS"
+            containerName = "config"
+          },
+          {
+            condition     = "SUCCESS"
+            containerName = "config-move"
+          },
+        ]
+        environment = []
+        essential   = true
+        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/mosquitto/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name = "mqtt"
+        portMappings = [
+          {
+            containerPort = 8080
+            hostPort      = 80
+            protocol      = "tcp"
+          },
+        ]
+        ulimits = [
+          {
+            hardLimit = 50000
+            name      = "nofile"
+            softLimit = 30000
+          },
+        ]
+        volumesFrom = []
+      },
+      {
+        command = [
+          "cp",
+          "/config/mosquitto-reader.conf",
+          "/config/mosquitto.conf",
+        ]
+        cpu = 0
+        dependsOn = [
+          {
+            condition     = "SUCCESS"
+            containerName = "config"
+          },
+        ]
+        environment = []
+        essential   = false
+        image       = "alpine"
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/ws-reader"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/config"
+            sourceVolume  = "config"
+          },
+        ]
+        name         = "config-move"
+        portMappings = []
+        volumesFrom  = []
+      },
+    ]
+  )
+  cpu                = "1024"
+  execution_role_arn = aws_iam_role.ecs_execution.arn
+  memory             = "800"
+  network_mode       = "bridge"
+  requires_compatibilities = [
+    "EC2",
+  ]
+
+  tags          = {}
+  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+
+
+  volume {
+    name = "config"
+  }
+}
+
 resource "aws_ecs_task_definition" "ws" {
   family = "ws"
   container_definitions = jsonencode(
@@ -381,7 +514,7 @@ resource "aws_ecs_service" "ws_reader" {
   iam_role                          = "aws-service-role"
   launch_type                       = "FARGATE"
   platform_version                  = "LATEST"
-  desired_count                     = 1
+  desired_count                     = 0
 
   load_balancer {
     container_name   = "mqtt"
@@ -399,6 +532,18 @@ resource "aws_ecs_service" "ws_reader" {
       aws_security_group.ws_reader.id
     ]
     subnets = values(aws_subnet.public)[*].id
+  }
+}
+
+resource "aws_ecs_service" "ws_reader_ec2" {
+  name                    = "ws-reader-ec2"
+  cluster                 = aws_ecs_cluster.ws.id
+  task_definition         = aws_ecs_task_definition.ws_reader_ec2.arn
+  enable_ecs_managed_tags = true
+  launch_type             = "EC2"
+  desired_count           = 3
+  placement_constraints {
+    type = "distinctInstance"
   }
 }
 
@@ -508,6 +653,16 @@ resource "aws_security_group_rule" "ws_writer_lb" {
   protocol                 = "-1"
   description              = ""
   source_security_group_id = aws_security_group.lb.id
+}
+
+resource "aws_security_group_rule" "ws_writer_lightsail_lb" {
+  security_group_id = aws_security_group.ws_writer.id
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  description       = ""
+  cidr_blocks       = ["172.26.0.0/16"]
 }
 
 # resource "aws_s3_bucket" "ws" {
@@ -640,8 +795,8 @@ resource "aws_appautoscaling_target" "ws_reader" {
   service_namespace  = "ecs"
   scalable_dimension = "ecs:service:DesiredCount"
   resource_id        = "service/ws/ws-reader"
-  min_capacity       = 1
-  max_capacity       = 25
+  min_capacity       = 0
+  max_capacity       = 0
 }
 
 resource "aws_appautoscaling_policy" "ws_reader" {
@@ -667,26 +822,12 @@ resource "aws_appautoscaling_policy" "ws_reader" {
 
 
 
-resource "aws_route53_record" "ws_reader_A" {
-  name = "ws-reader"
-  type = "A"
-  alias {
-    name                   = "dualstack.${aws_lb.ws.dns_name}."
-    zone_id                = aws_lb.ws.zone_id
-    evaluate_target_health = true
-  }
+resource "aws_route53_record" "ws_reader_CNAME" {
+  name    = "ws-reader"
+  type    = "CNAME"
+  ttl     = 300
   zone_id = aws_route53_zone.Route53HostedZone.zone_id
-}
-
-resource "aws_route53_record" "ws_reader_AAAA" {
-  name = "ws-reader"
-  type = "AAAA"
-  alias {
-    name                   = "dualstack.${aws_lb.ws.dns_name}."
-    zone_id                = aws_lb.ws.zone_id
-    evaluate_target_health = true
-  }
-  zone_id = aws_route53_zone.Route53HostedZone.zone_id
+  records = ["e31a53851c58b6410708e31423860d7d-1304003304.us-east-1.elb.amazonaws.com."]
 }
 
 resource "aws_route53_record" "ws_A" {
