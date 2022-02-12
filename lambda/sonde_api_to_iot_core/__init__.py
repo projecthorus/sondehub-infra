@@ -349,7 +349,8 @@ def upload(event, context):
     #     last = to_sns.pop()
     #     to_sns = to_sns[::3]
     #     to_sns.append(last)
-    post(to_sns)
+    if len(to_sns) > 0:
+        post(to_sns)
     return errors
 def lambda_handler(event, context):
     try:
