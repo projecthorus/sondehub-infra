@@ -132,12 +132,20 @@ resource "aws_lambda_permission" "get_sites" {
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/sites"
 }
 
+resource "aws_lambda_permission" "get_listeners_stats" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_listener_stats.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listeners/stats"
+}
+
 resource "aws_lambda_permission" "get_listener_stats" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_listener_stats.arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/listener/stats"
 }
+
 
 
 
@@ -171,6 +179,14 @@ resource "aws_apigatewayv2_route" "get_sites" {
 }
 
 
+resource "aws_apigatewayv2_route" "get_listeners_stats" {
+  api_id             = aws_apigatewayv2_api.main.id
+  api_key_required   = false
+  authorization_type = "NONE"
+  route_key          = "GET /listeners/stats"
+  target             = "integrations/${aws_apigatewayv2_integration.get_listener_stats.id}"
+}
+
 resource "aws_apigatewayv2_route" "get_listener_stats" {
   api_id             = aws_apigatewayv2_api.main.id
   api_key_required   = false
@@ -178,7 +194,6 @@ resource "aws_apigatewayv2_route" "get_listener_stats" {
   route_key          = "GET /listener/stats"
   target             = "integrations/${aws_apigatewayv2_integration.get_listener_stats.id}"
 }
-
 
 
 
