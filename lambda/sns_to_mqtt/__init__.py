@@ -5,6 +5,9 @@ import os
 import paho.mqtt.client as mqtt
 import time
 import random
+import zlib
+import base64
+
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
@@ -47,10 +50,15 @@ def lambda_handler(event, context):
     client.loop(timeout=0.05, max_packets=1) # make sure it reconnects
     for record in event['Records']:
         sns_message = record["Sns"]
-        if type(json.loads(sns_message["Message"])) == dict:
-            incoming_payloads = [json.loads(sns_message["Message"])]
+        try:
+            decoded = json.loads(zlib.decompress(base64.b64decode(sns_message["Message"]), 16 + zlib.MAX_WBITS))
+        except:
+            decoded = json.loads(sns_message["Message"])
+
+        if type(decoded) == dict:
+            incoming_payloads = [decoded]
         else:
-            incoming_payloads = json.loads(sns_message["Message"])
+            incoming_payloads = decoded
         
         #send only the first, last and every 5th packet
         payloads = [incoming_payloads[0]] + incoming_payloads[1:-1:5][1:] + [incoming_payloads[-1]]

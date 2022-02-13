@@ -10,6 +10,10 @@ from math import radians, degrees, sin, cos, atan2, sqrt, pi
 import statistics
 from collections import defaultdict
 
+import base64
+import gzip
+from io import BytesIO
+
 def z_check(data, threshold):
     outliers = []
     mean = statistics.mean(data)
@@ -240,9 +244,13 @@ sns = boto3.client("sns",region_name="us-east-1")
 sns.meta.events.register('request-created.sns', set_connection_header)
 
 def post(payload):
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(json.dumps(payload).encode('utf-8'))
+    payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
     sns.publish(
                 TopicArn=os.getenv("SNS_TOPIC"),
-                Message=json.dumps(payload)
+                Message=payload
     )
 
 def upload(event, context):

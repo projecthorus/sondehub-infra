@@ -1,16 +1,21 @@
 import json
 import es
-
+import zlib
+import base64
 
 
 def lambda_handler(event, context):
     payloads = {}
     for record in event['Records']:
         sns_message = json.loads(record["body"])
-        if type(json.loads(sns_message["Message"])) == dict:
-            incoming_payloads = [json.loads(sns_message["Message"])]
+        try:
+            decoded = json.loads(zlib.decompress(base64.b64decode(sns_message["Message"]), 16 + zlib.MAX_WBITS))
+        except:
+            decoded = json.loads(sns_message["Message"])
+        if type(decoded) == dict:
+            incoming_payloads = [decoded]
         else:
-            incoming_payloads = json.loads(sns_message["Message"])
+            incoming_payloads = decoded
         for payload in incoming_payloads:
             index = payload['datetime'][:7]
             
