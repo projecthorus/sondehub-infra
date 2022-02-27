@@ -396,40 +396,46 @@ def telm_stats(event, context):
     path = "telm-*/_search"
     payload = {
         "aggs": {
-            "software_name": {
-            "terms": {
-                "field": "software_name.keyword",
-                "order": {
-                "unique_callsigns": "desc"
-                },
-                "size": 10
+            "total_unique_callsigns": {
+                        "cardinality": {
+                            "field": "uploader_callsign.keyword"
+                        }
             },
-            "aggs": {
-                "unique_callsigns": {
-                "cardinality": {
-                    "field": "uploader_callsign.keyword"
-                }
-                },
-                "software_version": {
+            "software_name": {
                 "terms": {
-                    "field": "software_version.keyword",
+                    "field": "software_name.keyword",
                     "order": {
-                    "unique_callsigns": "desc"
+                        "unique_callsigns": "desc"
                     },
                     "size": 10
                 },
                 "aggs": {
                     "unique_callsigns": {
-                    "cardinality": {
-                        "field": "uploader_callsign.keyword"
-                    }
+                        "cardinality": {
+                            "field": "uploader_callsign.keyword"
+                        }
+                    },
+                    "software_version": {
+                        "terms": {
+                            "field": "software_version.keyword",
+                            "order": {
+                                "unique_callsigns": "desc"
+                            },
+                            "size": 10
+                        },
+                        "aggs": {
+                            "unique_callsigns": {
+                                "cardinality": {
+                                    "field": "uploader_callsign.keyword"
+                                }
+                            }
+                        }
                     }
                 }
-                }
-            }
             }
         },
         "size": 0,
+        "track_total_hits": True,
         "query": {
             "bool": {
             "must": [],
@@ -463,6 +469,10 @@ def telm_stats(event, context):
                 } 
                 for x in results['aggregations']['software_name']['buckets']
             }
+    output['totals'] = {
+        "unique_callsigns": results['aggregations']['total_unique_callsigns']['value'],
+        "telemetry_count": results['hits']['total']['value']
+    }
 
     compressed = BytesIO()
     with gzip.GzipFile(fileobj=compressed, mode='w') as f:
