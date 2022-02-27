@@ -230,12 +230,22 @@ def telemetry_filter(telemetry):
             _id_msg += " Note: MRZ sondes may take a while to get an ID."
 
         return (False, _id_msg)
-    
+    # https://github.com/projecthorus/sondehub-infra/issues/56
+    if "iMet-4" ==  telemetry["type"] or "iMet-1" ==  telemetry["type"]:
+        if telemetry["software_name"] == "radiosonde_auto_rx":
+            if parse_autorx_version(telemetry["software_version"]) < (1,5,9): 
+                return (False,f"Autorx version is out of date and doesn't handle iMet-1 and iMet-4 radiosondes correctly. Please update to 1.5.9 or later")
     if "dev" in telemetry:
         return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
     return (True, "")
 
+def parse_autorx_version(version):
+    try:
+        m = re.search(r'(\d+)\.(\d+)(?:\.(\d+))?', version)
+        return tuple([int(x if x != None else 0) for x in m.groups()])
+    except:
+        return (0,0,0)
 
 def set_connection_header(request, operation_name, **kwargs):
     request.headers['Connection'] = 'keep-alive'
