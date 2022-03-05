@@ -97,10 +97,10 @@ resource "aws_sqs_queue" "sqs_to_elk" {
   redrive_policy = jsonencode(
     {
       deadLetterTargetArn = "arn:aws:sqs:us-east-1:143841941773:to-elk-dlq"
-      maxReceiveCount     = 10
+      maxReceiveCount     = 100
     }
   )
-  visibility_timeout_seconds = 3600
+  visibility_timeout_seconds = 10
 }
 
 resource "aws_sqs_queue_policy" "sqs_to_elk" {

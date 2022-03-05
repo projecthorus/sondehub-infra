@@ -108,8 +108,23 @@ resource "aws_lambda_function" "queue_data_update" {
 resource "aws_sqs_queue" "historic_to_s3" {
   name                       = "update-history"
   receive_wait_time_seconds  = 0
-  message_retention_seconds  = 1209600 # 14 days
-  visibility_timeout_seconds = 300
+  message_retention_seconds  = 259200
+  visibility_timeout_seconds = 3600
+
+
+  redrive_policy = jsonencode(
+    {
+      deadLetterTargetArn = aws_sqs_queue.historic_to_s3_dlq.arn
+      maxReceiveCount     = 100
+    }
+  )
+}
+
+resource "aws_sqs_queue" "historic_to_s3_dlq" {
+  name                      = "update-history-dlq"
+  receive_wait_time_seconds = 1
+  message_retention_seconds = 1209600 # 14 days
+  visibility_timeout_seconds = 10
 }
 
 
