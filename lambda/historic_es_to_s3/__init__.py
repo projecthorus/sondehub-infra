@@ -168,7 +168,7 @@ def write_s3(serial, data, launch_sites):
     append_data = ""
     if serial in launch_sites:
         append_data = f"\"launch_site\": \"{launch_sites[serial]['launch_site']}\", \"launch_site_range_estimate\": {launch_sites[serial]['launch_site_range_estimate']}"
-    max_alt = sorted(data, key=lambda k: json.loads(k)['alt'])[-1]
+    max_alt = sorted(data, key=lambda k: float(json.loads(k)['alt']))[-1]
     summary = [
         json.loads(data[0]),
         json.loads(max_alt),
