@@ -729,14 +729,14 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
 
                 
 
-                _rev_pred = await loop.run_in_executor(None,  functools.partial(get_launch_estimate,
+                _rev_pred = get_launch_estimate(
                     value['time'], 
                     latitude,
                     longitude,
                     value['alt'],
                     current_rate=value['rate'],
-                    ascent_rate=value['rate'],
-                ))
+                    ascent_rate=value['rate']
+                )
                 
                 if _rev_pred:
 
