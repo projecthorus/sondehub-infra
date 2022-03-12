@@ -299,7 +299,7 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
         return None
 
 
-async def get_launch_estimate(timestamp, latitude, longitude, altitude, ascent_rate=PREDICT_DEFAULTS['ascent_rate'], current_rate=5.0):
+def get_launch_estimate(timestamp, latitude, longitude, altitude, ascent_rate=PREDICT_DEFAULTS['ascent_rate'], current_rate=5.0):
     """
     Estimate the launch site of a sonde based on a current ascent position.
 
@@ -601,7 +601,8 @@ async def predict_async(event, context):
     for data in output:
         if data:
             serial_data[data[0]] = data[1]
-
+            if data[2]:
+                reverse_serial_data[serial] = data[2]
 
 
 
@@ -682,6 +683,7 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
         # Fallback Option - use flight profile data based on sonde type.
         _flight_profile = flight_profile_by_type(value['type'])
 
+        reverse_serial_data = None
 
         # Check if we have already run a reverse prediction on this serial 
         if serial in reverse_predictions:
@@ -725,14 +727,14 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
 
                 
 
-                _rev_pred = await loop.run_in_executor(None, functools.partial(get_launch_estimate, 
+                _rev_pred = get_launch_estimate(
                     value['time'], 
                     latitude,
                     longitude,
                     value['alt'],
                     current_rate=value['rate'],
                     ascent_rate=value['rate'],
-                ))
+                )
                 
                 if _rev_pred:
 
@@ -762,7 +764,7 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
 
 
                     # Add to dict for upload later.
-                    reverse_serial_data[serial] = _rev_pred
+                    reverse_serial_data = _rev_pred
 
                 else:
                     # Launch estimate prediction failed.
@@ -812,5 +814,5 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
             ascent_rate=ascent_rate,
             burst_altitude=burst_altitude,
             descent_rate=descent_rate
-            ))]
+            )), reverse_serial_data]
 
