@@ -32,6 +32,7 @@ LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range i
 # Do not run predictions if the ascent or descent rate is less than this value
 ASCENT_RATE_THRESHOLD = 0.5
 
+sem = asyncio.Semaphore(20)
 
 def flight_profile_by_type(sonde_type):
     """
@@ -676,6 +677,7 @@ async def predict_async(event, context):
 
 
 async def run_predictions_for_serial(serial, value, reverse_predictions, launch_sites):
+    async with sem:
         loop = asyncio.get_event_loop()
         #
         # Flight Profile selection 
@@ -727,14 +729,14 @@ async def run_predictions_for_serial(serial, value, reverse_predictions, launch_
 
                 
 
-                _rev_pred = get_launch_estimate(
+                _rev_pred = await loop.run_in_executor(None,  functools.partial(get_launch_estimate,
                     value['time'], 
                     latitude,
                     longitude,
                     value['alt'],
                     current_rate=value['rate'],
                     ascent_rate=value['rate'],
-                )
+                ))
                 
                 if _rev_pred:
 
