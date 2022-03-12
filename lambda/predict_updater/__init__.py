@@ -32,8 +32,6 @@ LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range i
 # Do not run predictions if the ascent or descent rate is less than this value
 ASCENT_RATE_THRESHOLD = 0.5
 
-sem = asyncio.Semaphore(20)
-
 def flight_profile_by_type(sonde_type):
     """
     Determine the appropriate flight profile based on radiosonde type
@@ -433,6 +431,7 @@ def predict(event, context):
     return result
 
 async def predict_async(event, context):
+    sem = asyncio.Semaphore(20)
     path = "telm-*/_search"
     payload = {
                 "aggs": {
@@ -597,7 +596,7 @@ async def predict_async(event, context):
     logging.debug("Start Predict")
     jobs=[]
     for serial in serials:
-        jobs.append(run_predictions_for_serial(serial, serials[serial], reverse_predictions, launch_sites))
+        jobs.append(run_predictions_for_serial(sem, serial, serials[serial], reverse_predictions, launch_sites))
     output = await asyncio.gather(*jobs)
     for data in output:
         if data:
@@ -676,7 +675,7 @@ async def predict_async(event, context):
 
 
 
-async def run_predictions_for_serial(serial, value, reverse_predictions, launch_sites):
+async def run_predictions_for_serial(sem, serial, value, reverse_predictions, launch_sites):
     async with sem:
         loop = asyncio.get_event_loop()
         #
