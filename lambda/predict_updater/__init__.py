@@ -603,7 +603,7 @@ async def predict_async(event, context):
         if data:
             serial_data[data[0]] = data[1]
             if data[2]:
-                reverse_serial_data[serial] = data[2]
+                reverse_serial_data[data[0]] = data[2]
 
 
 
