@@ -67,7 +67,7 @@ resource "aws_lambda_function" "predict_updater" {
   s3_key                         = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
-  memory_size                    = 1024
+  memory_size                    = 512
   role                           = aws_iam_role.predict_updater.arn
   runtime                        = "python3.9"
   architectures                  = ["arm64"]
