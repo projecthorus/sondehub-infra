@@ -30,7 +30,7 @@ LAUNCH_ALLOCATE_RANGE_MAX = 30000 # metres
 LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range is min(current alt * this value , launch allocate range max)
 
 # Do not run predictions if the ascent or descent rate is less than this value
-ASCENT_RATE_THRESHOLD = 0.5
+ASCENT_RATE_THRESHOLD = 0.8
 
 def flight_profile_by_type(sonde_type):
     """
