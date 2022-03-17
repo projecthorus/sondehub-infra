@@ -718,7 +718,7 @@ async def run_predictions_for_serial(sem, serial, value, reverse_predictions, la
             # No reverse prediction data!
             # We can only run a reverse prediction with a sonde on ascent.
             #print(f"{serial}: {value['rate']}")
-            if value['rate'] > 0.5:
+            if value['rate'] > ASCENT_RATE_THRESHOLD:
 
                 # Try and run a reverse prediction
                 logging.info(f"Running reverse predict for {serial}")
@@ -777,9 +777,14 @@ async def run_predictions_for_serial(sem, serial, value, reverse_predictions, la
         #print(_flight_profile)
         logging.debug(f"Running prediction for {serial} using flight profile {str(_flight_profile)}.")
 
+        # skip when close to 0.
+        if value['rate'] < ASCENT_RATE_THRESHOLD and value['rate'] > -ASCENT_RATE_THRESHOLD:
+            logging.debug(f"Skipping {serial} due to ascent rate limiting.")
+            return False 
+
         # Determine current ascent rate
         # If the value is < 0.5 (e.g. we are on descent, or not moving), we just use a default value.
-        ascent_rate=value['rate'] if value['rate'] > 0.5 else _flight_profile['ascent_rate']
+        ascent_rate=value['rate'] if value['rate'] > ASCENT_RATE_THRESHOLD else _flight_profile['ascent_rate']
         
         # If we are on descent, estimate the sea-level descent rate from the current descent rate
         # Otherwise, use the flight profile descent rate 
@@ -787,7 +792,7 @@ async def run_predictions_for_serial(sem, serial, value, reverse_predictions, la
 
         # If the resultant sea-level descent rate is very small, it means we're probably landed
         # so dont run a prediction for this sonde.
-        if descent_rate < 0.5:
+        if descent_rate < ASCENT_RATE_THRESHOLD:
             return False
 
         # Now to determine the burst altitude
