@@ -431,7 +431,7 @@ def predict(event, context):
     return result
 
 async def predict_async(event, context):
-    sem = asyncio.Semaphore(20)
+    sem = asyncio.Semaphore(5)
     path = "telm-*/_search"
     payload = {
                 "aggs": {
