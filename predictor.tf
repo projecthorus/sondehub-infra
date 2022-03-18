@@ -209,10 +209,10 @@ resource "aws_ecs_task_definition" "tawhiri" {
           "/root/.local/bin/gunicorn",
           "-b",
           "0.0.0.0:8000",
-          "--workers=20",
+          "--workers=1",
           "--timeout=30",
           "--keep-alive=65",
-          "--threads=1",
+          "--threads=20",
           "tawhiri.api:app"
         ]
         dependsOn = [
