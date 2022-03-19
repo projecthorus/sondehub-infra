@@ -720,6 +720,29 @@ resource "aws_iam_role_policy" "efs" {
 EOF
 }
 
+resource "aws_iam_role_policy" "ssm" {
+  name = "SSM"
+  role = aws_iam_role.ecs_execution.id
+
+  policy = jsonencode(
+      {
+        Statement = [
+            {
+                Action   = [
+                    "ssmmessages:CreateControlChannel",
+                    "ssmmessages:CreateDataChannel",
+                    "ssmmessages:OpenControlChannel",
+                    "ssmmessages:OpenDataChannel",
+                  ]
+                Effect   = "Allow"
+                Resource = "*"
+              }
+          ]
+        Version   = "2012-10-17"
+      }
+  )
+}
+
 resource "aws_iam_role_policy" "kms" {
   name = "kms"
   role = aws_iam_role.ecs_execution.id
