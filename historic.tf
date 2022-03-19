@@ -121,9 +121,9 @@ resource "aws_sqs_queue" "historic_to_s3" {
 }
 
 resource "aws_sqs_queue" "historic_to_s3_dlq" {
-  name                      = "update-history-dlq"
-  receive_wait_time_seconds = 1
-  message_retention_seconds = 1209600 # 14 days
+  name                       = "update-history-dlq"
+  receive_wait_time_seconds  = 1
+  message_retention_seconds  = 1209600 # 14 days
   visibility_timeout_seconds = 10
 }
 

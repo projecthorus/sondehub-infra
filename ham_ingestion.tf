@@ -236,8 +236,8 @@ resource "aws_lambda_function" "ham_sns_to_mqtt" {
   vpc_config {
     security_group_ids = [
       "sg-05f795128b295c504",
-    ] 
-    subnet_ids         = [
+    ]
+    subnet_ids = [
       aws_subnet.private["us-east-1b"].id
     ]
   }
