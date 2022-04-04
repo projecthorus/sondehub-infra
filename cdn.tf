@@ -37,6 +37,50 @@ resource "aws_route53_record" "testing_AAAA" {
   zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
+resource "aws_route53_record" "amateur_A" {
+  name = "amateur"
+  type = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+resource "aws_route53_record" "amateur_AAAA" {
+  name = "amateur"
+  type = "AAAA"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+resource "aws_route53_record" "ham_A" {
+  name = "ham"
+  type = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+resource "aws_route53_record" "ham_AAAA" {
+  name = "ham"
+  type = "AAAA"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
 
 resource "aws_route53_record" "root_A" {
   name            = ""
@@ -346,6 +390,54 @@ resource "aws_cloudfront_distribution" "testing" {
   enabled     = true
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate_validation.CertificateManagerCertificate.certificate_arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  http_version    = "http2"
+  is_ipv6_enabled = true
+}
+
+resource "aws_cloudfront_distribution" "amateur" {
+  aliases = [
+    "amateur.sondehub.org",
+    "ham.sondehub.org"
+  ]
+  default_root_object = "index.html"
+  origin {
+    domain_name = aws_s3_bucket.v2.bucket_regional_domain_name
+    origin_id   = "S3-${local.domain_name}/amateur"
+    origin_path = "/amateur"
+  }
+  default_cache_behavior {
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 5
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 5
+    min_ttl                = 0
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/amateur"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  comment     = ""
+  price_class = "PriceClass_All"
+  enabled     = true
+  viewer_certificate {
+    acm_certificate_arn      = aws_acm_certificate.CertificateManagerCertificate_root.arn
     minimum_protocol_version = "TLSv1.2_2021"
     ssl_support_method       = "sni-only"
   }
