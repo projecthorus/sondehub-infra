@@ -2,7 +2,7 @@
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   domain_name           = "sondes-v2-7-9"
-  elasticsearch_version = "7.9"
+  elasticsearch_version = "OpenSearch_1.2"
   cluster_config {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
@@ -76,6 +76,9 @@ EOF
     enabled                  = true
     log_type                 = "SEARCH_SLOW_LOGS"
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 data "aws_kms_key" "es" {
   key_id = "alias/aws/es"
@@ -105,6 +108,11 @@ resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
     server_side_token_check = false
   }
 
+  cognito_identity_providers {
+    client_id               = "u3ggvo1spp1e6cffbietq7fbm" 
+    provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+  }
+
 }
 
 resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAttachment" {
@@ -119,10 +127,16 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
     type                      = "Token"
   }
   role_mapping {
-    ambiguous_role_resolution = "AuthenticatedRole"
-    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:62uut02s5ts991uhpf4fbuvrtj"
-    type                      = "Token"
+          ambiguous_role_resolution = "AuthenticatedRole"
+          identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:227g2bbcb2tqjfii1ipt2tj5m6" 
+          type                      = "Token"
   }
+
+  role_mapping {
+          ambiguous_role_resolution = "AuthenticatedRole"
+          identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:u3ggvo1spp1e6cffbietq7fbm" 
+          type                      = "Token" 
+        }
   role_mapping {
     ambiguous_role_resolution = "AuthenticatedRole"
     identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:7v892rnrta8ms785pl0aaqo8ke"
