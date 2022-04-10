@@ -284,6 +284,8 @@ def predict(event, context):
 async def predict_async(event, context):
     sem = asyncio.Semaphore(5)
     path = "ham-telm-*/_search"
+    interval = 60 # because some aprs balloons are only every minute
+    lag = 3 # how many samples to use
     payload = {
                 "aggs": {
                     "2": {
@@ -298,7 +300,7 @@ async def predict_async(event, context):
                         "3": {
                         "date_histogram": {
                             "field": "datetime",
-                            "fixed_interval": "5s"
+                            "fixed_interval": f"{interval}s"
                         },
                         "aggs": {
                             "1": {
@@ -323,7 +325,7 @@ async def predict_async(event, context):
                             "serial_diff": {
                                 "buckets_path": "4-metric",
                                 "gap_policy": "skip",
-                                "lag": 5
+                                "lag": lag
                             }
                             },
                             "5": {
@@ -429,7 +431,7 @@ async def predict_async(event, context):
             serials[x['key']] = {
                 "alt": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['1']['hits']['hits'][0]['fields']['alt'][0],
                 "position": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]['fields']['position'][0].split(","),
-                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/25, # as we bucket for every 5 seconds with a lag of 5
+                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/(lag*interval), # as we bucket for every 5 seconds with a lag of 5
                 "time": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['key_as_string']
             
             }
