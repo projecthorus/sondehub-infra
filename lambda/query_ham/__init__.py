@@ -162,14 +162,47 @@ def get_telem(event, context):
         },
         "query": {
             "bool": {
+                "minimum_should_match": 1,
                 "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"payload_callsign": "xxxxxxxx"}}],
+                    "should": [
+                        {
+                        "bool": {
+                            "must": [
+                                {
+                                    "exists": {
+                                    "field": "sats"
+                                    }
+                                },
+                                {
+                                "range": {
+                                        "sats": {
+                                            "gte": 1,
+                                            "lt": None
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                        },
+                        {
+                            "bool": {
+                                "must_not": [
+                                    {
+                                        "exists": {
+                                        "field": "sats"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
                 "filter": [
                     {"match_all": {}},
                     {
                         "range": {
                             "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
                         }
-                    },
+                    }
                 ]
             }
         },

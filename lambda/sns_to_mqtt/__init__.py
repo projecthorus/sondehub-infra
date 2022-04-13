@@ -60,8 +60,7 @@ def lambda_handler(event, context):
         else:
             incoming_payloads = decoded
         
-        #send only the first, last and every 5th packet
-        payloads = [incoming_payloads[0]] + incoming_payloads[1:-1:5][1:] + [incoming_payloads[-1]]
+        payloads = incoming_payloads
         for payload in payloads:
             
             body = json.dumps(payload)
