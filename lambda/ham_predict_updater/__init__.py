@@ -13,7 +13,7 @@ import functools
 #
 
 # If we have no better estimates for flight profile, use these:
-PREDICT_DEFAULTS = {'ascent_rate': 5.0, 'burst_altitude': 26000.0, 'descent_rate': 6.0}
+PREDICT_DEFAULTS = {'ascent_rate': 5.0, 'burst_altitude': 30000.0, 'descent_rate': 5.0}
 
 # For some sonde types we can make better assumptions
 SONDE_TYPE_PREDICT_DEFAULTS = {

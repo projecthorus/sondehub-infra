@@ -696,19 +696,22 @@ async def run_predictions_for_serial(sem, serial, value, reverse_predictions, la
             if 'launch_site' in _rev_pred:
                 # This serial number has been assigned to a launch site!
                 # Grab the launch site information
-                _site_info = launch_sites[_rev_pred['launch_site']]
+                try:
+                    _site_info = launch_sites[_rev_pred['launch_site']]
+                    
+                    # If we have flight profile data, update the default flight profile
+                    if 'ascent_rate' in _site_info:
+                        _flight_profile['ascent_rate'] = _site_info['ascent_rate']
+                    
+                    if 'burst_altitude' in _site_info:
+                        _flight_profile['burst_altitude'] = _site_info['burst_altitude']
+                    
+                    if 'descent_rate' in _site_info:
+                        _flight_profile['descent_rate'] = _site_info['descent_rate']
+                    logging.debug(f"{serial} - Using Flight Profile data for Launch site: {_site_info['station_name']}")
+                except KeyError:
+                    logging.info(f"Possible missing launch site {_rev_pred['launch_site'] } for sonde {serial}")
                 
-                # If we have flight profile data, update the default flight profile
-                if 'ascent_rate' in _site_info:
-                    _flight_profile['ascent_rate'] = _site_info['ascent_rate']
-                
-                if 'burst_altitude' in _site_info:
-                    _flight_profile['burst_altitude'] = _site_info['burst_altitude']
-                
-                if 'descent_rate' in _site_info:
-                    _flight_profile['descent_rate'] = _site_info['descent_rate']
-
-                logging.debug(f"{serial} - Using Flight Profile data for Launch site: {_site_info['station_name']}")
             else:
                 # No launch site was allocated...
                 # TODO - Try again?
