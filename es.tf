@@ -109,8 +109,8 @@ resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
   }
 
   cognito_identity_providers {
-    client_id               = "u3ggvo1spp1e6cffbietq7fbm" 
-    provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+    client_id     = "u3ggvo1spp1e6cffbietq7fbm"
+    provider_name = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
   }
 
 }
@@ -127,16 +127,16 @@ resource "aws_cognito_identity_pool_roles_attachment" "CognitoIdentityPoolRoleAt
     type                      = "Token"
   }
   role_mapping {
-          ambiguous_role_resolution = "AuthenticatedRole"
-          identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:227g2bbcb2tqjfii1ipt2tj5m6" 
-          type                      = "Token"
+    ambiguous_role_resolution = "AuthenticatedRole"
+    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:227g2bbcb2tqjfii1ipt2tj5m6"
+    type                      = "Token"
   }
 
   role_mapping {
-          ambiguous_role_resolution = "AuthenticatedRole"
-          identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:u3ggvo1spp1e6cffbietq7fbm" 
-          type                      = "Token" 
-        }
+    ambiguous_role_resolution = "AuthenticatedRole"
+    identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:u3ggvo1spp1e6cffbietq7fbm"
+    type                      = "Token"
+  }
   role_mapping {
     ambiguous_role_resolution = "AuthenticatedRole"
     identity_provider         = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM:7v892rnrta8ms785pl0aaqo8ke"
