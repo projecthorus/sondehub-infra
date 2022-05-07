@@ -17,6 +17,8 @@ paths:
   /amateur/telemetry:
     put:
       summary: Upload Radiosonde Telemetry to Sondehub amateur database.
+      tags:
+        - amateur
       consumes:
         - "application/json"
       produces:
@@ -32,6 +34,47 @@ paths:
           description: Telemetry Saved into Database Successfuly
         500:
           description: Other Server error (including malformed data submissions)
+    get:
+      summary: Request Amateur Radiosonde Telemetry Data
+      tags:
+        - amateur
+      description: >
+        Use this to get the current state of all the radiosondes then use the realtime API to access streaming data. Do not regularly poll this endpoint, it is rate limited.
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: duration
+          description: How far back in time to receive data from. A shorter time period will result is higher time resolution data.
+          required: false
+          type: string
+          enum:
+            - "0"
+            - "15s"
+            - "1m"
+            - "30m"
+            - "1h"
+            - "3h"
+            - "6h"
+            - "1d"
+            - "3d"
+        - in: query
+          name: payload_callsign
+          description: Specific callsign to query (if wanted). Requests for data for a single sonde will return the highest time resolution data available.
+          required: false
+          type: string
+        - in: query
+          name: datetime
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          required: false
+          type: string
+          format: date-time
+
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            $ref: "#/definitions/amateur_query_results_format"
   /sondes/telemetry:
     put:
       summary: Upload Radiosonde Telemetry to Sondehub database.
@@ -98,6 +141,36 @@ paths:
           description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
           schema:
             $ref: "#/definitions/sonde_query_results_format"
+  /amateur:
+    get:
+      summary: Request latest amateur payload data indexed by serial number, with options for position/distance based-filtering.
+      produces:
+        - "application/json"
+      tags:
+        - amateur
+      parameters:
+        - in: query
+          name: lat
+          type: number
+          description:  "Latitude - if specified, lon and distance are required. Eg: -34.9285"
+        - in: query
+          name: lon
+          description: "Longitude - if specified, lat and distance are required Eg:  138.6007"
+          type: number
+        - in: query
+          name: distance
+          description: "Distance in meters - if specified, lat and lon are required"
+          type: number
+        - in: query
+          name: last
+          description: "How far back to search in seconds. Defaults to 24hrs"
+          type: number
+          
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            $ref: "#/definitions/amateur_telm_results_format"
   /sondes:
     get:
       summary: Request latest sonde data indexed by serial number, with options for position/distance based-filtering.
@@ -125,7 +198,7 @@ paths:
         200:
           description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
           schema:
-            $ref: "#/definitions/sonde_query_results_format"
+            $ref: "#/definitions/sonde_telm_results_format"
   /sonde/{serial}:
     get:
       summary: Request telemetry data for an individual radiosonde
@@ -147,6 +220,60 @@ paths:
             type: array
             items:
               $ref: "#/definitions/telemetry_format" 
+  /amateur/listeners:
+    put:
+      summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
+      tags:
+        - amateur
+      consumes:
+        - "application/json"
+      produces:
+        - "text/plain"
+      parameters:
+        - in: body
+          required: true
+          name: body
+          schema:
+            $ref: "#/definitions/listener"
+      responses:
+        200:
+          description: Station Position successfully uploaded.
+  /amateur/listeners/telemetry:
+    get:
+      summary: Request Listener Telemetry Data
+      tags:
+        - amateur
+      description: >
+        Use this to get the current listener (chase car / station) telemetry
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: duration
+          description: How far back in time to receive data from. A shorter time period will result is higher time resolution data.
+          required: false
+          type: string
+          enum:
+            - "3h"
+            - "6h"
+            - "1d"
+            - "3d"
+        - in: query
+          name: uploader_callsign
+          description: Specific callsign number to query (if wanted). Requests for data for a single uploader will return the highest time resolution data available.
+          required: false
+          type: string
+        - in: query
+          name: datetime
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          required: false
+          type: string
+          format: date-time
+      responses:
+        200:
+          description: Returns a dictionary keyed by uploader_callsign of a dictionary of times with listener data.
+          schema:
+            $ref: "#/definitions/listener_results_format"
   /listeners:
     put:
       summary: 'Allows a station to upload their station information to the SondeHub database, for display on the SondeHub Tracker map. This endpoint can also be used to upload chase-car positions by setting the "mobile" setting to True'
@@ -196,7 +323,7 @@ paths:
         200:
           description: Returns a dictionary keyed by uploader_callsign of a dictionary of times with listener data.
           schema:
-            $ref: "#/definitions/listener"
+            $ref: "#/definitions/listener_results_format"
   /listeners/stats:
     get:
       summary: Basic version stats
@@ -527,6 +654,32 @@ definitions:
         properties:
           datetime: 
             $ref: "#/definitions/telemetry_format"
+  sonde_telm_results_format:
+    type: object
+    properties:
+      serial:
+        $ref: "#/definitions/telemetry_format"
+  listener_results_format:
+    type: object
+    properties:
+      serial:
+        type: object
+        properties:
+          datetime: 
+            $ref: "#/definitions/listener"
+  amateur_query_results_format:
+    type: object
+    properties:
+      serial:
+        type: object
+        properties:
+          datetime: 
+            $ref: "#/definitions/amateur_telemetry_format"
+  amateur_telm_results_format:
+    type: object
+    properties:
+      serial:
+        $ref: "#/definitions/amateur_telemetry_format"
   recovery_results_format:
     type: array
     items:
