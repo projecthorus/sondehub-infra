@@ -112,6 +112,11 @@ resource "aws_cognito_identity_pool" "CognitoIdentityPool" {
     client_id     = "u3ggvo1spp1e6cffbietq7fbm"
     provider_name = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
   }
+  cognito_identity_providers { // for the website
+    client_id               = "21dpr4kth8lonk2rq803loh5oa"
+    provider_name           = "cognito-idp.us-east-1.amazonaws.com/us-east-1_G4H7NMniM"
+    server_side_token_check = false
+  }
 
 }
 
@@ -391,6 +396,26 @@ resource "aws_iam_role_policy" "IAMPolicy3" {
       ]
     }
   ]
+}
+EOF
+  role   = aws_iam_role.auth_role.name
+}
+
+resource "aws_iam_role_policy" "IAMPolicy4" {
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "execute-api:*"
+            ],
+            "Resource": [
+                "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/amateur/flightdoc"
+            ]
+        }
+    ]
 }
 EOF
   role   = aws_iam_role.auth_role.name
