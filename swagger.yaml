@@ -75,6 +75,42 @@ paths:
           description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
           schema:
             $ref: "#/definitions/amateur_query_results_format"
+  /amateur/telemetry/{payload_callsign}:
+    get:
+      summary: Request Amateur Radiosonde Telemetry Data
+      tags:
+        - amateur
+      description: >
+        Use this to get the current state of all the radiosondes then use the realtime API to access streaming data. Do not regularly poll this endpoint, it is rate limited.
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: last
+          description: "How far back to search in seconds. Defaults to 24hrs"
+          type: number
+        - in: query
+          name: datetime
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          required: false
+          type: string
+          format: date-time
+        - in: path
+          name: payload_callsign
+          description: Specific callsign to query (if wanted). Requests for data for a single sonde will return the highest time resolution data available.
+          required: true
+          type: string
+        - in: query
+          name: format
+          description: "If set to csv will provide a CSV of the results rather than JSON"
+          required: false
+          type: string
+          format: string
+      responses:
+        200:
+          description: Returns a list of all data received
+          schema:
+            $ref: "#/definitions/amateur_query_full_results_format"
   /sondes/telemetry:
     put:
       summary: Upload Radiosonde Telemetry to Sondehub database.
@@ -667,6 +703,10 @@ definitions:
         properties:
           datetime: 
             $ref: "#/definitions/listener"
+  amateur_query_full_results_format:
+    type: array
+    items:
+      $ref: "#/definitions/amateur_telemetry_format"
   amateur_query_results_format:
     type: object
     properties:

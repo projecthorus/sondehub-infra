@@ -3,24 +3,20 @@ import base64
 
 import zlib
 
-response = get_telem(
+response = get_telem_full(
         {
+            "pathParameters": {
+                "payload_callsign" : "HORUS-V2"
+            },
             "queryStringParameters":{
-            #    "payload_callsign": "HORUS-V2",
-               "duration": "3d"
+                "last": "3600",
+                "datetime": "2022-05-07T04:18:10.000000Z",
+                "format": "csv"
             }
         }, {})
-
-# response = get_listener_telemetry(
-#         {
-#             "queryStringParameters":{
-#             #    "payload_callsign": "HORUS-V2",
-#                "duration": "3h"
-#             }
-#         }, {})
+print(len(response['body']))
 compressed = base64.b64decode(response['body'])
 
 decompressed = (zlib.decompress(compressed, 16 + zlib.MAX_WBITS))
-print(json.loads(decompressed)
-)
-print(len(json.dumps(response)))
+#print(json.loads(decompressed))
+print(decompressed.decode().splitlines()[:5])

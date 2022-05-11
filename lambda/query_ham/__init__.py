@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 import base64
 import gzip
-from io import BytesIO
+from io import BytesIO, StringIO
 import es
 
 def get(event, context):
@@ -242,6 +242,151 @@ def get_telem(event, context):
             "headers": {
                 "Content-Encoding": "gzip",
                 "content-type": "application/json"
+            }
+            
+        }
+def get_telem_full(event, context):
+   
+    
+
+    if (
+        "queryStringParameters" in event
+        and "last" in event["queryStringParameters"]
+    ):
+        last = int(event["queryStringParameters"]["last"])
+    else:
+        last = 21600 # 6 hours
+    
+    if (
+        "queryStringParameters" in event
+        and "datetime" in event["queryStringParameters"]
+    ):
+        requested_time = datetime.fromisoformat(
+            event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
+        )
+    else:
+        requested_time = datetime.now(timezone.utc)
+
+
+    lt = requested_time + timedelta(0, 1)
+    gte = requested_time - timedelta(0, last)
+
+    path = f"ham-telm-{lt.year:2}-{lt.month:02},telm-{gte.year:2}-{gte.month:02}/_search"
+    payload = {
+        "timeout": "30s",
+        "size": 10000,
+        "query": {
+            "bool": {
+                "minimum_should_match": 1,
+                "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"payload_callsign": "xxxxxxxx"}}],
+                    "should": [
+                        {
+                        "bool": {
+                            "must": [
+                                {
+                                    "exists": {
+                                    "field": "sats"
+                                    }
+                                },
+                                {
+                                "range": {
+                                        "sats": {
+                                            "gte": 1,
+                                            "lt": None
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                        },
+                        {
+                            "bool": {
+                                "must_not": [
+                                    {
+                                        "exists": {
+                                        "field": "sats"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                "filter": [
+                    {"match_all": {}},
+                    {
+                        "range": {
+                            "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
+                        }
+                    }
+                ]
+            }
+        },
+    }
+    payload["query"]["bool"]["filter"].append(
+        {
+            "match_phrase": {
+                "payload_callsign": str(event["pathParameters"]["payload_callsign"])
+            }
+        }
+    )
+    data = []
+    response = es.request(json.dumps(payload), path, "POST", params={"scroll": "1m"})
+    scroll_id = response['_scroll_id']
+    scroll_ids = [scroll_id]
+    data += [ x["_source"] for x in response['hits']['hits']]
+
+
+    while response['hits']['hits']:
+        response = es.request(json.dumps({"scroll": "1m", "scroll_id": scroll_id }),
+                          "_search/scroll", "POST")
+        scroll_id = response['_scroll_id']
+        scroll_ids.append(scroll_id)
+        data += [ x["_source"] for x in response['hits']['hits']]
+    for scroll_id in scroll_ids: # clean up scrolls
+        try:
+            scroll_delete = es.request(json.dumps({"scroll_id": scroll_id }),
+                                "_search/scroll", "DELETE")
+            print(scroll_delete)
+        except RuntimeError:
+            pass
+
+    content_type = "application/json"
+    # convert to CSV if requested
+    if (
+        "queryStringParameters" in event
+        and "format" in event["queryStringParameters"]
+        and event["queryStringParameters"]['format'] == "csv"
+    ):
+        import csv
+        content_type = "text/csv"
+        csv_keys = list(set().union(*(d.keys() for d in data)))
+        csv_keys.remove("datetime")
+        csv_keys.insert(0,"datetime") # datetime should be at the front of the CSV
+        csv_output = StringIO(newline='')
+        fc = csv.DictWriter(csv_output, fieldnames=csv_keys)
+        fc.writeheader()
+        fc.writerows(data)
+        data = csv_output.getvalue()
+    else:
+        data = json.dumps(data)
+
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(data.encode('utf-8'))
+    
+    gzippedResponse = compressed.getvalue()
+    body = base64.b64encode(gzippedResponse).decode()
+    if len(body) > (1024 * 1024 * 6) - 1000 : # check if payload is too big
+        content_type = "text/plain"
+        body = "Output is too large, try a smaller time frame"
+
+    return {
+            "body": body,
+            "isBase64Encoded": True,
+            "statusCode": 400,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": content_type
             }
             
         }
