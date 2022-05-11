@@ -32,3 +32,28 @@ def lambda_handler(event, context):
     es.request(json.dumps(payload),f"flight-doc/_doc","POST")
 
     return {"statusCode": 200, "body": "^v^ updated"}
+
+def query(event, context):
+    payload_callsign = event['pathParameters']['payload_callsign']
+    payload = {
+        "sort": [
+            { "datetime" : {"order" : "desc"}}
+        ],
+        "size": 1,
+        "query": {
+            "bool": {
+            "filter": [
+                {
+                    "match_phrase": {
+                        "payload_callsign.keyword": payload_callsign
+                    }
+                }
+            ]
+            }
+        }
+    }
+    results = es.request(json.dumps(payload),f"flight-doc/_search","POST")
+    if len(results['hits']['hits']) > 0 :
+        return {"statusCode": 200, "body": json.dumps(results['hits']['hits'][0]['_source'])}
+    else:
+        return {"statusCode": 404, "body": "not found"}
