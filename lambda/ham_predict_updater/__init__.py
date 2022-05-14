@@ -243,7 +243,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
         longitude += 360.0
 
     # Generate the prediction URL
-    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_time={(datetime.now() + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
+    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now() + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
     logging.debug(url)
     conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
     conn.request("GET", url)
@@ -551,8 +551,8 @@ async def predict_async(event, context):
                         ],
                     "altitude": value['request']['launch_altitude'],
                     "ascent_rate": value['request']['ascent_rate'],
-                    "descent_rate": value['request']['descent_rate'],
-                    "burst_altitude": value['request']['burst_altitude'],
+                    "descent_rate": value['request']['descent_rate'] if 'descent_rate' in value['request'] else None,
+                    "burst_altitude": value['request']['burst_altitude'] if 'burst_altitude' in value['request'] else None,
                     "descending": True if serials[serial]['rate'] < 0 else False,
                     "landed": False, # I don't think this gets used anywhere?
                     "data": value['path']
