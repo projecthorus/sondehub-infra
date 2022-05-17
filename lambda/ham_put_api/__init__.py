@@ -13,7 +13,17 @@ def set_connection_header(request, operation_name, **kwargs):
 sns = boto3.client("sns",region_name="us-east-1")
 sns.meta.events.register('request-created.sns', set_connection_header)
 
+def check_fields_are_number(field, telemetry):
+    if type(telemetry[field]) != float and type(telemetry[field]) != int:
+        return (False, f"{field} should not be a float")
+    return (True, "")
+
 def telemetry_filter(telemetry):
+    fields_to_check = ["alt", "lat", "lon"]
+    for field in fields_to_check:
+        field_check = check_fields_are_number(field, telemetry)
+        if  field_check[0] == False:
+            return field_check
     if "dev" in telemetry:
         return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
