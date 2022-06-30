@@ -261,9 +261,12 @@ def get_telem_full(event, context):
         "queryStringParameters" in event
         and "datetime" in event["queryStringParameters"]
     ):
-        requested_time = datetime.fromisoformat(
-            event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
-        )
+        try:
+            requested_time = datetime.fromisoformat(
+                event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
+            )
+        except: # might be in unix time
+            requested_time = datetime.utcfromtimestamp(float(event["queryStringParameters"]["datetime"]))
     else:
         requested_time = datetime.now(timezone.utc)
 
@@ -383,10 +386,11 @@ def get_telem_full(event, context):
     return {
             "body": body,
             "isBase64Encoded": True,
-            "statusCode": 400,
+            "statusCode": 200,
             "headers": {
                 "Content-Encoding": "gzip",
-                "content-type": content_type
+                "Content-Disposition": "attachment",
+                "Content-Type": content_type
             }
             
         }
