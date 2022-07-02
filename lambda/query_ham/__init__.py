@@ -353,6 +353,7 @@ def get_telem_full(event, context):
         except RuntimeError:
             pass
 
+    filename = f'{event["pathParameters"]["payload_callsign"]}.json'
     content_type = "application/json"
     # convert to CSV if requested
     if (
@@ -362,6 +363,7 @@ def get_telem_full(event, context):
     ):
         import csv
         content_type = "text/csv"
+        filename = f'{event["pathParameters"]["payload_callsign"]}.csv'
         csv_keys = list(set().union(*(d.keys() for d in data)))
         csv_keys.remove("datetime")
         csv_keys.insert(0,"datetime") # datetime should be at the front of the CSV
@@ -369,6 +371,7 @@ def get_telem_full(event, context):
         fc = csv.DictWriter(csv_output, fieldnames=csv_keys)
         fc.writeheader()
         fc.writerows(data)
+        
         data = csv_output.getvalue()
     elif (
         "queryStringParameters" in event
@@ -376,6 +379,7 @@ def get_telem_full(event, context):
         and event["queryStringParameters"]['format'] == "kml"
     ):
         content_type = "application/vnd.google-earth.kml+xml"
+        filename = f'{event["pathParameters"]["payload_callsign"]}.kml'
 
         # Extract some basic flight info for use in KML Metadata
         callsign = str(event["pathParameters"]["payload_callsign"])
@@ -453,7 +457,7 @@ def get_telem_full(event, context):
             "statusCode": 200,
             "headers": {
                 "Content-Encoding": "gzip",
-                "Content-Disposition": "attachment",
+                "Content-Disposition": f'attachment; filename="{filename}"',
                 "Content-Type": content_type
             }
             
