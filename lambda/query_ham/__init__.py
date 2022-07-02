@@ -274,7 +274,7 @@ def get_telem_full(event, context):
     lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, last)
 
-    path = f"ham-telm-{lt.year:2}-{lt.month:02},telm-{gte.year:2}-{gte.month:02}/_search"
+    path = f"ham-telm-*/_search"
     payload = {
         "timeout": "30s",
         "size": 10000,
@@ -370,6 +370,70 @@ def get_telem_full(event, context):
         fc.writeheader()
         fc.writerows(data)
         data = csv_output.getvalue()
+    elif (
+        "queryStringParameters" in event
+        and "format" in event["queryStringParameters"]
+        and event["queryStringParameters"]['format'] == "kml"
+    ):
+        content_type = "application/vnd.google-earth.kml+xml"
+
+        # Extract some basic flight info for use in KML Metadata
+        callsign = str(event["pathParameters"]["payload_callsign"])
+        start_datetime = gte.isoformat()
+
+        # Only get unique date/time data.
+        # This results in a much shorter dictionary.
+        _temp_data = {}
+        for _telem in data:
+            _temp_data[_telem['datetime']] = f"{float(_telem['lon']):.6f},{float(_telem['lat']):.6f},{float(_telem['alt']):.1f}\n"
+
+        # For a KML output, the data *must* be sorted, else the KML LineString becomes a complete mess.
+        # Get the keys from the dictionary generated above, and sort them.
+        data_keys = list(_temp_data.keys())
+        data_keys.sort()
+
+        # Now generate the LineString data (lon,lat,alt)
+        # This could possibly done with a .join, but I suspect that wont be much more efficient.
+        kml_coords = ""
+        for _key in data_keys:
+            kml_coords += _temp_data[_key]
+
+        # Generate the output KML. 
+        # This is probably the simplest way of handling this without bringing in
+        # any other libraries.
+        kml_out = f"""
+        <kml:Document xmlns:kml="http://www.opengis.net/kml/2.2">
+        <kml:visibility>1</kml:visibility>
+        <kml:Folder id="{callsign}">
+            <kml:name>{start_datetime} {callsign}</kml:name>
+            <kml:description>Flight Path</kml:description>
+            <kml:visibility>1</kml:visibility>
+            <kml:Placemark id="Flight Path ID">
+                <kml:name>{start_datetime} {callsign}</kml:name>
+                <kml:visibility>1</kml:visibility>
+                <kml:Style><kml:LineStyle>
+                <kml:color>aaffffff</kml:color>
+                <kml:width>2.0</kml:width>
+                </kml:LineStyle>
+                <kml:PolyStyle>
+                <kml:color>20000000</kml:color>
+                <kml:fill>1</kml:fill>
+                <kml:outline>1</kml:outline>
+                </kml:PolyStyle></kml:Style>
+                <kml:LineString>
+                    <kml:extrude>1</kml:extrude>
+                    <kml:altitudeMode>absolute</kml:altitudeMode>
+                    <kml:coordinates>
+        {kml_coords}
+                    </kml:coordinates>
+                </kml:LineString>
+        </kml:Placemark>
+        </kml:Folder>
+        </kml:Document>
+        """
+
+        # Finally replace the data with the kml data
+        data = kml_out
     else:
         data = json.dumps(data)
 

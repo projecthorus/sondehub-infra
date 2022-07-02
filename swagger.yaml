@@ -102,7 +102,7 @@ paths:
           type: string
         - in: query
           name: format
-          description: "If set to csv will provide a CSV of the results rather than JSON"
+          description: "Valid options are csv, kml or json"
           required: false
           type: string
           format: string
