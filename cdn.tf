@@ -128,6 +128,29 @@ resource "aws_route53_record" "predict_AAAA" {
   zone_id = "Z0756308IVLVF48G6G1S"
 }
 
+resource "aws_route53_record" "predict_testing_A" {
+  name = "predict-testing"
+  type = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.predict-testing.domain_name
+    zone_id                = aws_cloudfront_distribution.predict-testing.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+resource "aws_route53_record" "predict_testing_AAAA" {
+  name = "predict-testing"
+  type = "AAAA"
+  alias {
+    name                   = aws_cloudfront_distribution.predict-testing.domain_name
+    zone_id                = aws_cloudfront_distribution.predict-testing.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+
 resource "aws_route53_record" "tracker_A" {
   name = "tracker"
   type = "A"
@@ -540,6 +563,53 @@ resource "aws_cloudfront_distribution" "predict" {
   is_ipv6_enabled = true
 }
 
+resource "aws_cloudfront_distribution" "predict-testing" {
+  aliases = [
+    "predict-testing.sondehub.org"
+  ]
+  origin {
+    domain_name = aws_s3_bucket.predict-testing.bucket_regional_domain_name
+    origin_id   = aws_s3_bucket.predict-testing.bucket_regional_domain_name
+    origin_path = ""
+  }
+  default_root_object = "index.html"
+  default_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 120
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 120
+    min_ttl                = 120
+    smooth_streaming       = false
+    target_origin_id       = aws_s3_bucket.predict-testing.bucket_regional_domain_name
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  comment     = ""
+  price_class = "PriceClass_100"
+  enabled     = true
+  viewer_certificate {
+    acm_certificate_arn      = aws_acm_certificate.CertificateManagerCertificate_root.arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  http_version    = "http2"
+  is_ipv6_enabled = true
+}
+
 resource "aws_cloudfront_distribution" "api" {
   aliases = [
     "api.${local.domain_name}"
@@ -738,6 +808,11 @@ resource "aws_s3_bucket" "history" {
 resource "aws_s3_bucket" "predict" {
   bucket = "sondehub-predict"
 }
+
+resource "aws_s3_bucket" "predict-testing" {
+  bucket = "sondehub-predict-testing"
+}
+
 
 resource "aws_s3_bucket" "card" {
   bucket = "sondehub-v2-card"
