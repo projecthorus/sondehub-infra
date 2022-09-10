@@ -625,7 +625,7 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
 
         # The balloon is either floating, or ascending.
 
-        if "no_flight_doc" in _flight_doc:
+        if ("no_flight_doc" in _flight_doc) and (_flight_doc["no_flight_doc"] == True) :
             # We don't have any information provided, so we need to make some assumptions.
 
             # First up - are we floating?
