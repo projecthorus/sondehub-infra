@@ -30,7 +30,7 @@ LAUNCH_ALLOCATE_RANGE_MAX = 30000 # metres
 LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range is min(current alt * this value , launch allocate range max)
 
 # Do not run predictions if the ascent or descent rate is less than this value
-ASCENT_RATE_THRESHOLD = 0.5
+ASCENT_RATE_THRESHOLD = 0.6
 
 def get_flight_docs():
     path = "flight-doc/_search"
@@ -577,7 +577,9 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
             logging.debug(f"Found flight doc for {serial}")
         except:
             logging.debug(f"Using default flight doc for {serial}")
+            # Some default parameters, including a flag to indicate there is no flight doc available.
             _flight_doc = {
+                "no_flight_doc": True,
                 "float_expected": False,
                 "peak_altitude": 30000,
                 "descent_rate": 5
@@ -598,7 +600,8 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
 
         logging.debug(f"Burst alt for {serial} is {burst_altitude}")
         
-        # balloon on descent
+        # Balloon is on Descent. Doesn't matter what the flight document says at this point,
+        # we just run a descent prediction using the current descent rate.
         if value['rate'] < -ASCENT_RATE_THRESHOLD:
             logging.debug(f"{serial} running normal descent profile")
             descent_rate= seaLevelDescentRate(abs(value['rate']),value['alt'])
@@ -619,9 +622,16 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
                     )
                 )
             ]
-        if _flight_doc["float_expected"]:
-            if abs(value['rate']) < ASCENT_RATE_THRESHOLD:
-                logging.debug(f"{serial} running float profile")
+
+        # The balloon is either floating, or ascending.
+
+        if "no_flight_doc" in _flight_doc:
+            # We don't have any information provided, so we need to make some assumptions.
+
+            # First up - are we floating?
+            if abs(value['rate']) <= ASCENT_RATE_THRESHOLD:
+                # If we are, run a float prediction, based off the current altitude.
+                logging.debug(f"{serial} - no flight doc, running float profile")
                 return [
                     serial, 
                     await loop.run_in_executor(
@@ -634,13 +644,38 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
                             value['alt'],
                             current_rate=value['rate'],
                             ascent_rate=1, # this doesn't matter because we are floating
-                            burst_altitude=burst_altitude,
+                            burst_altitude=value['alt']+1,
                         )
                     )
                 ]
-            else: # ascending to float
-                logging.debug(f"{serial} running ascending float profile")
-                if abs(value['rate']) > ASCENT_RATE_THRESHOLD:
+            else:
+                # We are ascending, run an ascent prediction using the standard parameters.
+                logging.debug(f"{serial} - no flight doc, running default ascent profile")
+                return [
+                    serial, 
+                    await loop.run_in_executor(
+                        None, 
+                        functools.partial(
+                            get_standard_prediction, 
+                            value['time'], 
+                            latitude,
+                            longitude,
+                            value['alt'],
+                            current_rate=value['rate'],
+                            ascent_rate=value['rate'],
+                            burst_altitude=burst_altitude,
+                            descent_rate=_flight_doc['descent_rate']
+                        )
+                    )
+                ]
+
+        else:
+            # We have a flight document specified!
+            if _flight_doc["float_expected"]:
+                # The flight document has specified that we are expecting a float.
+                if abs(value['rate']) <= ASCENT_RATE_THRESHOLD:
+                    # We are in float - run a float prediction based on the current altitude.
+                    logging.debug(f"{serial} running float profile")
                     return [
                         serial, 
                         await loop.run_in_executor(
@@ -652,29 +687,74 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
                                 longitude,
                                 value['alt'],
                                 current_rate=value['rate'],
-                                ascent_rate=value['rate'], 
+                                ascent_rate=1, # this doesn't matter because we are floating
+                                burst_altitude=value['alt']+1,
+                            )
+                        )
+                    ]
+                else:
+                    # We are still ascending, on the way to an expected float
+                    # Run a float prediction using the specified expected float altitude.
+                    logging.debug(f"{serial} running ascending float profile")
+                    if abs(value['rate']) > ASCENT_RATE_THRESHOLD:
+                        return [
+                            serial, 
+                            await loop.run_in_executor(
+                                None, 
+                                functools.partial(
+                                    get_float_prediction, 
+                                    value['time'], 
+                                    latitude,
+                                    longitude,
+                                    value['alt'],
+                                    current_rate=value['rate'],
+                                    ascent_rate=value['rate'], 
+                                    burst_altitude=burst_altitude,
+                                )
+                            )
+                        ]
+            else:
+                # The flight document has not specified that a float is expected.
+                if abs(value['rate']) <= ASCENT_RATE_THRESHOLD:
+                    # We didn't expect a float, but we are in one anyway.
+                    # Run a normal ascent prediction, but with with an imminent burst.
+                    logging.debug(f"{serial} - flight doc available but in float, near-burst ascent prediction")
+                    return [
+                        serial, 
+                        await loop.run_in_executor(
+                            None, 
+                            functools.partial(
+                                get_standard_prediction, 
+                                value['time'], 
+                                latitude,
+                                longitude,
+                                value['alt'],
+                                current_rate=value['rate'],
+                                ascent_rate=value['rate'],
+                                burst_altitude=value['alt']+100,
+                                descent_rate=_flight_doc['descent_rate']
+                            )
+                        )
+                    ]
+                else:
+                    # We are on ascent, run a normal ascent prediction.
+                    logging.debug(f"{serial} - flight doc available, running standard ascent profile")
+                    return [
+                        serial, 
+                        await loop.run_in_executor(
+                            None, 
+                            functools.partial(
+                                get_standard_prediction, 
+                                value['time'], 
+                                latitude,
+                                longitude,
+                                value['alt'],
+                                current_rate=value['rate'],
+                                ascent_rate=value['rate'],
                                 burst_altitude=burst_altitude,
+                                descent_rate=_flight_doc['descent_rate']
                             )
                         )
                     ]
 
 
-        logging.debug(f"{serial} running standard ascent profile")
-        # standard balloon on ascent
-        return [
-            serial, 
-            await loop.run_in_executor(
-                None, 
-                functools.partial(
-                    get_standard_prediction, 
-                    value['time'], 
-                    latitude,
-                    longitude,
-                    value['alt'],
-                    current_rate=value['rate'],
-                    ascent_rate=value['rate'],
-                    burst_altitude=burst_altitude,
-                    descent_rate=_flight_doc['descent_rate']
-                )
-            )
-        ]
