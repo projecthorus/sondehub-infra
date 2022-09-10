@@ -32,6 +32,13 @@ LAUNCH_ALLOCATE_RANGE_SCALING = 1.5 # Scaling factor - launch allocation range i
 # Do not run predictions if the ascent or descent rate is less than this value
 ASCENT_RATE_THRESHOLD = 0.6
 
+# Do not run predictions if the payload is below this altitude AGL
+# Currently not used.
+ALTITUDE_AGL_THRESHOLD = 150.0
+
+# Do not run predictions if the payload is below this altitude AMSL, and has an ascent rate below the above threshold.
+ALTITUDE_AMSL_THRESHOLD = 1500.0
+
 def get_flight_docs():
     path = "flight-doc/_search"
     payload = {
@@ -337,6 +344,37 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
 
 
 
+def get_ruaumoko(latitude, longitude):
+    """
+    Request the ground level from ruaumoko.
+
+    Returns 0.0 if the ground level could not be determined, effectively
+    defaulting to any checks based on this data being based on mean sea level.
+    """
+
+    # Shift longitude into the appropriate range for Tawhiri
+    if longitude < 0:
+        longitude += 360.0
+
+    # Generate the prediction URL
+    url = f"/api/ruaumoko/?latitude={latitude}&longitude={longitude}"
+    logging.debug(url)
+    conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
+    conn.request("GET", url)
+    res = conn.getresponse()
+    data = res.read()
+
+    if res.code != 200:
+        logging.debug(data)
+        return None
+    
+    resp_data = json.loads(data.decode("utf-8"))
+
+    if 'altitude' in resp_data:
+        return resp_data['altitude']
+    else:
+        return 0.0
+
 
 def bulk_upload_es(index_prefix,payloads):
     body=""
@@ -587,6 +625,28 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
         
         longitude = float(value['position'][1].strip())
         latitude = float(value['position'][0].strip())
+
+
+        #
+        # AGL Threshold check - currently not used due to the ruamoko request blocking
+        #
+        # # Attempt to get the ground level.
+        # try:
+        #     ground_level = get_ruaumoko(latitude, longitude)
+        # except:
+        #     ground_level = 0.0
+        
+        # # Don't run a prediction if the altitude is less than our AGL threshold.
+        # if (value['alt'] - ground_level) < ALTITUDE_AGL_THRESHOLD:
+        #     return None
+
+        #
+        # AMSL + Float check.
+        #
+        if (abs(value['rate']) <= ASCENT_RATE_THRESHOLD) and (value['alt'] < ALTITUDE_AMSL_THRESHOLD):
+            # Payload is 'floating' (e.g. is probably on the ground), and is below 1500m AMSL.
+            # Don't run a prediction in this case. It probably just hasn't been launched yet.
+            return None
 
     
         # Now to determine the burst altitude
