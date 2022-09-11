@@ -294,12 +294,12 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
     - All ascent/descent rates must be positive.
     """
 
-    # Bomb out if the rates are too low.
-    if ascent_rate < ASCENT_RATE_THRESHOLD:
-        return None
+    # # Bomb out if the rates are too low.
+    # if ascent_rate < ASCENT_RATE_THRESHOLD:
+    #     return None
 
-    if descent_rate < ASCENT_RATE_THRESHOLD:
-        return None
+    # if descent_rate < ASCENT_RATE_THRESHOLD:
+    #     return None
 
 
     # Shift longitude into the appropriate range for Tawhiri
@@ -777,7 +777,7 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
                 # The flight document has not specified that a float is expected.
                 if abs(value['rate']) <= ASCENT_RATE_THRESHOLD:
                     # We didn't expect a float, but we are in one anyway.
-                    # Run a normal ascent prediction, but with with an imminent burst.
+                    # Run an ascent prediction, but with with an imminent burst.
                     logging.debug(f"{serial} - flight doc available but in float, near-burst ascent prediction")
                     return [
                         serial, 
@@ -790,8 +790,8 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
                                 longitude,
                                 value['alt'],
                                 current_rate=value['rate'],
-                                ascent_rate=value['rate'],
-                                burst_altitude=value['alt']+100,
+                                ascent_rate=1,
+                                burst_altitude=value['alt']+1,
                                 descent_rate=_flight_doc['descent_rate']
                             )
                         )
