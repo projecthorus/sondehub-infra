@@ -272,6 +272,7 @@ resource "aws_lambda_function" "ham_listener_put" {
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
+      "SNS_TOPIC" = aws_sns_topic.ham_listener_telem.arn
     }
   }
   tags = {
@@ -302,4 +303,68 @@ resource "aws_apigatewayv2_integration" "ham_listener_put" {
   integration_uri        = aws_lambda_function.ham_listener_put.arn
   timeout_milliseconds   = 30000
   payload_format_version = "2.0"
+}
+
+
+resource "aws_lambda_function" "ham_sns_to_mqtt_listener" {
+  function_name    = "ham-sns-to-mqtt-listener"
+  handler          = "sns_to_mqtt.lambda_handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.basic_lambda_role.arn
+  runtime          = "python3.9"
+  timeout          = 3
+  architectures    = ["arm64"]
+  lifecycle {
+    ignore_changes = [environment]
+  }
+  tags = {
+    Name = "sns-to-mqtt"
+  }
+
+  vpc_config {
+    security_group_ids = [
+      "sg-05f795128b295c504",
+    ]
+    subnet_ids = [
+      aws_subnet.private["us-east-1b"].id
+    ]
+  }
+
+}
+
+resource "aws_lambda_permission" "ham_sns_to_mqtt_listener" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ham_sns_to_mqtt_listener.arn
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.ham_listener_telem.arn
+}
+
+resource "aws_sns_topic" "ham_listener_telem" {
+  name            = "ham-listener-telem"
+  delivery_policy = <<EOF
+{
+  "http": {
+    "defaultHealthyRetryPolicy": {
+      "minDelayTarget": 5,
+      "maxDelayTarget": 30,
+      "numRetries": 100,
+      "numMaxDelayRetries": 0,
+      "numNoDelayRetries": 3,
+      "numMinDelayRetries": 0,
+      "backoffFunction": "linear"
+    },
+    "disableSubscriptionOverrides": false
+  }
+}
+EOF
+}
+
+resource "aws_sns_topic_subscription" "ham_listener_telem" {
+  topic_arn = aws_sns_topic.ham_listener_telem.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.ham_sns_to_mqtt_listener.arn
 }

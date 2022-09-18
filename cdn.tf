@@ -282,6 +282,22 @@ resource "aws_cloudfront_distribution" "sondehub" {
     origin_id   = "S3-${local.domain_name}"
     origin_path = ""
   }
+  origin {
+    connection_attempts = 3
+    connection_timeout  = 10
+    domain_name         = "sondehub-burst-calc.s3-website-us-east-1.amazonaws.com"
+    origin_id           = "sondehub-burst-calc.s3-website-us-east-1.amazonaws.com"
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_keepalive_timeout = 5
+      origin_protocol_policy   = "http-only"
+      origin_read_timeout      = 30
+      origin_ssl_protocols     = [
+            "TLSv1.2",
+        ]
+    }
+  }
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods = [
@@ -306,6 +322,7 @@ resource "aws_cloudfront_distribution" "sondehub" {
     target_origin_id       = "S3-${local.domain_name}"
     viewer_protocol_policy = "redirect-to-https"
   }
+
   ordered_cache_behavior {
 
     allowed_methods = ["GET", "HEAD"]
@@ -326,6 +343,48 @@ resource "aws_cloudfront_distribution" "sondehub" {
     path_pattern           = "card/*"
     smooth_streaming       = false
     target_origin_id       = "card"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    compress    = true
+    default_ttl = 0
+    max_ttl                = 0
+    min_ttl                = 0
+    path_pattern           = "calc/*"
+    smooth_streaming       = false
+    target_origin_id       = "sondehub-burst-calc.s3-website-us-east-1.amazonaws.com"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    compress    = true
+    default_ttl = 0
+    max_ttl                = 0
+    min_ttl                = 0
+    path_pattern           = "calc"
+    smooth_streaming       = false
+    target_origin_id       = "sondehub-burst-calc.s3-website-us-east-1.amazonaws.com"
     viewer_protocol_policy = "redirect-to-https"
   }
   ordered_cache_behavior {

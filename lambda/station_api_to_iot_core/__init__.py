@@ -3,10 +3,33 @@ import zlib
 import base64
 import datetime
 from email.utils import parsedate
+import os
+import base64
+import gzip
+from io import BytesIO
+import boto3
 
 CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO"]
 
 import es
+
+# Setup SNS
+
+def set_connection_header(request, operation_name, **kwargs):
+    request.headers['Connection'] = 'keep-alive'
+
+sns = boto3.client("sns",region_name="us-east-1")
+sns.meta.events.register('request-created.sns', set_connection_header)
+
+def post(payload):
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        f.write(json.dumps(payload).encode('utf-8'))
+    payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
+    sns.publish(
+                TopicArn=os.getenv("SNS_TOPIC"),
+                Message=payload
+    )
 
 def lambda_handler(event, context):
     if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
@@ -54,6 +77,7 @@ def lambda_handler(event, context):
     index = datetime.datetime.utcnow().strftime("listeners-%Y-%m")
     payload["ts"] = datetime.datetime.utcnow().isoformat()
 
+    post([payload])
     es.request(json.dumps(payload),f"{index}/_doc","POST")
 
     return {"statusCode": 200, "body": "^v^ telm logged"}
