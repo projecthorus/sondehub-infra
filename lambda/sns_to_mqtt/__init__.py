@@ -75,7 +75,7 @@ def lambda_handler(event, context):
                 retain=False
             )
         client.publish(
-            topic=f'batch',
+            topic=os.getenv("MQTT_BATCH"),
             payload=json.dumps(payloads),
             qos=0,
             retain=False
