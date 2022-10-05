@@ -11,6 +11,7 @@ resource "aws_lambda_function" "redirect" {
   role          = aws_iam_role.basic_lambda_role.arn
   runtime       = "python3.9"
   timeout       = 3
+  source_code_hash = data.archive_file.lambda.output_base64sha256
 }
 
 
