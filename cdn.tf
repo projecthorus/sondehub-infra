@@ -14,6 +14,25 @@ resource "aws_lambda_function" "redirect" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
 }
 
+resource "aws_lambda_function" "ham_redirect" {
+  function_name = "ham-sondehub-redirect"
+  handler       = "redirect_ham.handler"
+  s3_bucket     = aws_s3_bucket_object.lambda.bucket
+  s3_key        = aws_s3_bucket_object.lambda.key
+  publish       = true
+  memory_size   = 128
+  role          = aws_iam_role.basic_lambda_role.arn
+  runtime       = "python3.9"
+  timeout       = 3
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+}
+
+resource "aws_lambda_permission" "ham_redirect" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ham_redirect.arn
+  principal     = "edgelambda.amazonaws.com"
+}
+
 
 
 resource "aws_route53_record" "testing_A" {
@@ -512,6 +531,31 @@ resource "aws_cloudfront_distribution" "amateur" {
     }
     max_ttl                = 5
     min_ttl                = 0
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/amateur"
+    viewer_protocol_policy = "redirect-to-https"
+    lambda_function_association {
+      event_type = "viewer-request"
+      lambda_arn = aws_lambda_function.ham_redirect.qualified_arn
+    }
+  }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 120
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 120
+    min_ttl                = 120
+    path_pattern           = "*.*"
     smooth_streaming       = false
     target_origin_id       = "S3-${local.domain_name}/amateur"
     viewer_protocol_policy = "redirect-to-https"

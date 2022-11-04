@@ -122,7 +122,7 @@ def get_telem(event, context):
     lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, duration)
 
-    path = f"telm-{lt.year:2}-{lt.month:02},telm-{gte.year:2}-{gte.month:02}/_search"
+    path = f"telm-*/_search"
     payload = {
         "timeout": "30s",
         "size": 0,
