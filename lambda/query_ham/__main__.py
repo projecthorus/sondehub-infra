@@ -3,12 +3,13 @@ import base64
 
 import zlib
 
-response = get_telem_full(
+response = get_telem(
         {
             "pathParameters": {
-                "payload_callsign" : "HORUSBINARY"
+                
             },
             "queryStringParameters":{
+                "payload_callsign" : "NOB14,VE6AGD-11",
                 "last": "10800",
                 "datetime": "2022-06-26T08:30:00.000001Z",
                 "format": "kml"

@@ -122,7 +122,7 @@ def get_telem(event, context):
     lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, duration)
 
-    path = f"ham-telm-{lt.year:2}-{lt.month:02},telm-{gte.year:2}-{gte.month:02}/_search"
+    path = f"ham-telm-{lt.year:2}-{lt.month:02},ham-telm-{gte.year:2}-{gte.month:02}/_search"
     payload = {
         "timeout": "30s",
         "size": 0,
@@ -209,13 +209,12 @@ def get_telem(event, context):
     }
     if "queryStringParameters" in event:
         if "payload_callsign" in event["queryStringParameters"]:
-            payload["query"]["bool"]["filter"].append(
-                {
-                    "match_phrase": {
-                        "payload_callsign": str(event["queryStringParameters"]["payload_callsign"])
-                    }
+            payloads = str(event["queryStringParameters"]["payload_callsign"]).split(",")
+            payload["query"]["bool"]["must"] = {
+                "bool": {
+                    "should": [ {"match_phrase": {"payload_callsign": x}} for x in payloads ]
                 }
-            )
+            }
     results = es.request(json.dumps(payload), path, "POST")
     output = {
         sonde["key"]: {

@@ -26,5 +26,5 @@ def handler(event, context):
         return redirect("https://cloudwatch.amazonaws.com/dashboard.html?dashboard=SondeHub&context=eyJSIjoidXMtZWFzdC0xIiwiRCI6ImN3LWRiLTE0Mzg0MTk0MTc3MyIsIlUiOiJ1cy1lYXN0LTFfZ2NlT3hwUnp0IiwiQyI6IjNuOWV0Y2ZxZm9zdm11aTc0NTYwMWFzajVzIiwiSSI6InVzLWVhc3QtMTo0ODI5YmQ4MC0yZmYzLTQ0MDktYjI1ZS0yOTE4MTM5YTgwM2MiLCJNIjoiUHVibGljIn0%3D")
     if uri != '/':
         uri = re.sub(r"^\/","", uri)
-        return redirect('https://amateur.sondehub.org/?sondehub=1#!f=' + sonde + '&mz=9&qm=All&q=' + sonde)
+        return redirect('https://amateur.sondehub.org/?sondehub=1#!f=' + uri + '&mz=9&qm=All&q=' + uri)
     return request
