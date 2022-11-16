@@ -191,7 +191,7 @@ def telemetry_filter(telemetry):
     # Modified 2021-06 to be more flexible and match older sondes, and reprogrammed sondes.
     # Still needs a letter at the start, but the numbers don't need to match the format exactly.
     if ("RS41" in telemetry["type"]) or ("RS92" in telemetry["type"]):
-        vaisala_callsign_valid = re.match(r"[C-Z][\d][\d][\d]\d{4}", _serial)
+        vaisala_callsign_valid = re.match(r"^[C-Z]\d{7}$", _serial)
     else:
         vaisala_callsign_valid = False
 

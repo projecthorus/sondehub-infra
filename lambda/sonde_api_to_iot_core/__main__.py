@@ -1,4 +1,50 @@
 from . import *
+import json
+import base64
+import gzip
+body = [
+    {
+        "software_name": "radiosonde_auto_rx",
+        "software_version": "1.5.9",
+        "uploader_callsign": "DL1XH",
+        "uploader_position": ["53.762","10.471",0],
+        "uploader_antenna": "5/8 GP",
+        "time_received": "2022-11-16T23:55:44.195615Z",
+        "datetime": "2022-11-16T23:56:00.000000Z",
+        "manufacturer": "Vaisala",
+        "type": "potato",
+        "serial": "T1240994",
+        "subtype": "iMet-4",
+        "frame": 5777,
+        "lat": 54.6185,
+        "lon": 11.23383,
+        "alt": 23214.77006,
+        "temp": -71.0,
+        "humidity": 3.3,
+        "pressure": 29.57,
+        "vel_v": 3.53743,
+        "vel_h": 43.32368,
+        "heading": 105.07473,
+        "sats": 10,
+        "batt": 2.5,
+        "frequency": 402.5,
+        "burst_timer": 65535,
+        "snr": 23.1,
+        "tx_frequency": 402.5,
+        "user-agent": "Amazon CloudFront",
+        "position": "54.6185,11.23383",
+        "upload_time_delta": -1.969,
+        "uploader_alt": 45.0,
+        "dev": True
+    }
+]
+
+compressed = BytesIO()
+with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+    f.write(json.dumps(body).encode('utf-8'))
+compressed.seek(0)
+bbody = base64.b64encode(compressed.read()).decode("utf-8")
+payload = compressed.getvalue()
 payload = {
     "version": "2.0",
     "routeKey": "PUT /sondes/telemetry",
@@ -36,7 +82,7 @@ payload = {
         "time": "31/Jan/2021:00:10:25 +0000",
         "timeEpoch": 1612051825409,
     },
-    "body": "H4sIAHrSGmIAA31TTY/TMBS876+ocm6MP+OmtxUIOIDEYYUQq1X02rx2LSVO8UfZBfHfib1a4UBZH3J482YymXFur1bz+Zmf6VR+OoTv4LCzMGK1XVUOejP5yfbYQQxT5x6q9YX1MzpvJpsYjCjSlkvxNEzQo+v2MAzeHPPWmw/sy/uLW6fJm/CkdVspQXTDq3XFKJGaVWt6d4kDNqC1kITVq83q3adSOZgRO4d7NGfs0wqnnNeU11zfcLFVaislYa1qmPpa8noImLgXKM2WUkLzWVBGsPEA+xAdukT7DMbDAAs3j6esaD5iqOUiTHQGhoTdMC5p2y7RuPs/9eCe6lJa62I8QEhDSRq2UeU8p8sY4UJsRAHAkAhccCaJ1pQ2pXEcTzNYa0ZoMb6Po+lNeJwhQUqtk0Pv5yCSYEtU6euMQ3fOBCW0FH8h9zMiZy0umk35Ipyvoj0m41QRqqUuiR6Cz1Ax20HIn0PUIir8FtHuk2FJl9guOh+61Hlqr1FKlKi3LodDWJnKQ/eSYpxLreGINhmprkf4MdnV62GK/Vs3zcMyrz/3vnqu7Lmif3+U7LLrcQjp1teMtE178c/IjUq16KzHlH5wEfPs19Xdb9jcd4QJBAAA",
+    "body": bbody,
     "isBase64Encoded": True,
 }
 print(lambda_handler(payload, {}))
