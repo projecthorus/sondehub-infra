@@ -9,10 +9,61 @@ import re
 from math import radians, degrees, sin, cos, atan2, sqrt, pi
 import statistics
 from collections import defaultdict
+import time
+import traceback
+import sys
 
 import base64
 import gzip
 from io import BytesIO
+
+logs = boto3.client('logs')
+sequenceToken = None
+
+def handle_error(message, event, stream_name):
+    global sequenceToken
+    print(message)
+    if sequenceToken:
+        response = logs.put_log_events(
+            logGroupName='/ingestion',
+            logStreamName=stream_name,
+            logEvents=[
+                {
+                    'timestamp': time.time_ns() // 1_000_000,
+                    'message': json.dumps(event)
+                },
+                {
+                    'timestamp': time.time_ns() // 1_000_000,
+                    'message': message
+                },
+            ],
+            sequenceToken=sequenceToken
+        )
+        sequenceToken = response['nextSequenceToken']
+    else:
+        try:
+            log_stream = logs.create_log_stream(
+            logGroupName='/ingestion',
+            logStreamName=stream_name
+        )
+        except: # ignore times we fail to create a log_stream - its probably already created
+            pass
+        response = logs.put_log_events(
+            logGroupName='/ingestion',
+            logStreamName=stream_name,
+            logEvents=[
+                {
+                    'timestamp': time.time_ns() // 1_000_000,
+                    'message': json.dumps(event)
+                },
+                {
+                    'timestamp': time.time_ns() // 1_000_000,
+                    'message': message
+                },
+            ]
+        )
+        sequenceToken = response['nextSequenceToken']
+    print(sequenceToken)
 
 def z_check(data, threshold):
     outliers = []
@@ -267,7 +318,7 @@ def post(payload):
                 Message=payload
     )
 
-def upload(event, context):
+def upload(event, context, orig_event):
     if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
         event["body"] = base64.b64decode(event["body"])
     if (
@@ -306,7 +357,7 @@ def upload(event, context):
             lon_outliers = z_check(lons, 3)
             alt_outliers = z_check(alts, 3)
             if lat_outliers or lon_outliers or alt_outliers:
-                print("Outlier check detected outlier, serial:", check_data[0]["serial"])
+                handle_error(f"Outlier check detected outlier, serial: {check_data[0]['serial']}", orig_event, context.log_stream_name)
             for index in lat_outliers:
                 payload_serials[serial][index]["lat_outlier"] = True
             for index in lon_outliers:
@@ -375,32 +426,35 @@ def upload(event, context):
         post(to_sns)
     return errors
 def lambda_handler(event, context):
+    orig_event = event.copy()
     try:
-        errors = upload(event, context)
-    except zlib.error:
-        return {"statusCode": 400, "body": "Could not decompress"}
-    except json.decoder.JSONDecodeError:
-        return {"statusCode": 400, "body": "Not valid json"}
-    error_message = {
-        "message": "some or all payloads could not be processed",
-        "errors": errors
-    }
-    if errors:
-        output = {
-            "statusCode": 202, 
-            "body": json.dumps(error_message),
-            "headers": {
-                "content-type": "application/json"
-            }
+        try:
+            errors = upload(event, context, orig_event)
+        except zlib.error:
+            response = {"statusCode": 400, "body": "Could not decompress"}
+            handle_error(json.dumps(response), orig_event, context.log_stream_name)
+            return response
+        except json.decoder.JSONDecodeError:
+            response = {"statusCode": 400, "body": "Not valid json"}
+            handle_error(json.dumps(response), orig_event, context.log_stream_name)
+            return response
+        error_message = {
+            "message": "some or all payloads could not be processed",
+            "errors": errors
         }
-        print({
-            "statusCode": 202, 
-            "body": error_message,
-            "headers": {
-                "content-type": "application/json"
+        if errors:
+            output = {
+                "statusCode": 202, 
+                "body": json.dumps(error_message),
+                "headers": {
+                    "content-type": "application/json"
+                }
             }
-        })
-        return output
-    else:
-        return {"statusCode": 200, "body": "^v^ telm logged"}
+            handle_error(json.dumps(output), orig_event, context.log_stream_name)
+            return output
+        else:
+            return {"statusCode": 200, "body": "^v^ telm logged"}
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        handle_error("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), orig_event, context.log_stream_name)
 

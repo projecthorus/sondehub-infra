@@ -2,6 +2,7 @@ from . import *
 import json
 import base64
 import gzip
+import uuid
 body = [
     {
         "software_name": "radiosonde_auto_rx",
@@ -85,4 +86,7 @@ payload = {
     "body": bbody,
     "isBase64Encoded": True,
 }
-print(lambda_handler(payload, {}))
+class fakeContext:
+    def __init__(self):
+        self.log_stream_name = str(uuid.uuid4())
+print(lambda_handler(payload, fakeContext()))

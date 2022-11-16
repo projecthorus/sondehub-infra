@@ -1,3 +1,100 @@
+
+resource "aws_iam_role" "ingestion_lambda_role" { # need a specific role so that we can disable cloudwatch logs
+  path                 = "/service-role/"
+  name_prefix                 = "sonde-ingestion-"
+  assume_role_policy   = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+    },
+    {
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "edgelambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+    }]
+}
+EOF
+  max_session_duration = 3600
+}
+
+
+
+
+resource "aws_iam_role_policy" "ingestion_lambda_role" {
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "sns:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogGroup",
+            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion",
+                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion*",
+                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt*"
+            ]
+        },
+        {
+            "Action": [
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeInstances",
+                "ec2:AttachNetworkInterface"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+        }
+                    
+    ]
+}
+EOF
+  role   = aws_iam_role.ingestion_lambda_role.name
+}
+
+resource "aws_cloudwatch_log_group" "ignestion" {
+  name = "/ingestion"
+}
+
+resource "aws_cloudwatch_log_group" "sns_to_mqtt" {
+  name = "/sns_to_mqtt"
+}
+
 resource "aws_lambda_function" "upload_telem" {
   function_name    = "sonde-api-to-iot-core"
   handler          = "sonde_api_to_iot_core.lambda_handler"
@@ -6,7 +103,7 @@ resource "aws_lambda_function" "upload_telem" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
-  role             = aws_iam_role.basic_lambda_role.arn
+  role             = aws_iam_role.ingestion_lambda_role.arn
   runtime          = "python3.9"
   timeout          = 30
   architectures    = ["arm64"]
@@ -140,7 +237,7 @@ resource "aws_lambda_function" "sns_to_mqtt" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
-  role             = aws_iam_role.basic_lambda_role.arn
+  role             = aws_iam_role.ingestion_lambda_role.arn
   runtime          = "python3.9"
   timeout          = 3
   architectures    = ["arm64"]

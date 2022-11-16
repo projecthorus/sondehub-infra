@@ -1,4 +1,9 @@
 from . import *
+import uuid
+
+class fakeContext:
+    def __init__(self):
+        self.log_stream_name = str(uuid.uuid4())
 # test event
 ###########
 if __name__ == "__main__":
@@ -23,6 +28,6 @@ if __name__ == "__main__":
             }
         ]
     }
-    print(lambda_handler(demo_event, {}))
+    print(lambda_handler(demo_event, fakeContext()))
 
     
