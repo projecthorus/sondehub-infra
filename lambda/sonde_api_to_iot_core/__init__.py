@@ -190,7 +190,10 @@ def telemetry_filter(telemetry):
     # ~2025-2030, so have expanded the regex to match (and also support some older RS92s)
     # Modified 2021-06 to be more flexible and match older sondes, and reprogrammed sondes.
     # Still needs a letter at the start, but the numbers don't need to match the format exactly.
-    vaisala_callsign_valid = re.match(r"[C-Z][\d][\d][\d]\d{4}", _serial)
+    if ("RS41" in telemetry["type"]) or ("RS92" in telemetry["type"]):
+        vaisala_callsign_valid = re.match(r"[C-Z][\d][\d][\d]\d{4}", _serial)
+    else:
+        vaisala_callsign_valid = False
 
     # Just make sure we're not getting the 'xxxxxxxx' unknown serial from the DFM decoder.
     if "DFM" in telemetry["type"]:
@@ -222,7 +225,7 @@ def telemetry_filter(telemetry):
         or ("iMet" in telemetry["type"])
         or ("MTS01" in telemetry["type"])
     ):
-        _id_msg = "Payload ID %s is invalid." % telemetry["serial"]
+        _id_msg = "Payload ID %s from Sonde type %s is invalid." % (telemetry["serial"], telemetry["type"])
         # Add in a note about DFM sondes and their oddness...
         if "DFM" in telemetry["serial"]:
             _id_msg += " Note: DFM sondes may take a while to get an ID."
