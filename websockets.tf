@@ -89,143 +89,143 @@ resource "aws_network_interface" "ws_pad" {
   description = "Do not delete. Padding to limit addresses"
 }
 
-resource "aws_ecs_task_definition" "ws_reader" {
-  family = "ws-reader"
-  container_definitions = jsonencode(
-    [
-      {
-        command = [
-          "s3",
-          "sync",
-          "s3://sondehub-ws-config/",
-          "/config/",
-        ]
-        cpu         = 0
-        environment = []
-        essential   = false
-        image       = "amazon/aws-cli"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/ws"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
-        mountPoints = [
-          {
-            containerPath = "/config"
-            sourceVolume  = "config"
-          },
-        ]
-        name         = "config"
-        portMappings = []
-        volumesFrom  = []
-      },
-      {
-        command = []
-        cpu     = 0
-        dependsOn = [
-          {
-            condition     = "SUCCESS"
-            containerName = "config"
-          },
-          {
-            condition     = "SUCCESS"
-            containerName = "config-move"
-          },
-        ]
-        environment = []
-        essential   = true
-        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/ws"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
-        mountPoints = [
-          {
-            containerPath = "/mosquitto/config"
-            sourceVolume  = "config"
-          },
-        ]
-        name = "mqtt"
-        portMappings = [
-          {
-            containerPort = 8080
-            hostPort      = 8080
-            protocol      = "tcp"
-          },
-          {
-            containerPort = 8883
-            hostPort      = 8883
-            protocol      = "tcp"
-          },
-        ]
-        ulimits = [
-          {
-            hardLimit = 50000
-            name      = "nofile"
-            softLimit = 30000
-          },
-        ]
-        volumesFrom = []
-      },
-      {
-        command = [
-          "cp",
-          "/config/mosquitto-reader.conf",
-          "/config/mosquitto.conf",
-        ]
-        cpu = 0
-        dependsOn = [
-          {
-            condition     = "SUCCESS"
-            containerName = "config"
-          },
-        ]
-        environment = []
-        essential   = false
-        image       = "alpine"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/ws-reader"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
-        mountPoints = [
-          {
-            containerPath = "/config"
-            sourceVolume  = "config"
-          },
-        ]
-        name         = "config-move"
-        portMappings = []
-        volumesFrom  = []
-      },
-    ]
-  )
-  cpu                = "256"
-  execution_role_arn = aws_iam_role.ecs_execution.arn
-  memory             = "512"
-  network_mode       = "awsvpc"
-  requires_compatibilities = [
-    "FARGATE",
-  ]
+# resource "aws_ecs_task_definition" "ws_reader" {
+#   family = "ws-reader"
+#   container_definitions = jsonencode(
+#     [
+#       {
+#         command = [
+#           "s3",
+#           "sync",
+#           "s3://sondehub-ws-config/",
+#           "/config/",
+#         ]
+#         cpu         = 0
+#         environment = []
+#         essential   = false
+#         image       = "amazon/aws-cli"
+#         logConfiguration = {
+#           logDriver = "awslogs"
+#           options = {
+#             awslogs-group         = "/ecs/ws"
+#             awslogs-region        = "us-east-1"
+#             awslogs-stream-prefix = "ecs"
+#           }
+#         }
+#         mountPoints = [
+#           {
+#             containerPath = "/config"
+#             sourceVolume  = "config"
+#           },
+#         ]
+#         name         = "config"
+#         portMappings = []
+#         volumesFrom  = []
+#       },
+#       {
+#         command = []
+#         cpu     = 0
+#         dependsOn = [
+#           {
+#             condition     = "SUCCESS"
+#             containerName = "config"
+#           },
+#           {
+#             condition     = "SUCCESS"
+#             containerName = "config-move"
+#           },
+#         ]
+#         environment = []
+#         essential   = true
+#         image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
+#         logConfiguration = {
+#           logDriver = "awslogs"
+#           options = {
+#             awslogs-group         = "/ecs/ws"
+#             awslogs-region        = "us-east-1"
+#             awslogs-stream-prefix = "ecs"
+#           }
+#         }
+#         mountPoints = [
+#           {
+#             containerPath = "/mosquitto/config"
+#             sourceVolume  = "config"
+#           },
+#         ]
+#         name = "mqtt"
+#         portMappings = [
+#           {
+#             containerPort = 8080
+#             hostPort      = 8080
+#             protocol      = "tcp"
+#           },
+#           {
+#             containerPort = 8883
+#             hostPort      = 8883
+#             protocol      = "tcp"
+#           },
+#         ]
+#         ulimits = [
+#           {
+#             hardLimit = 50000
+#             name      = "nofile"
+#             softLimit = 30000
+#           },
+#         ]
+#         volumesFrom = []
+#       },
+#       {
+#         command = [
+#           "cp",
+#           "/config/mosquitto-reader.conf",
+#           "/config/mosquitto.conf",
+#         ]
+#         cpu = 0
+#         dependsOn = [
+#           {
+#             condition     = "SUCCESS"
+#             containerName = "config"
+#           },
+#         ]
+#         environment = []
+#         essential   = false
+#         image       = "alpine"
+#         # logConfiguration = {
+#         #   logDriver = "awslogs"
+#         #   options = {
+#         #     awslogs-group         = "/ecs/ws-reader"
+#         #     awslogs-region        = "us-east-1"
+#         #     awslogs-stream-prefix = "ecs"
+#         #   }
+#         # }
+#         mountPoints = [
+#           {
+#             containerPath = "/config"
+#             sourceVolume  = "config"
+#           },
+#         ]
+#         name         = "config-move"
+#         portMappings = []
+#         volumesFrom  = []
+#       },
+#     ]
+#   )
+#   cpu                = "256"
+#   execution_role_arn = aws_iam_role.ecs_execution.arn
+#   memory             = "512"
+#   network_mode       = "awsvpc"
+#   requires_compatibilities = [
+#     "FARGATE",
+#   ]
 
-  tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+#   tags          = {}
+#   task_role_arn = "arn:aws:iam::143841941773:role/ws"
 
 
-  volume {
-    name = "config"
-  }
-}
+#   volume {
+#     name = "config"
+#   }
+# }
 
 resource "aws_ecs_task_definition" "ws_reader_ec2" {
   family = "ws_reader_ec2"
@@ -276,14 +276,14 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
         environment = []
         essential   = true
         image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/ws"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
+        # logConfiguration = {
+        #   logDriver = "awslogs"
+        #   options = {
+        #     awslogs-group         = "/ecs/ws"
+        #     awslogs-region        = "us-east-1"
+        #     awslogs-stream-prefix = "ecs"
+        #   }
+        # }
         mountPoints = [
           {
             containerPath = "/mosquitto/config"
@@ -404,14 +404,14 @@ resource "aws_ecs_task_definition" "ws" {
         environment = []
         essential   = true
         image       = "eclipse-mosquitto:2-openssl"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/ws"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
+        # logConfiguration = {
+        #   logDriver = "awslogs"
+        #   options = {
+        #     awslogs-group         = "/ecs/ws"
+        #     awslogs-region        = "us-east-1"
+        #     awslogs-stream-prefix = "ecs"
+        #   }
+        # }
         mountPoints = [
           {
             containerPath = "/mosquitto/config"
@@ -505,35 +505,35 @@ resource "aws_lb_target_group" "ws_reader" {
   }
 }
 
-resource "aws_ecs_service" "ws_reader" {
-  name                              = "ws-reader"
-  cluster                           = aws_ecs_cluster.ws.id
-  task_definition                   = aws_ecs_task_definition.ws_reader.arn
-  enable_ecs_managed_tags           = true
-  health_check_grace_period_seconds = 60
-  iam_role                          = "aws-service-role"
-  launch_type                       = "FARGATE"
-  platform_version                  = "LATEST"
-  desired_count                     = 0
+# resource "aws_ecs_service" "ws_reader" {
+#   name                              = "ws-reader"
+#   cluster                           = aws_ecs_cluster.ws.id
+#   task_definition                   = aws_ecs_task_definition.ws_reader.arn
+#   enable_ecs_managed_tags           = true
+#   health_check_grace_period_seconds = 60
+#   iam_role                          = "aws-service-role"
+#   launch_type                       = "FARGATE"
+#   platform_version                  = "LATEST"
+#   desired_count                     = 0
 
-  load_balancer {
-    container_name   = "mqtt"
-    container_port   = 8080
-    target_group_arn = aws_lb_target_group.ws_reader.arn
-  }
+#   load_balancer {
+#     container_name   = "mqtt"
+#     container_port   = 8080
+#     target_group_arn = aws_lb_target_group.ws_reader.arn
+#   }
 
-  lifecycle {
-    ignore_changes = [desired_count]
-  }
+#   lifecycle {
+#     ignore_changes = [desired_count]
+#   }
 
-  network_configuration {
-    assign_public_ip = true
-    security_groups = [
-      aws_security_group.ws_reader.id
-    ]
-    subnets = values(aws_subnet.public)[*].id
-  }
-}
+#   network_configuration {
+#     assign_public_ip = true
+#     security_groups = [
+#       aws_security_group.ws_reader.id
+#     ]
+#     subnets = values(aws_subnet.public)[*].id
+#   }
+# }
 
 resource "aws_ecs_service" "ws_reader_ec2" {
   name                    = "ws-reader-ec2"
@@ -814,31 +814,31 @@ resource "aws_iam_role_policy" "s3_config" {
 EOF
 }
 
-resource "aws_appautoscaling_target" "ws_reader" {
-  service_namespace  = "ecs"
-  scalable_dimension = "ecs:service:DesiredCount"
-  resource_id        = "service/ws/ws-reader"
-  min_capacity       = 0
-  max_capacity       = 0
-}
+# resource "aws_appautoscaling_target" "ws_reader" {
+#   service_namespace  = "ecs"
+#   scalable_dimension = "ecs:service:DesiredCount"
+#   resource_id        = "service/ws/ws-reader"
+#   min_capacity       = 0
+#   max_capacity       = 0
+# }
 
-resource "aws_appautoscaling_policy" "ws_reader" {
-  name               = "ws-reader-tt"
-  service_namespace  = aws_appautoscaling_target.ws_reader.service_namespace
-  scalable_dimension = aws_appautoscaling_target.ws_reader.scalable_dimension
-  resource_id        = aws_appautoscaling_target.ws_reader.resource_id
-  policy_type        = "TargetTrackingScaling"
+# resource "aws_appautoscaling_policy" "ws_reader" {
+#   name               = "ws-reader-tt"
+#   service_namespace  = aws_appautoscaling_target.ws_reader.service_namespace
+#   scalable_dimension = aws_appautoscaling_target.ws_reader.scalable_dimension
+#   resource_id        = aws_appautoscaling_target.ws_reader.resource_id
+#   policy_type        = "TargetTrackingScaling"
 
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
+#   target_tracking_scaling_policy_configuration {
+#     predefined_metric_specification {
+#       predefined_metric_type = "ECSServiceAverageCPUUtilization"
+#     }
 
-    target_value       = 60
-    scale_in_cooldown  = 200
-    scale_out_cooldown = 200
-  }
-}
+#     target_value       = 60
+#     scale_in_cooldown  = 200
+#     scale_out_cooldown = 200
+#   }
+# }
 
 # TODO
 # s3 config bucket
