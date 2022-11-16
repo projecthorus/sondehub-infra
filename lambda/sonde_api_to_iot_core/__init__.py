@@ -357,7 +357,8 @@ def upload(event, context, orig_event):
             lon_outliers = z_check(lons, 3)
             alt_outliers = z_check(alts, 3)
             if lat_outliers or lon_outliers or alt_outliers:
-                handle_error(f"Outlier check detected outlier, serial: {check_data[0]['serial']}", orig_event, context.log_stream_name)
+                pass
+                #handle_error(f"Outlier check detected outlier, serial: {check_data[0]['serial']}", orig_event, context.log_stream_name)
             for index in lat_outliers:
                 payload_serials[serial][index]["lat_outlier"] = True
             for index in lon_outliers:
@@ -450,7 +451,7 @@ def lambda_handler(event, context):
                     "content-type": "application/json"
                 }
             }
-            handle_error(json.dumps(output), orig_event, context.log_stream_name)
+            #handle_error(json.dumps(output), orig_event, context.log_stream_name)
             return output
         else:
             return {"statusCode": 200, "body": "^v^ telm logged"}
