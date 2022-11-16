@@ -290,10 +290,22 @@ def telemetry_filter(telemetry):
         if telemetry["software_name"] == "radiosonde_auto_rx":
             if parse_autorx_version(telemetry["software_version"]) < (1,5,9): 
                 return (False,f"Autorx version is out of date and doesn't handle iMet-1 and iMet-4 radiosondes correctly. Please update to 1.5.9 or later")
+    if "DFM" in telemetry["type"]:
+        if telemetry["software_name"] == "SondeMonitor":
+            if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,7,9): 
+                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.7.9 or later")
+                    
     if "dev" in telemetry:
         return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
     return (True, "")
+
+def parse_sondemonitor_version(version):
+    try:
+        m = re.search(r'(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?', version)
+        return tuple([int(x if x != None else 0) for x in m.groups()])
+    except:
+        return (0,0,0,0)
 
 def parse_autorx_version(version):
     try:
