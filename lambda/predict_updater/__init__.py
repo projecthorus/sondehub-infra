@@ -416,7 +416,7 @@ def bulk_upload_es(index_prefix,payloads):
         body += "{\"index\":{}}\n" + json.dumps(payload) + "\n"
     body += "\n"
     date_prefix = datetime.now().strftime("%Y-%m")
-    result = es.request(body, f"{index_prefix}-{date_prefix}/_doc/_bulk", "POST")
+    result = es.request(body, f"{index_prefix}-{date_prefix}/_bulk", "POST")
 
     if 'errors' in result and result['errors'] == True:
         error_types = [x['index']['error']['type'] for x in result['items'] if 'error' in x['index']] # get all the error types

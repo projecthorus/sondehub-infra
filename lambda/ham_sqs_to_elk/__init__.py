@@ -28,7 +28,7 @@ def lambda_handler(event, context):
             body += "{\"index\":{}}\n" + json.dumps(payload) + "\n"
         body += "\n"
 
-        result = es.request(body, f"ham-telm-{index}/_doc/_bulk", "POST")
+        result = es.request(body, f"ham-telm-{index}/_bulk", "POST")
         if 'errors' in result and result['errors'] == True:
             error_types = [x['index']['error']['type'] for x in result['items'] if 'error' in x['index']] # get all the error types
             print(event)
