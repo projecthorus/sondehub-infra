@@ -23,7 +23,7 @@ def handler(event, context):
     if uri.startswith('/go/donate'):
         return redirect('https://www.paypal.com/donate/?hosted_button_id=4V7L43MD5CQ52')
     if uri.startswith('/go/status'):
-        return redirect("https://cloudwatch.amazonaws.com/dashboard.html?dashboard=SondeHub&context=eyJSIjoidXMtZWFzdC0xIiwiRCI6ImN3LWRiLTE0Mzg0MTk0MTc3MyIsIlUiOiJ1cy1lYXN0LTFfZ2NlT3hwUnp0IiwiQyI6IjNuOWV0Y2ZxZm9zdm11aTc0NTYwMWFzajVzIiwiSSI6InVzLWVhc3QtMTo0ODI5YmQ4MC0yZmYzLTQ0MDktYjI1ZS0yOTE4MTM5YTgwM2MiLCJNIjoiUHVibGljIn0%3D")
+        return redirect("https://grafana.v2.sondehub.org/d/bhdBI0KVz/infrastructure")
     if uri.startswith('/go/'):
         tinyurl = uri.replace("/go/", "")
         return redirect('https://tinyurl.com/' + tinyurl)

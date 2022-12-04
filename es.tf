@@ -2,7 +2,7 @@
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   domain_name           = "sondes-v2-7-9"
-  elasticsearch_version = "OpenSearch_1.3"
+  elasticsearch_version = "OpenSearch_2.3"
   cluster_config {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
