@@ -31,7 +31,10 @@ def request(payload, path, method, params=None):
     r = es_session.send(request.prepare())
 
     if r.status_code != 200 and r.status_code != 201:
-        print(zlib.decompress(r.content, 16 + zlib.MAX_WBITS))
+        try:
+            print(zlib.decompress(r.content, 16 + zlib.MAX_WBITS))
+        except:
+            print(r.content)
         raise RuntimeError
     
     if (
