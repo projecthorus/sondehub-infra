@@ -778,6 +778,8 @@ definitions:
           - Intermet Systems
           - Lockheed Martin
           - Meteo-Radiy
+          - Meteosis
+          - Meisei
       type:
         type: "string"
         description: "The high-level radiosonde model, as can be determined just from the transmit modulation and high-level packet format."
@@ -787,10 +789,14 @@ definitions:
           - M10
           - M20
           - iMet-4
+          - iMet-50
           - iMet-54
           - LMS6-400
           - LMS6-1680
           - MRZ
+          - MTS01
+          - iMS-100
+          - RS-11G
       serial:
         type: "string"
         description: >
