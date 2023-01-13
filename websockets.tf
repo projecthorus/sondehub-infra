@@ -275,7 +275,7 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
         ]
         environment = []
         essential   = true
-        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
+        image       = "eclipse-mosquitto:latest"
         # logConfiguration = {
         #   logDriver = "awslogs"
         #   options = {
