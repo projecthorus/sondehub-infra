@@ -1,5 +1,5 @@
 name: 'Terraform GitHub Actions'
-on:
+True:
   - pull_request
 env:
   tf_version: 'latest'
