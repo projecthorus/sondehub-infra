@@ -433,6 +433,8 @@ def predict(event, context):
 async def predict_async(event, context):
     sem = asyncio.Semaphore(5)
     path = "telm-*/_search"
+    interval = 10 
+    lag = 3 # how many samples to use
     payload = {
                 "aggs": {
                     "2": {
@@ -447,7 +449,7 @@ async def predict_async(event, context):
                         "3": {
                         "date_histogram": {
                             "field": "datetime",
-                            "fixed_interval": "5s"
+                            "fixed_interval": f"{interval}s"
                         },
                         "aggs": {
                             "1": {
@@ -578,7 +580,7 @@ async def predict_async(event, context):
             serials[x['key']] = {
                 "alt": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['1']['hits']['hits'][0]['fields']['alt'][0],
                 "position": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]['fields']['position'][0].split(","),
-                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/25, # as we bucket for every 5 seconds with a lag of 5
+                "rate": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['4']['value']/(lag*interval), # as we bucket for every 5 seconds with a lag of 5
                 "time": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['key_as_string'],
                 "type": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"]["type"],
                 "subtype": sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"]["subtype"] if "subtype" in sorted(x['3']['buckets'], key=lambda k: k['key_as_string'])[-1]['5']['hits']['hits'][0]["_source"] else None
