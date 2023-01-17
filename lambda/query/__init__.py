@@ -85,14 +85,14 @@ def get_sondes(event, context):
 def get_telem(event, context):
 
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
-        "3d": (259200, 1200),  # 3d, 20m
-        "1d": (86400, 600),  # 1d, 10m
-        "12h": (43200, 600),  # 1d, 10m
-        "6h": (21600, 120),  # 6h, 1m
-        "3h": (10800, 60),  # 3h, 10s
-        "1h": (3600, 40),
-        "30m": (1800, 20),
-        "1m": (60, 1),
+        "3d": (259200, 1200),  
+        "1d": (86400, 600), 
+        "12h": (43200, 600),  
+        "6h": (21600, 240),  
+        "3h": (10800, 120), 
+        "1h": (3600, 60),
+        "30m": (1800, 30),
+        "1m": (60, 5),
         "15s": (15, 1),
         "0": (0, 1) # for getting a single time point
     }
@@ -130,7 +130,6 @@ def get_telem(event, context):
             "2": {
                 "terms": {
                     "field": "serial.keyword",
-                    "order": {"_key": "desc"},
                     "size": 10000,
                 },
                 "aggs": {
@@ -143,12 +142,6 @@ def get_telem(event, context):
                         "aggs": {
                             "1": {
                                 "top_hits": {
-                                    # "docvalue_fields": [
-                                    #     {"field": "position"},
-                                    #     {"field": "alt"},
-                                    #     {"field": "datetime"},
-                                    # ],
-                                    # "_source": "position",
                                     "size": 10 if (duration == 0 ) else 1,
                                         "sort": [
                                                 {"datetime": {"order": "desc"}},
@@ -163,7 +156,6 @@ def get_telem(event, context):
         },
         "query": {
             "bool": {
-                "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"serial": "xxxxxxxx"}}],
                 "filter": [
                     {"match_all": {}},
                     {
