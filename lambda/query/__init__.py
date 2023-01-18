@@ -145,7 +145,7 @@ def get_telem(event, context):
                                     "size": 10 if (duration == 0 ) else 1,
                                         "sort": [
                                                 {"datetime": {"order": "desc"}},
-                                                {"pressure": {"order": "desc","mode" : "median"}}
+                                                
                                             ],
                                 }
                             }
@@ -169,6 +169,7 @@ def get_telem(event, context):
     }
     if "queryStringParameters" in event:
         if "serial" in event["queryStringParameters"]:
+            payload["aggs"]["2"]["aggs"]["3"]["aggs"]["1"]["top_hits"]["sort"].append({"pressure": {"order": "desc","mode" : "median"}})
             payload["query"]["bool"]["filter"].append(
                 {
                     "match_phrase": {
