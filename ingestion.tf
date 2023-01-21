@@ -1,7 +1,7 @@
 
 resource "aws_iam_role" "ingestion_lambda_role" { # need a specific role so that we can disable cloudwatch logs
   path                 = "/service-role/"
-  name_prefix                 = "sonde-ingestion-"
+  name_prefix          = "sonde-ingestion-"
   assume_role_policy   = <<EOF
 {
     "Version": "2012-10-17",
@@ -128,7 +128,7 @@ resource "aws_lambda_function" "station" {
   architectures    = ["arm64"]
   environment {
     variables = {
-      "ES" = "es.${local.domain_name}"
+      "ES"        = "es.${local.domain_name}"
       "SNS_TOPIC" = aws_sns_topic.listener_telem.arn
     }
   }

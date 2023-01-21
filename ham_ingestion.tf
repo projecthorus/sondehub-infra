@@ -271,7 +271,7 @@ resource "aws_lambda_function" "ham_listener_put" {
   architectures    = ["arm64"]
   environment {
     variables = {
-      "ES" = "es.${local.domain_name}"
+      "ES"        = "es.${local.domain_name}"
       "SNS_TOPIC" = aws_sns_topic.ham_listener_telem.arn
     }
   }
