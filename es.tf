@@ -60,7 +60,7 @@ EOF
     ebs_enabled = true
     volume_type = "gp3"
     volume_size = 200
-    iops        = 3000 
+    iops        = 3000
   }
   log_publishing_options {
     cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs"

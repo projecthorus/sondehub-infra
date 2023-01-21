@@ -2,28 +2,28 @@
 
 
 resource "aws_lambda_function" "redirect" {
-  function_name = "sondehub-redirect"
-  handler       = "redirect.handler"
-  s3_bucket     = aws_s3_bucket_object.lambda.bucket
-  s3_key        = aws_s3_bucket_object.lambda.key
-  publish       = true
-  memory_size   = 128
-  role          = aws_iam_role.basic_lambda_role.arn
-  runtime       = "python3.9"
-  timeout       = 3
+  function_name    = "sondehub-redirect"
+  handler          = "redirect.handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.basic_lambda_role.arn
+  runtime          = "python3.9"
+  timeout          = 3
   source_code_hash = data.archive_file.lambda.output_base64sha256
 }
 
 resource "aws_lambda_function" "ham_redirect" {
-  function_name = "ham-sondehub-redirect"
-  handler       = "redirect_ham.handler"
-  s3_bucket     = aws_s3_bucket_object.lambda.bucket
-  s3_key        = aws_s3_bucket_object.lambda.key
-  publish       = true
-  memory_size   = 128
-  role          = aws_iam_role.basic_lambda_role.arn
-  runtime       = "python3.9"
-  timeout       = 3
+  function_name    = "ham-sondehub-redirect"
+  handler          = "redirect_ham.handler"
+  s3_bucket        = aws_s3_bucket_object.lambda.bucket
+  s3_key           = aws_s3_bucket_object.lambda.key
+  publish          = true
+  memory_size      = 128
+  role             = aws_iam_role.basic_lambda_role.arn
+  runtime          = "python3.9"
+  timeout          = 3
   source_code_hash = data.archive_file.lambda.output_base64sha256
 }
 
@@ -313,9 +313,9 @@ resource "aws_cloudfront_distribution" "sondehub" {
       origin_keepalive_timeout = 5
       origin_protocol_policy   = "http-only"
       origin_read_timeout      = 30
-      origin_ssl_protocols     = [
-            "TLSv1.2",
-        ]
+      origin_ssl_protocols = [
+        "TLSv1.2",
+      ]
     }
   }
   default_cache_behavior {
@@ -377,8 +377,8 @@ resource "aws_cloudfront_distribution" "sondehub" {
       }
       query_string = false
     }
-    compress    = true
-    default_ttl = 0
+    compress               = true
+    default_ttl            = 0
     max_ttl                = 0
     min_ttl                = 0
     path_pattern           = "calc/*"
@@ -398,8 +398,8 @@ resource "aws_cloudfront_distribution" "sondehub" {
       }
       query_string = false
     }
-    compress    = true
-    default_ttl = 0
+    compress               = true
+    default_ttl            = 0
     max_ttl                = 0
     min_ttl                = 0
     path_pattern           = "calc"
