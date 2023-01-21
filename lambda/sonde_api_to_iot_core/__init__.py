@@ -348,7 +348,10 @@ def upload(event, context, orig_event):
             ).total_seconds()
         except:
             pass
+    # check if event is an array
     payloads = json.loads(event["body"])
+    if type(payloads) != list:
+        raise TypeError("Expecting list of payloads")
     to_sns = []
     first = False
     errors = []
@@ -451,6 +454,10 @@ def lambda_handler(event, context):
             response = {"statusCode": 400, "body": "Not valid json"}
             handle_error(json.dumps(response), orig_event, context.log_stream_name)
             return response
+        except TypeError as e:
+            response = {"statusCode": 400, "body": str(e)}
+            handle_error(json.dumps(response), orig_event, context.log_stream_name)
+            return response            
         error_message = {
             "message": "some or all payloads could not be processed",
             "errors": errors
@@ -470,4 +477,5 @@ def lambda_handler(event, context):
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         handle_error("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), orig_event, context.log_stream_name)
+        return {"statusCode": 400, "body": "Error processing request. Check payloads format."}
 

@@ -3,42 +3,7 @@ import json
 import base64
 import gzip
 import uuid
-body = [
-    {
-        "software_name": "SondeMonitor",
-        "software_version": "6.2.7.9",
-        "uploader_callsign": "DL1XH",
-        "uploader_position": ["53.762","10.471",0],
-        "uploader_antenna": "5/8 GP",
-        "time_received": "2022-11-16T23:55:44.195615Z",
-        "datetime": "2022-11-16T23:56:00.000000Z",
-        "manufacturer": "Vaisala",
-        "type": "DFM",
-        "serial": "T1240994",
-        "subtype": "RS41-SGP",
-        "frame": 5777,
-        "lat": 54.6185,
-        "lon": 11.23383,
-        "alt": 1.77006,
-        "temp": -71.0,
-        "humidity": 3.3,
-        "pressure": 29.57,
-        "vel_v": 3.53743,
-        "vel_h": 43.32368,
-        "heading": 105.07473,
-        "sats": 10,
-        "batt": 2.5,
-        "frequency": 402.5,
-        "burst_timer": 65535,
-        "snr": 23.1,
-        "tx_frequency": 402.5,
-        "user-agent": "Amazon CloudFront",
-        "position": "54.6185,11.23383",
-        "upload_time_delta": -1.969,
-        "uploader_alt": 45.0,
-        "dev": True
-    }
-]
+body = {"software_name": "SondeHubUploader", "software_version": "1.0.0", "uploader_callsign": "SIMON2-14", "uploader_position": [53.23764, 7.74426, 7.0], "uploader_antenna": "5/8-Wave-J-Pole", "time_received": "2023-01-20T22:48:43.208780Z", "datetime": "2023-01-20T22:48:41.000000Z", "manufacturer": "Vaisala", "type": "RS41", "serial": "U1440085", "frame": 1759, "lat": 53.706667, "lon": 7.146944, "alt": 1295.7, "vel_v": 5.5, "vel_h": 6.2, "heading": 222.0, "sats": 10, "batt": 2.9, "frequency": 404.1, "rssi": 70.9}
 
 compressed = BytesIO()
 with gzip.GzipFile(fileobj=compressed, mode='w') as f:
