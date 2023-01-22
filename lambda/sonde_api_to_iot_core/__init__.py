@@ -294,7 +294,11 @@ def telemetry_filter(telemetry):
         if telemetry["software_name"] == "SondeMonitor":
             if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,4): 
                 return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.4 or later")
-                    
+
+    # block callsigns
+    if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144"]:
+        return (False, "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
+
     if "dev" in telemetry:
         return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
 

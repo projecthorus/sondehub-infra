@@ -3,7 +3,30 @@ import json
 import base64
 import gzip
 import uuid
-body = {"software_name": "SondeHubUploader", "software_version": "1.0.0", "uploader_callsign": "SIMON2-14", "uploader_position": [53.23764, 7.74426, 7.0], "uploader_antenna": "5/8-Wave-J-Pole", "time_received": "2023-01-20T22:48:43.208780Z", "datetime": "2023-01-20T22:48:41.000000Z", "manufacturer": "Vaisala", "type": "RS41", "serial": "U1440085", "frame": 1759, "lat": 53.706667, "lon": 7.146944, "alt": 1295.7, "vel_v": 5.5, "vel_h": 6.2, "heading": 222.0, "sats": 10, "batt": 2.9, "frequency": 404.1, "rssi": 70.9}
+body = [{
+    "dev":True,
+    "software_name": "SondeHubUploader", 
+    "software_version": "1.0.0", 
+    "uploader_callsign": "a", 
+    "uploader_position": [53.23764, 7.74426, 7.0], 
+    "uploader_antenna": "5/8-Wave-J-Pole",
+    "time_received": "2023-01-22T22:48:43.208780Z",
+    "datetime": "2023-01-22T22:48:41.000000Z",
+    "manufacturer": "Vaisala", 
+    "type": "RS41", 
+    "serial": "U1440085",
+    "frame": 1759, 
+    "lat": 53.706667, 
+    "lon": 7.146944, 
+    "alt": 1295.7,
+    "vel_v": 5.5, 
+    "vel_h": 6.2,
+    "heading": 222.0,
+    "sats": 10, 
+    "batt": 2.9, 
+    "frequency": 404.1, 
+    "rssi": 70.9
+}]
 
 compressed = BytesIO()
 with gzip.GzipFile(fileobj=compressed, mode='w') as f:
