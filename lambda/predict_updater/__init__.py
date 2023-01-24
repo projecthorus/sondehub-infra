@@ -474,7 +474,7 @@ async def predict_async(event, context):
                             "serial_diff": {
                                 "buckets_path": "4-metric",
                                 "gap_policy": "skip",
-                                "lag": 5
+                                "lag": lag
                             }
                             },
                             "5": {
