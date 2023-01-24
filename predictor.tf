@@ -221,7 +221,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
           "-b",
           "0.0.0.0:8000",
           "--workers=1",
-          "--timeout=30",
+          "--timeout=10",
           "--keep-alive=65",
           "--threads=20",
           "tawhiri.api:app"
@@ -428,13 +428,13 @@ resource "aws_lb_target_group" "tawhiri" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    interval            = 10
+    unhealthy_threshold = 10
+    interval            = 20
     matcher             = "200"
     path                = "/api/datasetcheck"
     port                = "traffic-port"
     protocol            = "HTTP"
-    timeout             = 5
-    unhealthy_threshold = 2
+    timeout             = 12
   }
 }
 
