@@ -31,6 +31,7 @@ resource "aws_lambda_function" "ham_telem" {
   handler          = "query_ham.get_telem"
   s3_bucket        = aws_s3_bucket_object.lambda.bucket
   s3_key           = aws_s3_bucket_object.lambda.key
+  reserved_concurrent_executions = 10 
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 1024

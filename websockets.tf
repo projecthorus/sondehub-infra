@@ -541,7 +541,7 @@ resource "aws_ecs_service" "ws_reader_ec2" {
   task_definition         = aws_ecs_task_definition.ws_reader_ec2.arn
   enable_ecs_managed_tags = true
   launch_type             = "EC2"
-  desired_count           = 6
+  desired_count           = 9
   placement_constraints {
     type = "distinctInstance"
   }

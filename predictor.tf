@@ -145,6 +145,7 @@ resource "aws_lambda_function" "predictions" {
   handler          = "predict.predict"
   s3_bucket        = aws_s3_bucket_object.lambda.bucket
   s3_key           = aws_s3_bucket_object.lambda.key
+  reserved_concurrent_executions = 10 
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -177,6 +178,7 @@ resource "aws_lambda_function" "reverse_predictions" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
+  reserved_concurrent_executions = 10
   role             = aws_iam_role.basic_lambda_role.arn
   runtime          = "python3.9"
   timeout          = 30
@@ -206,14 +208,14 @@ resource "aws_ecs_task_definition" "tawhiri" {
     [
       {
         healthCheck = {
-          retries = 3
+          retries = 10
           command = [
             "/usr/bin/python3.7",
             "-c",
             "import urllib.request; import json; import datetime; import sys; sys.exit(0) if len(json.loads(urllib.request.urlopen(f'http://localhost:8000/api/v1/?launch_latitude=51.77542999852449&launch_longitude=15.553199937567115&launch_datetime={datetime.datetime.now().strftime(\"%Y-%m-%dT%H:%M:%SZ\")}&launch_altitude=0&ascent_rate=5.00&burst_altitude=14030.77&descent_rate=5.28').read())['prediction'][0]['trajectory']) > 0 else sys.exit(1)"
           ]
           timeout     = 20
-          interval    = 60
+          interval    = 120
           startPeriod = 30
         }
         command = [
@@ -221,7 +223,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
           "-b",
           "0.0.0.0:8000",
           "--workers=1",
-          "--timeout=10",
+          "--timeout=3",
           "--keep-alive=65",
           "--threads=20",
           "tawhiri.api:app"
@@ -229,6 +231,10 @@ resource "aws_ecs_task_definition" "tawhiri" {
         dependsOn = [
           {
             containerName = "downloader"
+            condition     = "SUCCESS"
+          },
+          {
+            containerName = "ruaumoko-copy"
             condition     = "SUCCESS"
           }
         ]
@@ -247,7 +253,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
         mountPoints = [
           {
             containerPath = "/srv"
-            sourceVolume  = "srv"
+            sourceVolume  = "ruaumoko"
           },
           {
             containerPath = "/srv/tawhiri-datasets"
@@ -291,6 +297,34 @@ resource "aws_ecs_task_definition" "tawhiri" {
         name        = "downloader"
         volumesFrom = []
       },
+      {
+        cpu = 0
+        environment = []
+        essential = false
+        image     = "amazon/aws-cli"
+        command = [                
+          "s3",
+                "cp",
+                "s3://ruaumoko/ruaumoko-dataset",
+                "/ruaumoko/ruaumoko-dataset"
+                ]
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/tawhiri"
+            awslogs-region        = "us-east-1"
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+        mountPoints = [
+          {
+            containerPath = "/ruaumoko"
+            sourceVolume  = "ruaumoko"
+          },
+        ]
+        name        = "ruaumoko-copy"
+        volumesFrom = []
+      }
     ]
   )
   cpu                = "512"
@@ -308,92 +342,10 @@ resource "aws_ecs_task_definition" "tawhiri" {
   volume {
     name = "downloader"
   }
-
   volume {
-    name = "srv"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.tawhiri.id
-      root_directory     = "/srv"
-      transit_encryption = "DISABLED"
-
-      authorization_config {
-        iam = "DISABLED"
-      }
-    }
+    name = "ruaumoko"
   }
-  lifecycle {
-    ignore_changes = [volume] # terraform has a bug that doesn't correctly deal with root_directory because I don't know why - so we ignore it
-  }
-}
 
-resource "aws_ecs_task_definition" "tawhiri_ruaumoko" {
-  family = "tawhiri-ruaumoko"
-  container_definitions = jsonencode(
-    [
-      {
-        cpu = 0
-        entryPoint = [
-          "/root/.local/bin/ruaumoko-download",
-        ]
-        environment = []
-        essential   = true
-        image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/tawhiri:latest"
-        logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            awslogs-group         = "/ecs/tawhiri-ruaumoko"
-            awslogs-region        = "us-east-1"
-            awslogs-stream-prefix = "ecs"
-          }
-        }
-        mountPoints = [
-          {
-            containerPath = "/srv"
-            sourceVolume  = "srv"
-          },
-        ]
-        name         = "ruaumoko"
-        portMappings = []
-        volumesFrom  = []
-      },
-    ]
-  )
-  cpu                = "1024"
-  execution_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
-  memory             = "2048"
-  network_mode       = "awsvpc"
-  requires_compatibilities = [
-    "FARGATE",
-  ]
-  tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ecsTaskExecutionRole"
-
-
-  volume {
-    name = "srv"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.tawhiri.id
-      root_directory     = "srv"
-      transit_encryption = "DISABLED"
-
-      authorization_config {
-        iam = "DISABLED"
-      }
-    }
-  }
-}
-
-
-
-resource "aws_efs_file_system" "tawhiri" {
-  tags = {
-    Name = "Tawhiri"
-  }
-  lifecycle_policy {
-    transition_to_ia = "AFTER_7_DAYS"
-  }
 }
 
 resource "aws_ecr_repository" "tawhiri" {
@@ -449,7 +401,7 @@ resource "aws_ecs_service" "tawhiri" {
   platform_version                  = "LATEST"
   desired_count                     = 1
   enable_execute_command            = true
-
+  deployment_maximum_percent         = 400
   load_balancer {
     container_name   = "tawhiri"
     container_port   = 8000
@@ -476,7 +428,7 @@ resource "aws_appautoscaling_target" "tawhiri" {
   scalable_dimension = "ecs:service:DesiredCount"
   resource_id        = "service/Tawhiri/tawhiri"
   min_capacity       = 1
-  max_capacity       = 5
+  max_capacity       = 7
 }
 
 resource "aws_appautoscaling_policy" "tawhiri" {
@@ -491,9 +443,9 @@ resource "aws_appautoscaling_policy" "tawhiri" {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
 
-    target_value       = 80
-    scale_in_cooldown  = 120
-    scale_out_cooldown = 120
+    target_value       = 75
+    scale_in_cooldown  = 240
+    scale_out_cooldown = 240
   }
 }
 

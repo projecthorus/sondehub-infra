@@ -131,6 +131,7 @@ resource "aws_lambda_function" "ham_predictions" {
   s3_bucket        = aws_s3_bucket_object.lambda.bucket
   s3_key           = aws_s3_bucket_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
+  reserved_concurrent_executions = 10
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn

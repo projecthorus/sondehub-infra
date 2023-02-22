@@ -7,6 +7,7 @@ resource "aws_lambda_function" "get_sondes" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
+  reserved_concurrent_executions = 10
   role             = aws_iam_role.basic_lambda_role.arn
   runtime          = "python3.9"
   timeout          = 30
@@ -101,6 +102,7 @@ resource "aws_lambda_function" "get_listener_stats" {
   s3_key           = aws_s3_bucket_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
+  reserved_concurrent_executions = 0
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
   runtime          = "python3.9"
