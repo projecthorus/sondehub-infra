@@ -292,8 +292,8 @@ def telemetry_filter(telemetry):
                 return (False,f"Autorx version is out of date and doesn't handle iMet-1 and iMet-4 radiosondes correctly. Please update to 1.5.9 or later")
     if "DFM" in telemetry["type"]:
         if telemetry["software_name"] == "SondeMonitor":
-            if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,6): 
-                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.6 or later")
+            if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,7): 
+                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.7 or later")
 
     # block callsigns
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12"]:
