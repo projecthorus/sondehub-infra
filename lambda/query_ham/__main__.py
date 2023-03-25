@@ -9,10 +9,11 @@ response = get_telem(
                 
             },
             "queryStringParameters":{
-                "payload_callsign" : "NOB14,VE6AGD-11",
-                "last": "10800",
-                "datetime": "2022-06-26T08:30:00.000001Z",
-                "format": "kml"
+              #  "payload_callsign" : "NOB14,VE6AGD-11",
+              #  "last": "10800",
+               # "datetime": "2022-06-26T08:30:00.000001Z",
+              #  "format": "kml"
+              "duration": "732d"
             }
         }, {})
 print(len(response['body']))

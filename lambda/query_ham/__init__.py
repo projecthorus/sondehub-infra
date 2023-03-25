@@ -85,6 +85,10 @@ def get(event, context):
 def get_telem(event, context):
 
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
+        "366d": (31622400, 14000),
+        "186d": (16070400, 3600),
+        "31d": (2678400, 300),
+        "7d": (604800, 120),
         "3d": (259200, 15), 
         "1d": (86400, 1), 
         "12h": (43200, 1),  
