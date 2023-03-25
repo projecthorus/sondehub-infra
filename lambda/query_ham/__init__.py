@@ -121,12 +121,15 @@ def get_telem(event, context):
         )
 
     (duration, interval) = durations[duration_query]
-    if "payload_callsign" in event["queryStringParameters"]:
+    if "payload_callsign" not in event["queryStringParameters"] and duration > 604800:
+        duration = 604800
+        interval = 120
+    if "payload_callsign" in event["queryStringParameters"] and duration < 604800:
         interval = 1
     lt = requested_time + timedelta(0, 1)
     gte = requested_time - timedelta(0, duration)
 
-    path = f"ham-telm-{lt.year:2}-{lt.month:02},ham-telm-{gte.year:2}-{gte.month:02}/_search"
+    path = f"ham-telm-*/_search"
     payload = {
         "timeout": "30s",
         "size": 0,
