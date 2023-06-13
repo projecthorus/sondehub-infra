@@ -345,7 +345,7 @@ def stats(event, context):
                     "order": {
                         "recovered_by": "desc"
                     },
-                    "size": 5
+                    "size": 6
                 },
                 "aggs": {
                     "recovered_by": {
@@ -393,6 +393,8 @@ def stats(event, context):
 
     try:
         output['top_chasers'] = { x['key'] : x['recovered_by']['value'] for x in results['aggregations']['top_recovered']['buckets']}
+        if "" in output['top_chasers']:
+            del output['top_chasers'][""]
     except:
         pass
 

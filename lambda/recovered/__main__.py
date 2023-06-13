@@ -46,16 +46,17 @@ payload = {
         "timeEpoch": 1612051825409,
     },
     "body": json.dumps({
-        "datetime": "2021-06-06T01:10:07.629Z",
-        "serial": "S4631407",
-        "lat": 0,
-        "lon": 0,
-        "alt": 0,
-        "recovered": True,
-        "recovered_by": "string",
-        "description": "string"
+        # "datetime": "2021-06-06T01:10:07.629Z",
+        # "serial": "S4631407",
+        # "lat": 0,
+        # "lon": 0,
+        # "alt": 0,
+        # "recovered": True,
+        # "recovered_by": "string",
+        # "description": "string"
     }),
     "isBase64Encoded": False,
 }
 # print(put(payload, {}))
-print(get(payload, {}))
+#print(get(payload, {}))
+print(stats(payload, {}))
