@@ -228,6 +228,9 @@ def telemetry_filter(telemetry):
         return (False, f"Unable to parse time")
 
     sonde_time_threshold = 48
+    future_time_threshold_seconds = 60
+    if _delta_time < -future_time_threshold_seconds:
+        return (False, f"Sonde reported time too far in the future. Either sonde time or system time is invalid. (Threshold: {future_time_threshold_seconds} seconds)")
     if abs(_delta_time) > (3600 * sonde_time_threshold):
         return (False, f"Sonde reported time too far from current UTC time. Either sonde time or system time is invalid. (Threshold: {sonde_time_threshold} hours)")
 

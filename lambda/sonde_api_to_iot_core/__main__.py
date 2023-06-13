@@ -11,7 +11,7 @@ body = [{
     "uploader_position": [53.23764, 7.74426, 7.0], 
     "uploader_antenna": "5/8-Wave-J-Pole",
     "time_received": "2023-01-22T22:48:43.208780Z",
-    "datetime": "2023-01-22T22:48:41.000000Z",
+    "datetime": "2023-06-13T00:48:41.000000Z",
     "manufacturer": "Vaisala", 
     "type": "RS41", 
     "serial": "U1440085",
