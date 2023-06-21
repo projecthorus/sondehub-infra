@@ -390,7 +390,7 @@ def upload(event, context, orig_event):
         elif "DFM" in check_data[0]["type"]: # if the sonde is a DFM and there's not enough payloads to perform z check then bail out
             fail_dfm = False
             for data in check_data:
-                if data['alt'] > 1000:
+                if data['alt'] > 2500:
                     fail_dfm = True
             if fail_dfm == True:
                 [x.update(dfm_failure=True) for x in payload_serials[serial]]
