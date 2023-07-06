@@ -338,9 +338,27 @@ def get_sites(event, context):
     path = "sites/_search"
     payload = {
         "version": True,
-        "size": 10000,
+        "size": 0,
         "_source": {
             "excludes": []
+        },
+        "aggs": {
+            "2": {
+                "terms": {
+                    "field": "station.keyword",
+                    "order": {"_key": "desc"},
+                    "size": 10000,
+                },
+
+                "aggs": {
+                    "1": {
+                        "top_hits": {
+                            "size": 1,
+                            "sort": [{"datetime": {"order": "desc"}}],
+                        }
+                    }
+                }
+            }
         },
         "query": {
             "bool": {
@@ -362,7 +380,7 @@ def get_sites(event, context):
                 }
             )
     results = es.request(json.dumps(payload), path, "POST")
-    output = {x['_source']['station']: x['_source'] for x in results['hits']['hits']}
+    output = {x['1']['hits']['hits'][0]['_source']['station']: x['1']['hits']['hits'][0]['_source'] for x in results['aggregations']['2']['buckets']}
 
     compressed = BytesIO()
     with gzip.GzipFile(fileobj=compressed, mode='w') as f:

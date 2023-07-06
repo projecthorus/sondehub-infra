@@ -62,24 +62,24 @@ from . import *
 #             {},
 #         )
 #     )
-#  print(get_sites({},{}))
+print(get_sites({},{}))
 
-a=get_telem(
-    {
-        "queryStringParameters": {
-            "duration": "3h",
-            # "serial": "S4430086"
-        }},{}
+# a=get_telem(
+#     {
+#         "queryStringParameters": {
+#             "duration": "3h",
+#             # "serial": "S4430086"
+#         }},{}
     
-    )
-b=get_telem(
-    {
-        "queryStringParameters": {
-            "duration": "3h",
-            "serial": "5C3A7D72"
-        }},{}
+#     )
+# b=get_telem(
+#     {
+#         "queryStringParameters": {
+#             "duration": "3h",
+#             "serial": "5C3A7D72"
+#         }},{}
     
-    )
+#     )
 # print (
 #     get_chase(
 #         {"queryStringParameters": {
