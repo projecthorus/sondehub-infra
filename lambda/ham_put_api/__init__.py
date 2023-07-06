@@ -20,6 +20,10 @@ def check_fields_are_number(field, telemetry):
 
 def telemetry_filter(telemetry):
     fields_to_check = ["alt", "lat", "lon"]
+    required_fields = ["datetime", "uploader_callsign", "software_name"] + fields_to_check
+    for field in required_fields:
+        if field not in telemetry:
+            return (False, f"Missing {field} field")    
     for field in fields_to_check:
         field_check = check_fields_are_number(field, telemetry)
         if  field_check[0] == False:
@@ -29,6 +33,11 @@ def telemetry_filter(telemetry):
 
     return (True, "")
 
+# Returns true for anything that should be hidden
+def telemetry_hide_filter(telemetry):
+    if telemetry["payload_callsign"] in ['MYCALL','4FSKTEST','4FSKTEST-V2']:
+        return True
+    return False
 
 def post(payload):
     sns.publish(
@@ -58,12 +67,16 @@ def upload(event, context):
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
 
         valid, error_message = telemetry_filter(payload)
+
         if not valid:
             errors.append({
                 "error_message": error_message,
                 "payload": payload
             })
         else:
+            # Apply hide field for anything that matches our filters
+            if telemetry_hide_filter(payload):
+                payload["telemetry_hidden"] = True
             if "uploader_position" in payload:
                 if not payload["uploader_position"]:
                     payload.pop("uploader_position")

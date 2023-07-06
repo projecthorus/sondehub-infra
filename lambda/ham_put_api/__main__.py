@@ -1,4 +1,47 @@
 from . import *
+import json
+import base64
+import gzip
+import uuid
+from io import BytesIO
+body = [
+    {
+    "software_name": "radiosonde_auto_rx",
+    "software_version": "1.5.5",
+    "uploader_callsign": "sdf",
+    "payload_callsign": "4FSKTEST",
+    "uploader_antenna": "1/4 wave monopole",
+    "time_received": "2021-12-30T03:55:05.510688Z",
+    "datetime": "2021-12-30T03:55:05.510688Z",
+    "manufacturer": "Graw",
+    "type": "DFM",
+    "subtype": "DFM09",
+    "serial": "00000000",
+    "frame": 1313391064,
+    "lat": 47.8319,
+    "lon": 10.89474,
+    "alt": 1717.93,
+    "temp": 7.4,
+    "vel_v": 2.51,
+    "vel_h": 8.18,
+    "heading": 81.51,
+    "sats": 9,
+    "batt": 5.32,
+    "frequency": 402.509,
+    "snr": 13.3,
+    "position": "47.8319,10.89474",
+    "uploader_alt": 545,
+    "uploader_position": [None,None,None],
+  }]
+
+compressed = BytesIO()
+with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+    f.write(json.dumps(body).encode('utf-8'))
+compressed.seek(0)
+bbody = base64.b64encode(compressed.read()).decode("utf-8")
+
+
+
 payload = {
     "version": "2.0",
     "routeKey": "PUT /sondes/telemetry",
@@ -36,7 +79,7 @@ payload = {
         "time": "31/Jan/2021:00:10:25 +0000",
         "timeEpoch": 1612051825409,
     },
-    "body": "H4sIAI8ihGIAA42Sz0/CMBTH7/wVhDPUdt3cxlnxYLwoepCQ5cEesKRrZ9cNifF/t53rJHCxhyb7vs/78X3rajS256u7J7XamSNozCSUOJmPJxryQtVK5phBY1SmPyfTC7RFXRdKOpqRiEQeaCqhIEedbUGIuth3xNsjX7w+z5b3L8srDqRBKaErdBOOj9DiuFRSVUqgh01RYqZxi0WLuSMDGrAZC2acLimfR9Gc2hEYvU2Sd5+Tg0GX90+8BNnsYGsajdqlPGg4Du1PVVfmbvE07KHZnKk0HXTUBQgn0/74yE7/Lpdxxnlqm4d9QIBxfBiThLOhkOh2yyhJ0jD2KAiHspjFJOV+OCwrK8bEQy2KrLVKYC2eSQcrJYQlvXRA+4/l3onsD6zB1FZK+88NGNcwIjwYXOBHg3J7snJIbQvq2Vrqzh3xg1WqLkz/RHpzU+/n+hV0zqIwugycVVnJRojpcK0t+T1a/wDKy8FaygIAAA==",
+    "body": bbody,
     "isBase64Encoded": True,
 }
 print(lambda_handler(payload, {}))
