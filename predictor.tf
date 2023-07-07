@@ -141,18 +141,18 @@ resource "aws_apigatewayv2_integration" "reverse_predictions" {
 }
 
 resource "aws_lambda_function" "predictions" {
-  function_name    = "predictions"
-  handler          = "predict.predict"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
-  reserved_concurrent_executions = 10 
-  source_code_hash = data.archive_file.lambda.output_base64sha256
-  publish          = true
-  memory_size      = 128
-  role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
+  function_name                  = "predictions"
+  handler                        = "predict.predict"
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
+  reserved_concurrent_executions = 10
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
+  publish                        = true
+  memory_size                    = 128
+  role                           = aws_iam_role.basic_lambda_role.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
+  architectures                  = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -171,18 +171,18 @@ resource "aws_lambda_permission" "predictions" {
 
 
 resource "aws_lambda_function" "reverse_predictions" {
-  function_name    = "reverse-predictions"
-  handler          = "reverse_predict.predict"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
-  source_code_hash = data.archive_file.lambda.output_base64sha256
-  publish          = true
-  memory_size      = 128
+  function_name                  = "reverse-predictions"
+  handler                        = "reverse_predict.predict"
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
+  publish                        = true
+  memory_size                    = 128
   reserved_concurrent_executions = 10
-  role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
+  role                           = aws_iam_role.basic_lambda_role.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
+  architectures                  = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
@@ -298,16 +298,16 @@ resource "aws_ecs_task_definition" "tawhiri" {
         volumesFrom = []
       },
       {
-        cpu = 0
+        cpu         = 0
         environment = []
-        essential = false
-        image     = "amazon/aws-cli"
-        command = [                
+        essential   = false
+        image       = "amazon/aws-cli"
+        command = [
           "s3",
-                "cp",
-                "s3://ruaumoko/ruaumoko-dataset",
-                "/ruaumoko/ruaumoko-dataset"
-                ]
+          "cp",
+          "s3://ruaumoko/ruaumoko-dataset",
+          "/ruaumoko/ruaumoko-dataset"
+        ]
         logConfiguration = {
           logDriver = "awslogs"
           options = {
@@ -401,7 +401,7 @@ resource "aws_ecs_service" "tawhiri" {
   platform_version                  = "LATEST"
   desired_count                     = 1
   enable_execute_command            = true
-  deployment_maximum_percent         = 400
+  deployment_maximum_percent        = 400
   load_balancer {
     container_name   = "tawhiri"
     container_port   = 8000

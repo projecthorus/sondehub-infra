@@ -126,18 +126,18 @@ resource "aws_apigatewayv2_integration" "ham_predictions" {
 
 
 resource "aws_lambda_function" "ham_predictions" {
-  function_name    = "ham_predictions"
-  handler          = "ham_predict.predict"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
-  source_code_hash = data.archive_file.lambda.output_base64sha256
+  function_name                  = "ham_predictions"
+  handler                        = "ham_predict.predict"
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
   reserved_concurrent_executions = 10
-  publish          = true
-  memory_size      = 128
-  role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
+  publish                        = true
+  memory_size                    = 128
+  role                           = aws_iam_role.basic_lambda_role.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
+  architectures                  = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
