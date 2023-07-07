@@ -1,17 +1,17 @@
 
 resource "aws_lambda_function" "get_sondes" {
-  function_name    = "query"
-  handler          = "query.get_sondes"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
-  source_code_hash = data.archive_file.lambda.output_base64sha256
-  publish          = true
-  memory_size      = 256
+  function_name                  = "query"
+  handler                        = "query.get_sondes"
+  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
+  s3_key                         = aws_s3_bucket_object.lambda.key
+  source_code_hash               = data.archive_file.lambda.output_base64sha256
+  publish                        = true
+  memory_size                    = 256
   reserved_concurrent_executions = 10
-  role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
-  timeout          = 30
-  architectures    = ["arm64"]
+  role                           = aws_iam_role.basic_lambda_role.arn
+  runtime                        = "python3.9"
+  timeout                        = 30
+  architectures                  = ["arm64"]
   environment {
     variables = {
       "ES" = "es.${local.domain_name}"
