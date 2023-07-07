@@ -35,8 +35,14 @@ def telemetry_filter(telemetry):
 
 # Returns true for anything that should be hidden
 def telemetry_hide_filter(telemetry):
-    if telemetry["payload_callsign"] in ['MYCALL','4FSKTEST','4FSKTEST-V2']:
+    # Default Horus Binary callsigns
+    if telemetry["payload_callsign"] in ['4FSKTEST','4FSKTEST-V2']:
         return True
+
+    # Default pysondehub uploader callsign
+    if telemetry["uploader_callsign"] in ['MYCALL']:
+        return True
+
     return False
 
 def post(payload):
