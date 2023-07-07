@@ -23,6 +23,8 @@ jobs:
           role-to-assume: arn:aws:iam::143841941773:role/github
           role-session-name: Terraform
       - uses: hashicorp/setup-terraform@v1
+        with:
+         terraform_version: 1.1.5
       - name: 'Checkout'
         uses: actions/checkout@master
       - name: Terraform fmt
