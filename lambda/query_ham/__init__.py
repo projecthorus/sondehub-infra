@@ -370,11 +370,26 @@ def get_telem_full(event, context):
         import csv
         content_type = "text/csv"
         filename = f'{event["pathParameters"]["payload_callsign"]}.csv'
+        # Get the set of all keys in all of the data packets.
         csv_keys = list(set().union(*(d.keys() for d in data)))
-        csv_keys.remove("datetime")
-        csv_keys.insert(0,"datetime") # datetime should be at the front of the CSV
+        # Fields that we don't include in the CSV output (either not useful, or duplicates)
+        remove_keys = ["user-agent", "position"]
+        # Mandatory fields that we put up front in the data
+        mandatory_keys = ["datetime", "payload_callsign", "lat", "lon", "alt"]
+        # Metadata fields that we move to the end. 
+        metadata_keys = ["uploader_callsign", "software_name", "software_version", "frequency", "modulation", "baud_rate", "snr", "rssi", "uploader_position", "uploader_antenna", "uploader_radio", "time_received", "raw"]
+
+        csv_keys = [x for x in csv_keys if x not in remove_keys]
+        csv_keys = [x for x in csv_keys if x not in mandatory_keys]
+        csv_keys = [x for x in csv_keys if x not in metadata_keys]
+
+        # Sort the remaining keys alphanumerically
+        csv_keys.sort()
+        # Construct our output keys ordering
+        csv_keys = mandatory_keys + csv_keys + metadata_keys
+
         csv_output = StringIO(newline='')
-        fc = csv.DictWriter(csv_output, fieldnames=csv_keys)
+        fc = csv.DictWriter(csv_output, fieldnames=csv_keys, extrasaction='ignore')
         fc.writeheader()
         fc.writerows(data)
         
