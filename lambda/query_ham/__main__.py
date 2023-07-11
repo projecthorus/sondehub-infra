@@ -3,17 +3,17 @@ import base64
 
 import zlib
 
-response = get_telem(
+response = get_telem_full(
         {
             "pathParameters": {
-                
+                "payload_callsign": "PD3EGE"
             },
             "queryStringParameters":{
               #  "payload_callsign" : "NOB14,VE6AGD-11",
-              #  "last": "10800",
-               # "datetime": "2022-06-26T08:30:00.000001Z",
+                "last": "22269",
+               "datetime": "1688655220.471",
               #  "format": "kml"
-              "duration": "732d"
+              #"duration": "732d"
             }
         }, {})
 print(len(response['body']))

@@ -24,7 +24,7 @@ def fetch_es(serial, s3_data):
             "bool": {
                 "filter": [
                     {
-                        "match_phrase": {
+                        "term": {
                             "serial.keyword": serial
                         }
                     }

@@ -30,7 +30,7 @@ def handler(event, context):
         },
         "query": {
             "bool": {
-                "must_not": [{"match_phrase": {"serial": "xxxxxxxx"}}],
+                "must_not": [{"term": {"serial": "xxxxxxxx"}}],
                 "filter": [
                     {
                         "range": {

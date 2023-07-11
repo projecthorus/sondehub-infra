@@ -49,8 +49,8 @@ def history(event, context):
                 "filter": [
                     {"match_all": {}},
                     {
-                        "match_phrase": {
-                        "serial": str(event["pathParameters"]["serial"])
+                        "term": {
+                            "serial.keyword": str(event["pathParameters"]["serial"])
                         }
                     }
                 ]

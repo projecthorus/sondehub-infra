@@ -78,7 +78,7 @@ def predict(event, context):
             for payload_callsign in event["queryStringParameters"]["vehicles"].split(","):
                 payload["query"]["bool"]["should"].append(
                     {
-                        "match_phrase": {
+                        "term": {
                             "payload_callsign.keyword": payload_callsign
                         }
                     }

@@ -172,8 +172,8 @@ def get_telem(event, context):
             payload["aggs"]["2"]["aggs"]["3"]["aggs"]["1"]["top_hits"]["sort"].append({"pressure": {"order": "desc","mode" : "median"}})
             payload["query"]["bool"]["filter"].append(
                 {
-                    "match_phrase": {
-                        "serial": str(event["queryStringParameters"]["serial"])
+                    "term": {
+                        "serial.keyword": str(event["queryStringParameters"]["serial"])
                     }
                 }
             )
@@ -302,8 +302,8 @@ def get_listener_telemetry(event, context):
         if "uploader_callsign" in event["queryStringParameters"]:
             payload["query"]["bool"]["filter"].append(
                 {
-                    "match_phrase": {
-                        "uploader_callsign": str(event["queryStringParameters"]["uploader_callsign"])
+                    "term": {
+                        "uploader_callsign.keyword": str(event["queryStringParameters"]["uploader_callsign"])
                     }
                 }
             )
@@ -374,8 +374,8 @@ def get_sites(event, context):
         if "station" in event["queryStringParameters"]:
             payload["query"]["bool"]["filter"].append(
                 {
-                    "match_phrase": {
-                        "station": str(event["queryStringParameters"]["station"])
+                    "term": {
+                        "station.keyword": str(event["queryStringParameters"]["station"])
                     }
                 }
             )

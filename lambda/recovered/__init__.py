@@ -36,7 +36,7 @@ def sondeExists(serial):
             "bool": {
                 "filter": [
                     {
-                        "match_phrase": {
+                        "term": {
                             "serial.keyword": serial
                         }
                     }
@@ -88,13 +88,13 @@ def getRecovered(serial):
             "bool": {
                 "filter": [
                     {
-                        "match_phrase": {
+                        "term": {
                             "serial.keyword": serial
                         }
                     },
                     {
-                        "match_phrase": {
-                            "recovered": True
+                        "term": {
+                            "recovered.keyword": True # not sure if this right? should be a bool time. function is never called though
                         }
                     },
                 ]
@@ -182,7 +182,7 @@ def get(event, context):
         for serial in serials:
             should.append(
                 {
-                    "match_phrase": {
+                    "term": {
                         "serial.keyword": serial
                     }
                 }

@@ -113,7 +113,7 @@ def predict(event, context):
             for serial in event["queryStringParameters"]["vehicles"].split(","):
                 payload["query"]["bool"]["should"].append(
                     {
-                        "match_phrase": {
+                        "term": {
                             "serial.keyword": serial
                         }
                     }

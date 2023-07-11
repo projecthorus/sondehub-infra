@@ -556,14 +556,7 @@ async def predict_async(event, context):
                         }
                         }
                     ],
-                    "should": [],
-                    "must_not": [
-                    {
-                        "match_phrase": {
-                            "software_name": "SondehubV1"
-                        }
-                    }
-                ]
+                    "should": []
                     }
                 },
                 "size": 0

@@ -62,16 +62,15 @@ from . import *
 #             {},
 #         )
 #     )
-print(get_sites({},{}))
+# print(get_sites({"queryStringParameters":{"station":-1}},{}))
 
-# a=get_telem(
-#     {
-#         "queryStringParameters": {
-#             "duration": "3h",
-#             # "serial": "S4430086"
-#         }},{}
-    
-#     )
+print(get_telem(
+    {
+        "queryStringParameters": {
+            "duration": "3h",
+            # "serial": "S4430086"
+        }},{}
+))
 # b=get_telem(
 #     {
 #         "queryStringParameters": {

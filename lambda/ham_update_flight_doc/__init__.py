@@ -44,7 +44,7 @@ def query(event, context):
             "bool": {
             "filter": [
                 {
-                    "match_phrase": {
+                    "term": {
                         "payload_callsign.keyword": payload_callsign
                     }
                 }

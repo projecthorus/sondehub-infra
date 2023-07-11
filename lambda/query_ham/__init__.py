@@ -170,7 +170,7 @@ def get_telem(event, context):
         "query": {
             "bool": {
                 "minimum_should_match": 1,
-                "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"payload_callsign": "xxxxxxxx"}}],
+                "must_not": [{"term": {"payload_callsign.keyword": "xxxxxxxx"}}],
                     "should": [
                         {
                         "bool": {
@@ -219,7 +219,7 @@ def get_telem(event, context):
             payloads = str(event["queryStringParameters"]["payload_callsign"]).split(",")
             payload["query"]["bool"]["must"] = {
                 "bool": {
-                    "should": [ {"match_phrase": {"payload_callsign": x}} for x in payloads ]
+                    "should": [ {"term": {"payload_callsign.keyword": x}} for x in payloads ]
                 }
             }
     results = es.request(json.dumps(payload), path, "POST")
@@ -287,7 +287,7 @@ def get_telem_full(event, context):
         "query": {
             "bool": {
                 "minimum_should_match": 1,
-                "must_not": [{"match_phrase": {"software_name": "SondehubV1"}}, {"match_phrase": {"payload_callsign": "xxxxxxxx"}}],
+                "must_not": [ {"term": {"payload_callsign.keyword": "xxxxxxxx"}}],
                     "should": [
                         {
                         "bool": {
@@ -333,8 +333,8 @@ def get_telem_full(event, context):
     }
     payload["query"]["bool"]["filter"].append(
         {
-            "match_phrase": {
-                "payload_callsign": str(event["pathParameters"]["payload_callsign"])
+            "term": {
+                "payload_callsign.keyword": str(event["pathParameters"]["payload_callsign"])
             }
         }
     )
@@ -578,8 +578,8 @@ def get_listener_telemetry(event, context):
         if "uploader_callsign" in event["queryStringParameters"]:
             payload["query"]["bool"]["filter"].append(
                 {
-                    "match_phrase": {
-                        "uploader_callsign": str(event["queryStringParameters"]["uploader_callsign"])
+                    "term": {
+                        "uploader_callsign.keyword": str(event["queryStringParameters"]["uploader_callsign"])
                     }
                 }
             )
