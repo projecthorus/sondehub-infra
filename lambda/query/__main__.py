@@ -64,12 +64,18 @@ from . import *
 #     )
 # print(get_sites({"queryStringParameters":{"station":-1}},{}))
 
-print(get_telem(
+print(get_sondes_site(
     {
-        "queryStringParameters": {
-            "duration": "3h",
-            # "serial": "S4430086"
-        }},{}
+        "pathParameters": {
+            "site": "10868"
+            
+        },
+        "queryStringParameters": {"last": str(60* 60 *24 * 7)}
+    },{}
+        # "queryStringParameters": {
+        #     "duration": "3h",
+        #     # "serial": "S4430086"
+        # }},{}
 ))
 # b=get_telem(
 #     {

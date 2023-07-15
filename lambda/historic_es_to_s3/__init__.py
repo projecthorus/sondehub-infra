@@ -71,7 +71,7 @@ def fetch_s3(serial):
         else:
             raise
 
-def fetch_launch_sites():
+def fetch_launch_sites(time_filter="24h"):
     payload = {
         "aggs": {
             "2": {
@@ -136,7 +136,7 @@ def fetch_launch_sites():
                 {
                 "range": {
                     "datetime": {
-                        "gte": "now-24h",
+                        "gte": f"now-{time_filter}",
                         "lte": "now",
                     "format": "strict_date_optional_time"
                     }

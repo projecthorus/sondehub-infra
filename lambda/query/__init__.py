@@ -5,6 +5,8 @@ import gzip
 from io import BytesIO
 import es
 
+from historic_es_to_s3 import fetch_launch_sites
+
 def get_sondes(event, context):
     path = "telm-*/_search"
     payload = {
@@ -81,6 +83,66 @@ def get_sondes(event, context):
     }
     return json.dumps(sondes)
 
+def get_sondes_site(event, context):
+    site = str(event["pathParameters"]["site"])
+    if "queryStringParameters" in event and "last" in event["queryStringParameters"]:
+        last_seconds = abs(int(event['queryStringParameters']['last']))
+        if last_seconds > 60 * 60 * 24 * 7:
+            return f"Duration too long. Must be less than 7 days"
+        last_time = f"{last_seconds}s"
+    else:
+        last_time = "1d"
+    launch_sites = fetch_launch_sites(time_filter=last_time)
+    path = "telm-*/_search"
+    payload = {
+        "size": 0,
+        "aggs": {
+            "2": {
+                "terms": {
+                    "field": "serial.keyword",
+                    "order": {"_key": "desc"},
+                    "size": 10000,
+                },
+                "aggs": {
+                    "1": {
+                        "top_hits": {
+                            "size": 1,
+                            "sort": [{"datetime": {"order": "desc"}}],
+                        }
+                    }
+                },
+            }
+        },
+        "query": {
+            "bool": {
+                "filter": [
+                    {"match_all": {}},
+                ]
+            }
+        },
+    }
+
+
+
+    payload["query"]["bool"]["filter"].append(
+            {"range": {"datetime": {"gte": f"now-{last_time}", "lte": "now+1m"}}}
+    )
+    try:
+        results = es.request(json.dumps(payload), path, "POST")
+    except:
+        print(json.dumps(event))
+        raise
+    output = {}
+    buckets = results["aggregations"]["2"]["buckets"]
+    sondes = {
+        bucket["1"]["hits"]["hits"][0]["_source"]["serial"]: bucket["1"]["hits"][
+            "hits"
+        ][0]["_source"]
+        for bucket in buckets
+        if bucket["1"]["hits"]["hits"][0]["_source"]["serial"] in launch_sites and
+        launch_sites[bucket["1"]["hits"]["hits"][0]["_source"]["serial"]]['launch_site'] == site
+    }
+    return json.dumps(sondes)
 
 def get_telem(event, context):
 

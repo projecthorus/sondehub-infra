@@ -235,6 +235,26 @@ paths:
           description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
           schema:
             $ref: "#/definitions/sonde_telm_results_format"
+  /sondes/site/{site}:
+    get:
+      summary: Request latest sonde data indexed by serial number based on site ID
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: last
+          description: "How far back to search in seconds. Defaults to 24hrs. Limited to 7 days"
+          type: number
+        - in: path
+          name: site
+          description: Site number of the radiosonde to request data for (see /sites endpoint)
+          required: true
+          type: string          
+      responses:
+        200:
+          description: Returns a dictionary keyed by serial number of a dictionary of times with SondeHub Telemetry values
+          schema:
+            $ref: "#/definitions/sonde_telm_results_format"
   /sonde/{serial}:
     get:
       summary: Request telemetry data for an individual radiosonde
