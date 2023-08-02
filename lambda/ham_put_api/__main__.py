@@ -12,7 +12,7 @@ body = [
     "payload_callsign": "4FSKTEST",
     "uploader_antenna": "1/4 wave monopole",
     "time_received": "2021-12-30T03:55:05.510688Z",
-    "datetime": "2021-12-30T03:55:05.510688Z",
+    "datetime": "2022-08-02T04:10:05.510688Z",
     "manufacturer": "Graw",
     "type": "DFM",
     "subtype": "DFM09",
@@ -32,6 +32,8 @@ body = [
     "position": "47.8319,10.89474",
     "uploader_alt": 545,
     "uploader_position": [None,None,None],
+    "historical": True,
+    "dev": True
   }]
 
 compressed = BytesIO()

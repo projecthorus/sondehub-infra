@@ -63,6 +63,7 @@ def upload(event, context):
     payloads = json.loads(event["body"])
     to_sns = []
     errors = []
+    warnings = []
 
 
 
@@ -72,7 +73,35 @@ def upload(event, context):
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
 
+        payload["upload_time"] = datetime.datetime.now().isoformat()
+
         valid, error_message = telemetry_filter(payload)
+
+        try:
+            _delta_time = (
+                datetime.datetime.now() - datetime.datetime.fromisoformat(payload["datetime"].replace("Z",""))
+            ).total_seconds()
+        except:
+            errors.append({
+                "error_message": "Unable to parse datetime",
+                "payload": payload
+            })
+
+        future_time_threshold_seconds = 60
+        time_threshold_hours = 24
+        if _delta_time < -future_time_threshold_seconds:
+            payload["telemetry_hidden"] = True
+            warnings.append({
+                "warning_message": f"Payload reported time too far in the future. Either sonde time or system time is invalid. (Threshold: {future_time_threshold_seconds} seconds)",
+                "payload": payload
+            })
+        if "historical" not in payload or payload['historical'] == False:
+            if abs(_delta_time) > (3600 * time_threshold_hours):
+                payload["telemetry_hidden"] = True
+                warnings.append({
+                    "warning_message": f"Payload reported time too far from current UTC time. Either payload time or system time is invalid. (Threshold: {time_threshold_hours} hours)",
+                    "payload": payload
+                })
 
         if not valid:
             errors.append({
@@ -98,19 +127,20 @@ def upload(event, context):
 
 
     post(to_sns)
-    return errors
+    return errors, warnings
 def lambda_handler(event, context):
     try:
-        errors = upload(event, context)
+        errors, warnings = upload(event, context)
     except zlib.error:
         return {"statusCode": 400, "body": "Could not decompress"}
     except json.decoder.JSONDecodeError:
         return {"statusCode": 400, "body": "Not valid json"}
     error_message = {
-        "message": "some or all payloads could not be processed",
-        "errors": errors
+        "message": "some or all payloads could not be processed or have warnings",
+        "errors": errors,
+        "warnings": warnings
     }
-    if errors:
+    if errors or warnings:
         output = {
             "statusCode": 202, 
             "body": json.dumps(error_message),
