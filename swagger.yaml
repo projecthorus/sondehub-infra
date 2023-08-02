@@ -1054,6 +1054,16 @@ definitions:
       uploader_antenna:
         type: string
         description: Station antenna/receiver information, free-text string.
+      telemetry_hidden:
+        type: boolean
+        description: This field is usually set by the server and usually does not need to be set when uploading. This controls if the data should be shown in default dashboards and the website.
+      historical:
+        type: boolean
+        description: Set this to true if uploading data in the past
+      upload_time:
+        type: "date-time"
+        description: Set by the server to indicate the servers received time. Not not set this when uploading.
+
   listener_stats:
     type: object
     additionalProperties:
