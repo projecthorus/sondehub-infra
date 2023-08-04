@@ -49,6 +49,7 @@ resource "aws_subnet" "private" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = each.value[0]
   ipv6_cidr_block         = each.value[1]
+  assign_ipv6_address_on_creation  = true
   tags = {
     Name = "${each.key} - private"
   }
@@ -61,6 +62,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = each.value[0]
   ipv6_cidr_block         = each.value[1]
+  assign_ipv6_address_on_creation  = true
 
   tags = {
     Name = "${each.key} - public"

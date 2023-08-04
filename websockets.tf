@@ -70,6 +70,8 @@ resource "aws_subnet" "ws_main" {
   map_public_ip_on_launch = false
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "172.31.134.0/28"
+  ipv6_cidr_block         = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, 128)
+  assign_ipv6_address_on_creation  = true
 
   tags = {
     Name = "wsmain"
