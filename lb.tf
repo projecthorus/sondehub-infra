@@ -8,6 +8,8 @@ resource "aws_lb" "ws" {
 
   enable_deletion_protection = true
 
+  ip_address_type    = "dualstack"
+
 }
 
 resource "aws_security_group" "lb" {
