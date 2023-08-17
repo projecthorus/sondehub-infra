@@ -1097,6 +1097,9 @@ definitions:
           format: double
         minItems: 3
         maxItems: 3
+      uploader_radio:
+        description: Uploader's radio description
+        type: "string"
       uploader_antenna:
         description: Uploader's antenna description
         type: "string"
