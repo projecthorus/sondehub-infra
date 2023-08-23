@@ -182,6 +182,8 @@ def telemetry_filter(telemetry):
     if telemetry["alt"] == 0:
         return (False,f"Sonde {telemetry['serial']} altitude is exactly 0m. Position is likely incorrect")
 
+    if "subtype" in telemetry and telemetry["subtype"] == "DL0UJ-12":
+        return (False,f"sondehub.org is not for use with amateur balloons. Use amateur.sondehub.org instead.")
 
     if "humidity" in telemetry and telemetry["humidity"] < 0:
         return (False,f"Humidity {telemetry['humidity']} is below 0")
