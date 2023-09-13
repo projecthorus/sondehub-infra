@@ -280,6 +280,7 @@ def telemetry_filter(telemetry):
         or ("LMS" in telemetry["type"])
         or ("iMet" in telemetry["type"])
         or ("MTS01" in telemetry["type"])
+        or ("WxR" in telemetry["type"])
     ):
         _id_msg = "Payload ID %s from Sonde type %s is invalid." % (telemetry["serial"], telemetry["type"])
         # Add in a note about DFM sondes and their oddness...
