@@ -277,7 +277,7 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
         ]
         environment = []
         essential   = true
-        image       = "eclipse-mosquitto:latest"
+        image       = "eclipse-mosquitto:2.0.15"
         # logConfiguration = {
         #   logDriver = "awslogs"
         #   options = {
@@ -543,7 +543,7 @@ resource "aws_ecs_service" "ws_reader_ec2" {
   task_definition         = aws_ecs_task_definition.ws_reader_ec2.arn
   enable_ecs_managed_tags = true
   launch_type             = "EC2"
-  desired_count           = 6
+  desired_count           = 4
   placement_constraints {
     type = "distinctInstance"
   }
