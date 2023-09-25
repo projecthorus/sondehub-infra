@@ -53,6 +53,17 @@ resource "aws_iam_role_policy" "predict_updater" {
             "Effect": "Allow",
             "Action": "s3:*",
             "Resource": "*"
+        },
+        {
+            "Action": [
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeInstances",
+                "ec2:AttachNetworkInterface"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
         }
     ]
 }
@@ -80,6 +91,9 @@ resource "aws_lambda_function" "predict_updater" {
   }
   tags = {
     Name = "predict_updater"
+  }
+  lifecycle {
+    ignore_changes = [environment]
   }
 }
 
