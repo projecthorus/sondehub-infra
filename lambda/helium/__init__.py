@@ -83,6 +83,30 @@ def upload(event, context):
             if 'speed' in telem_data:
                 telem['speed'] = telem_data['speed']
 
+            if 'temperature' in telem_data:
+                telem['temp'] = telem_data['temperature']
+
+            if 'temp' in telem_data:
+                telem['temp'] = telem_data['temp']
+
+            if 'ext_temperature' in telem_data:
+                telem['ext_temperature'] = telem_data['ext_temperature']
+
+            if 'ext_pressure' in telem_data:
+                telem['ext_pressure'] = telem_data['ext_pressure']
+
+            if 'ext_humidity' in telem_data:
+                telem['ext_humidity'] = telem_data['ext_humidity']
+
+            if 'accel_x' in telem_data:
+                telem['accel_x'] = telem_data['accel_x']
+            
+            if 'accel_y' in telem_data:
+                telem['accel_y'] = telem_data['accel_y']
+
+            if 'accel_z' in telem_data:
+                telem['accel_z'] = telem_data['accel_z']
+
             # Base64-encoded raw and payload packet data
             if 'raw_packet' in payload:
                 telem['raw'] = payload['raw_packet']
