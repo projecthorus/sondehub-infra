@@ -6,7 +6,38 @@ import datetime
 from email.utils import parsedate
 import os
 
-HELIUM_GW_VERSION = "2023.08.25"
+HELIUM_GW_VERSION = "2023.10.08"
+
+# Mappings between input (Helium) field names, and field names fed into SondeHub-Amateur
+FIELD_MAPPINGS = [
+    ['lat',         'lat'],
+    ['lon',         'lon'],
+    ['alt',         'alt'],
+    ['latitude',    'lat'],
+    ['longitude',   'lon'],
+    ['altitude',    'alt'],
+    ['sats',        'sats'],
+    ['battery',     'batt'],
+    ['batt',        'batt'],
+    ['speed',       'speed'],
+    ['heading',     'heading'],
+    ['temp',        'temp'],
+    ['temperature', 'temp'],
+    ['ext_temperature', 'ext_temperature'],
+    ['ext_pressure','ext_pressure'],
+    ['pressure',    'ext_pressure'],
+    ['ext_humidity','ext_humidity'],
+    ['accel_x',     'accel_x'],
+    ['accel_y',     'accel_y'],
+    ['accel_z',     'accel_z'],
+    ['gyro_x',      'gyro_x'],
+    ['gyro_y',      'gyro_y'],
+    ['gyro_z',      'gyro_z'],
+    ['illuminance', 'illuminance'],
+    ['raw_packet',  'raw'],
+    ['raw_payload', 'payload']
+]
+
 
 def set_connection_header(request, operation_name, **kwargs):
     request.headers['Connection'] = 'keep-alive'
@@ -62,57 +93,22 @@ def upload(event, context):
             # Positional and other data
             telem_data = payload["decoded"]["payload"]
 
-            # Position
-            telem["position"] = f'{telem_data["latitude"]},{telem_data["longitude"]}'
-            telem["lat"] = telem_data['latitude']
-            telem["lon"] = telem_data['longitude']
-            telem["alt"] = telem_data['altitude']
+            # Work through all accepted field names and map them
+            # into the output structure.
+            for _field in FIELD_MAPPINGS:
+                _input = _field[0]
+                _output = _field[1]
 
-            #
-            # Other optional fields
-            #
-            if 'sats' in telem_data:
-                telem["sats"] = telem_data["sats"]
-            
-            if 'battery' in telem_data:
-                telem["batt"] = telem_data["battery"]
+                if _input in telem_data:
+                    telem[_output] = telem_data[_input]
 
-            if 'batt' in telem_data:
-                telem["batt"] = telem_data["batt"]
+            # Position field, required by OpenSearch
+            # If lat/lon are not in the telemetry, then this will error
+            telem["position"] = f'{telem["lat"]},{telem["lon"]}'
 
-            if 'speed' in telem_data:
-                telem['speed'] = telem_data['speed']
-
-            if 'temperature' in telem_data:
-                telem['temp'] = telem_data['temperature']
-
-            if 'temp' in telem_data:
-                telem['temp'] = telem_data['temp']
-
-            if 'ext_temperature' in telem_data:
-                telem['ext_temperature'] = telem_data['ext_temperature']
-
-            if 'ext_pressure' in telem_data:
-                telem['ext_pressure'] = telem_data['ext_pressure']
-
-            if 'ext_humidity' in telem_data:
-                telem['ext_humidity'] = telem_data['ext_humidity']
-
-            if 'accel_x' in telem_data:
-                telem['accel_x'] = telem_data['accel_x']
-            
-            if 'accel_y' in telem_data:
-                telem['accel_y'] = telem_data['accel_y']
-
-            if 'accel_z' in telem_data:
-                telem['accel_z'] = telem_data['accel_z']
-
-            # Base64-encoded raw and payload packet data
-            if 'raw_packet' in payload:
-                telem['raw'] = payload['raw_packet']
-
-            if 'payload' in payload:
-                telem['raw_payload'] = payload['payload']
+            # We also need altitude as a minimum
+            if 'alt' not in telem:
+                raise IOError("No altitude field")
         
         except Exception as e:
             errors.append({
@@ -139,7 +135,7 @@ def upload(event, context):
                 except:
                     pass
 
-                
+            
                 to_sns.append(hotspot_telem)
 
             except Exception as e:
