@@ -1,0 +1,6 @@
+build
+.DS_Store
+swagger.md
+__pycache__
+.terraform
+.vscode

@@ -62,4 +62,4 @@ payload = {
     "body": bbody,
     "isBase64Encoded": True,
 }
-print(lambda_handler(payload, {}))
+print(lambda_handler_helium(payload, {}))

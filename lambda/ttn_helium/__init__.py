@@ -182,3 +182,7 @@ def lambda_handler(event, context):
     else:
         return {"statusCode": 200, "body": "^v^ telm logged"}
 
+def lambda_handler_helium(event, context):
+    return lambda_handler(event, context)
+def lambda_handler_ttn(event, context):
+    return lambda_handler(event, context)
