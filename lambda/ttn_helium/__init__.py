@@ -33,9 +33,7 @@ FIELD_MAPPINGS = [
     ['gyro_x',      'gyro_x'],
     ['gyro_y',      'gyro_y'],
     ['gyro_z',      'gyro_z'],
-    ['illuminance', 'illuminance'],
-    ['raw_packet',  'raw'],
-    ['raw_payload', 'payload']
+    ['illuminance', 'illuminance']
 ]
 
 
@@ -110,6 +108,9 @@ def upload_helium(event, context):
             if 'alt' not in telem:
                 raise IOError("No altitude field")
         
+            # Extract raw payload data, base64
+            telem["raw"] = payload["payload"]
+
         except Exception as e:
             errors.append({
                 "error_message": f"Error parsing telemetry data - {str(e)}",
@@ -206,6 +207,9 @@ def upload_ttn(event, context):
             # We also need altitude as a minimum
             if 'alt' not in telem:
                 raise IOError("No altitude field")
+            
+            # Extract raw payload data, base64
+            telem["raw"] = payload["uplink_message"]["frm_payload"]
         
         except Exception as e:
             errors.append({
