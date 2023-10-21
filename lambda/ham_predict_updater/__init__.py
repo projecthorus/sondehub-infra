@@ -1,3 +1,7 @@
+import sys
+sys.path.append("sns_to_mqtt/vendor")
+
+import paho.mqtt.client as mqtt
 import json
 from datetime import datetime
 from datetime import timedelta
@@ -8,7 +12,11 @@ from math import radians, degrees, sin, cos, atan2, sqrt, pi
 import es
 import asyncio
 import functools
+import os
+import random
+import time
 
+TAWHIRI_SERVER = "tawhiri.v2.sondehub.org"
 
 #   FLIGHT PROFILE DEFAULTS
 #
@@ -38,6 +46,49 @@ ALTITUDE_AGL_THRESHOLD = 150.0
 
 # Do not run predictions if the payload is below this altitude AMSL, and has an ascent rate below the above threshold.
 ALTITUDE_AMSL_THRESHOLD = 1500.0
+
+
+# Setup MQTT
+client = mqtt.Client(transport="websockets")
+
+connected_flag = False
+
+import socket
+socket.setdefaulttimeout(1)
+
+
+## MQTT functions
+def connect():
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_publish = on_publish
+    #client.tls_set()
+    client.username_pw_set(username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD"))
+    HOSTS = os.getenv("MQTT_HOST").split(",")
+    PORT = int(os.getenv("MQTT_PORT", default="8080"))
+    if PORT == 443:
+        client.tls_set()
+    HOST = random.choice(HOSTS)
+    print(f"Connecting to {HOST}")
+    client.connect(HOST, PORT, 5)
+    client.loop_start()
+    print("loop started")
+
+def on_disconnect(client, userdata, rc):
+    global connected_flag
+    print("disconnected")
+    connected_flag=False #set flag
+
+def on_connect(client, userdata, flags, rc):
+    global connected_flag
+    if rc==0:
+        print("connected")
+        connected_flag=True #set flag
+    else:
+        print("Bad connection Returned code")
+
+def on_publish(client, userdata, mid):
+    pass
 
 def get_flight_docs():
     path = "flight-doc/_search"
@@ -252,7 +303,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
     # Generate the prediction URL
     url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now() + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
     logging.debug(url)
-    conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
+    conn = http.client.HTTPSConnection(TAWHIRI_SERVER)
     conn.request("GET", url)
     res = conn.getresponse()
     data = res.read()
@@ -309,7 +360,7 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
     # Generate the prediction URL
     url = f"/api/v1/?launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&launch_altitude={altitude:.2f}&ascent_rate={ascent_rate:.2f}&burst_altitude={burst_altitude:.2f}&descent_rate={descent_rate:.2f}"
     logging.debug(url)
-    conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
+    conn = http.client.HTTPSConnection(TAWHIRI_SERVER)
     conn.request("GET", url)
     res = conn.getresponse()
     data = res.read()
@@ -343,37 +394,38 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
         return None
 
 
+#  Need to mock this out if we ever use it again
+#
+# def get_ruaumoko(latitude, longitude):
+#     """
+#     Request the ground level from ruaumoko.
 
-def get_ruaumoko(latitude, longitude):
-    """
-    Request the ground level from ruaumoko.
+#     Returns 0.0 if the ground level could not be determined, effectively
+#     defaulting to any checks based on this data being based on mean sea level.
+#     """
 
-    Returns 0.0 if the ground level could not be determined, effectively
-    defaulting to any checks based on this data being based on mean sea level.
-    """
+#     # Shift longitude into the appropriate range for Tawhiri
+#     if longitude < 0:
+#         longitude += 360.0
 
-    # Shift longitude into the appropriate range for Tawhiri
-    if longitude < 0:
-        longitude += 360.0
+#     # Generate the prediction URL
+#     url = f"/api/ruaumoko/?latitude={latitude}&longitude={longitude}"
+#     logging.debug(url)
+#     conn = http.client.HTTPSConnection(TAWHIRI_SERVER)
+#     conn.request("GET", url)
+#     res = conn.getresponse()
+#     data = res.read()
 
-    # Generate the prediction URL
-    url = f"/api/ruaumoko/?latitude={latitude}&longitude={longitude}"
-    logging.debug(url)
-    conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
-    conn.request("GET", url)
-    res = conn.getresponse()
-    data = res.read()
-
-    if res.code != 200:
-        logging.debug(data)
-        return None
+#     if res.code != 200:
+#         logging.debug(data)
+#         return None
     
-    resp_data = json.loads(data.decode("utf-8"))
+#     resp_data = json.loads(data.decode("utf-8"))
 
-    if 'altitude' in resp_data:
-        return resp_data['altitude']
-    else:
-        return 0.0
+#     if 'altitude' in resp_data:
+#         return resp_data['altitude']
+#     else:
+#         return 0.0
 
 
 def bulk_upload_es(index_prefix,payloads):
@@ -392,8 +444,11 @@ def bulk_upload_es(index_prefix,payloads):
             raise RuntimeError
 
 def predict(event, context):
+    # Connect to MQTT
+    connect()
     # Use asyncio.run to synchronously "await" an async function
     result = asyncio.run(predict_async(event, context))
+    time.sleep(0.5) # give paho mqtt 500ms to send messages this could be improved on but paho mqtt is a pain to interface with
     return result
 
 async def predict_async(event, context):
@@ -593,6 +648,18 @@ async def predict_async(event, context):
     if len(output) > 0:
         bulk_upload_es("ham-predictions", output)
 
+    # upload to mqtt
+    while not connected_flag:
+        time.sleep(0.01) # wait until connected
+    for prediction in output:
+        logging.debug(f'Publishing prediction for {prediction["payload_callsign"]} to MQTT')
+        client.publish(
+            topic=f'amateur-prediction/{prediction["payload_callsign"]}',
+            payload=json.dumps(prediction),
+            qos=0,
+            retain=False
+        )
+        logging.debug(f'Published prediction for {prediction["payload_callsign"]} to MQTT')
 
     logging.debug("Finished")
     return
@@ -639,6 +706,7 @@ async def run_predictions_for_serial(sem, flight_docs, serial, value):
         if (abs(value['rate']) <= ASCENT_RATE_THRESHOLD) and (value['alt'] < ALTITUDE_AMSL_THRESHOLD):
             # Payload is 'floating' (e.g. is probably on the ground), and is below 1500m AMSL.
             # Don't run a prediction in this case. It probably just hasn't been launched yet.
+            logging.debug(f"{serial} is floating and alt is low so not running prediction")
             return None
 
     
