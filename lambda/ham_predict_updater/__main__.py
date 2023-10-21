@@ -1,43 +1,66 @@
 from . import *
+from . import mock_values, test_values
+import unittest
+from unittest.mock import MagicMock, call, patch
 
-# Predictor test
-# conn = http.client.HTTPSConnection("tawhiri.v2.sondehub.org")
-# _now = datetime.utcnow().isoformat() + "Z"
+# Mock OpenSearch requests
+def mock_es_request(body, path, method):
+    if path.endswith("_bulk"): # handle when the upload happens
+        return {}
+    elif(path == "flight-doc/_search"): # handle flightdoc queries
+        return mock_values.flight_docs
+    elif(path == "ham-telm-*/_search"): # handle telm searches
+        return mock_values.ham_telm
+    else:
+        raise NotImplemented
 
-# _ascent = get_standard_prediction(conn, _now, -34.0, 138.0, 10.0, burst_altitude=26000)
-# print(f"Got {len(_ascent)} data points for ascent prediction.")
-# _descent = get_standard_prediction(conn, _now, -34.0, 138.0, 24000.0, burst_altitude=24000.5)
-# print(f"Got {len(_descent)} data points for descent prediction.")
-
-# test = predict(
-#       {},{}
-#     )
-#print(get_launch_sites())
-#print(get_reverse_predictions())
-# for _serial in test:
-#     print(f"{_serial['serial']}: {len(_serial['data'])}")
-
+# Mock out tawhiri
+class MockResponse(object):
+    code = 200
+    def read(self):
+        return mock_values.tawhiri_respose # currently we only mock a float profile
+    
+class MockHTTPS(object):
+    logging.debug(object)
+    def __init__(self, url):
+        logging.debug(url)
+    def request(self,method, url):
+        pass
+    def getresponse(self):
+        return MockResponse()
+    
+http.client.HTTPSConnection = MockHTTPS
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(message)s", level=logging.DEBUG
 )
 
-print(predict(
-        {},{}
-    ))
-# bulk_upload_es("reverse-prediction",[{
-#       "datetime" : "2021-10-04",
-#       "data" : { },
-#       "serial" : "R12341234",
-#       "station" : "-2",
-#       "subtype" : "RS41-SGM",
-#       "ascent_rate" : "5",
-#       "alt" : 1000,
-#       "position" : [
-#         1,
-#         2
-#       ],
-#       "type" : "RS41"
-#     }]
-# )
+class TestAmateurPrediction(unittest.TestCase):
+    def setUp(self):
+        es.request = MagicMock(side_effect=mock_es_request)
+        client.connect = MagicMock()
+        client.loop_start = MagicMock()
+        client.username_pw_set = MagicMock()
+        client.tls_set = MagicMock()
+        client.publish = MagicMock()
+        on_connect(client, "userdata", "flags", 0)
 
+    @patch("time.sleep")
+    def test_float_prediction(self, MockSleep):
+        predict({},{})
+        date_prefix = datetime.now().strftime("%Y-%m")
+        es.request.assert_has_calls(
+            [
+                call(json.dumps(test_values.flight_doc_search),"flight-doc/_search", "POST"),
+                call(json.dumps(test_values.ham_telm_search), "ham-telm-*/_search", "GET"),
+                call(test_values.es_bulk_upload,f"ham-predictions-{date_prefix}/_bulk","POST")
+            ]
+        )
+        client.username_pw_set.assert_called()
+        client.loop_start.assert_called()
+        client.connect.assert_called()
+        client.publish.assert_has_calls([test_values.mqtt_publish_call])
+        time.sleep.assert_called_with(0.5) # make sure we sleep to let paho mqtt queue clear
+
+if __name__ == '__main__':
+    unittest.main()
