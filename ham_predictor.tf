@@ -81,6 +81,9 @@ resource "aws_lambda_function" "ham_predict_updater" {
   tags = {
     Name = "ham_predict_updater"
   }
+  lifecycle {
+    ignore_changes = [environment]
+  }
 }
 
 
