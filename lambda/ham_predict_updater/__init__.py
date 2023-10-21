@@ -52,6 +52,7 @@ ALTITUDE_AMSL_THRESHOLD = 1500.0
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
+setup = False
 
 import socket
 socket.setdefaulttimeout(1)
@@ -444,8 +445,11 @@ def bulk_upload_es(index_prefix,payloads):
             raise RuntimeError
 
 def predict(event, context):
+    global setup
     # Connect to MQTT
-    connect()
+    if not setup:
+        connect()
+        setup = True
     # Use asyncio.run to synchronously "await" an async function
     result = asyncio.run(predict_async(event, context))
     time.sleep(0.5) # give paho mqtt 500ms to send messages this could be improved on but paho mqtt is a pain to interface with
