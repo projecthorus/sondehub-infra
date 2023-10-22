@@ -8,6 +8,7 @@ import base64
 import gzip
 from io import BytesIO
 import boto3
+import config_handler
 
 CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO"]
 
@@ -27,7 +28,7 @@ def post(payload):
         f.write(json.dumps(payload).encode('utf-8'))
     payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
     sns.publish(
-                TopicArn=os.getenv("SNS_TOPIC"),
+                TopicArn=config_handler.get("SNS","TOPIC"),
                 Message=payload
     )
 

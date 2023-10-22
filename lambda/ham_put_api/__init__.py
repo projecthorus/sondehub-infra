@@ -5,7 +5,7 @@ import base64
 import datetime
 from email.utils import parsedate
 import os
-
+import config_handler
 
 def set_connection_header(request, operation_name, **kwargs):
     request.headers['Connection'] = 'keep-alive'
@@ -47,7 +47,7 @@ def telemetry_hide_filter(telemetry):
 
 def post(payload):
     sns.publish(
-                TopicArn=os.getenv("HAM_SNS_TOPIC"),
+                TopicArn=config_handler.get("HAM_SNS","TOPIC"),
                 Message=json.dumps(payload)
     )
 

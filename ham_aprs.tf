@@ -83,6 +83,13 @@ resource "aws_iam_role_policy" "aprsgw" {
             "Effect": "Allow",
             "Action": "sns:Publish",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
@@ -90,8 +97,14 @@ EOF
 }
 
 resource "aws_ecs_cluster" "aprsgw" {
-  name               = "aprsgw"
-  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  name = "aprsgw"
+}
+
+
+resource "aws_ecs_cluster_capacity_providers" "aprsgw" {
+  cluster_name = aws_ecs_cluster.aprsgw.name
+
+  capacity_providers = ["FARGATE"]
 }
 
 

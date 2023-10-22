@@ -1,9 +1,9 @@
 from datetime import datetime
 import urllib.request
 import json
-import os
+import config_handler
 
-apiKey = os.environ["radiosondy_apikey"]
+apiKey = config_handler.get("RADIOSONDY","API_KEY")
 
 params = "?token={}&period=2".format(apiKey)
 url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)

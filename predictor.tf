@@ -64,6 +64,13 @@ resource "aws_iam_role_policy" "predict_updater" {
             ],
             "Effect": "Allow",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
@@ -86,14 +93,13 @@ resource "aws_lambda_function" "predict_updater" {
   reserved_concurrent_executions = 1
   environment {
     variables = {
-      "ES" = aws_route53_record.es.fqdn
+      "ES"      = aws_route53_record.es.fqdn
+      MQTT_HOST = "ws.v2.sondehub.org"
+      MQTT_PORT = "443"
     }
   }
   tags = {
     Name = "predict_updater"
-  }
-  lifecycle {
-    ignore_changes = [environment]
   }
 }
 
@@ -380,8 +386,13 @@ resource "aws_ecr_repository" "tawhiri_downloader" {
 }
 
 resource "aws_ecs_cluster" "tawhiri" {
-  name               = "Tawhiri"
-  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  name = "Tawhiri"
+}
+
+resource "aws_ecs_cluster_capacity_providers" "tawhiri" {
+  cluster_name = aws_ecs_cluster.tawhiri.name
+
+  capacity_providers = ["FARGATE"]
 }
 
 
@@ -410,7 +421,7 @@ resource "aws_ecs_service" "tawhiri" {
   task_definition                   = aws_ecs_task_definition.tawhiri.arn
   enable_ecs_managed_tags           = true
   health_check_grace_period_seconds = 600
-  iam_role                          = "aws-service-role"
+  iam_role                          = "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
   launch_type                       = "FARGATE"
   platform_version                  = "LATEST"
   desired_count                     = 1

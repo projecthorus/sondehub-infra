@@ -79,6 +79,13 @@ resource "aws_iam_role_policy" "ingestion_lambda_role" {
             ],
             "Effect": "Allow",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
                     
     ]
@@ -241,8 +248,12 @@ resource "aws_lambda_function" "sns_to_mqtt" {
   runtime          = "python3.9"
   timeout          = 3
   architectures    = ["arm64"]
-  lifecycle {
-    ignore_changes = [environment]
+  environment {
+    variables = {
+      MQTT_BATCH  = "batch"
+      MQTT_ID     = "serial"
+      MQTT_PREFIX = "sondes"
+    }
   }
   tags = {
     Name = "sns-to-mqtt"
@@ -279,8 +290,12 @@ resource "aws_lambda_function" "sns_to_mqtt_listener" {
   runtime          = "python3.9"
   timeout          = 3
   architectures    = ["arm64"]
-  lifecycle {
-    ignore_changes = [environment]
+  environment {
+    variables = {
+      MQTT_BATCH  = "batch-listener"
+      MQTT_ID     = "uploader_callsign"
+      MQTT_PREFIX = "listener"
+    }
   }
   tags = {
     Name = "sns-to-mqtt"

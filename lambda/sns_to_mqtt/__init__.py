@@ -11,6 +11,7 @@ import boto3
 import traceback
 import sys
 import uuid
+import config_handler
 
 client = mqtt.Client(transport="websockets")
 
@@ -69,8 +70,8 @@ def connect():
     client.on_disconnect = on_disconnect
     client.on_publish = on_publish
     #client.tls_set()
-    client.username_pw_set(username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD"))
-    HOSTS = os.getenv("MQTT_HOST").split(",")
+    client.username_pw_set(username=config_handler.get("MQTT","USERNAME"), password=config_handler.get("MQTT","PASSWORD"))
+    HOSTS = config_handler.get("MQTT","HOST").split(",")
     HOST = random.choice(HOSTS)
     print(f"Connecting to {HOST}",None,log_stream_name)
     client.connect(HOST, 8080, 5)
@@ -119,18 +120,18 @@ def lambda_handler(event, context):
                 
                 body = json.dumps(payload)
 
-                serial = payload[os.getenv("MQTT_ID")]
+                serial = payload[config_handler.get("MQTT","ID")]
                 while not connected_flag:
                     time.sleep(0.01) # wait until connected
                 client.publish(
-                    topic=f'{os.getenv("MQTT_PREFIX")}/{serial}',
+                    topic=f'{config_handler.get("MQTT","PREFIX")}/{serial}',
                     payload=body,
                     qos=0,
                     retain=False
                 )
                 if serial not in cache: # low bandwidth feeds with just the first packet
                     client.publish(
-                        topic=f'{os.getenv("MQTT_PREFIX")}-new/{serial}',
+                        topic=f'{config_handler.get("MQTT","PREFIX")}-new/{serial}',
                         payload=body,
                         qos=0,
                         retain=False
@@ -140,7 +141,7 @@ def lambda_handler(event, context):
                     while len(cache) > MAX_CACHE:
                         del cache[next(iter(cache))]
             client.publish(
-                topic=os.getenv("MQTT_BATCH"),
+                topic=config_handler.get("MQTT","BATCH"),
                 payload=json.dumps(payloads),
                 qos=0,
                 retain=False

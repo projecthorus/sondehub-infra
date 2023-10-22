@@ -48,6 +48,13 @@ resource "aws_iam_role_policy" "sqs_to_elk" {
             "Effect": "Allow",
             "Action": "sqs:*",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }

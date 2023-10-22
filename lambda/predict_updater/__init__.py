@@ -14,7 +14,7 @@ import os
 import random
 import time
 import traceback
-
+import config_handler
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
@@ -29,9 +29,9 @@ def connect():
     client.on_disconnect = on_disconnect
     client.on_publish = on_publish
     #client.tls_set()
-    client.username_pw_set(username=os.getenv("MQTT_USERNAME"), password=os.getenv("MQTT_PASSWORD"))
-    HOSTS = os.getenv("MQTT_HOST").split(",")
-    PORT = int(os.getenv("MQTT_PORT", default="8080"))
+    client.username_pw_set(username=config_handler.get("MQTT","USERNAME"), password=config_handler.get("MQTT","PASSWORD"))
+    HOSTS = config_handler.get("MQTT","HOST").split(",")
+    PORT = int(config_handler.get("MQTT","PORT", default="8080"))
     if PORT == 443:
         client.tls_set()
     HOST = random.choice(HOSTS)
