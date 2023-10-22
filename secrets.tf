@@ -6,9 +6,10 @@ resource "aws_secretsmanager_secret_version" "mqtt" {
   secret_id = aws_secretsmanager_secret.mqtt.id
   secret_string = jsonencode(
     {
-      HOST     = join(",", local.websocket_host_addresses)
-      PASSWORD = random_password.mqtt.result
-      USERNAME = "write"
+      HOST            = join(",", local.websocket_host_addresses)
+      HOST_MOS_FORMAT = join(" ", [for x in local.websocket_host_addresses : "${x}:1883"])
+      PASSWORD        = random_password.mqtt.result
+      USERNAME        = "write"
     }
   )
 }
