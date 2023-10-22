@@ -14,6 +14,8 @@ CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO"]
 
 import es
 
+TOPIC = config_handler.get("SNS","TOPIC")
+
 # Setup SNS
 
 def set_connection_header(request, operation_name, **kwargs):
@@ -28,7 +30,7 @@ def post(payload):
         f.write(json.dumps(payload).encode('utf-8'))
     payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
     sns.publish(
-                TopicArn=config_handler.get("SNS","TOPIC"),
+                TopicArn=TOPIC,
                 Message=payload
     )
 

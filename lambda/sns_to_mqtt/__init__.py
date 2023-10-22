@@ -13,6 +13,10 @@ import sys
 import uuid
 import config_handler
 
+MQTT_ID = config_handler.get("MQTT","ID")
+MQTT_PREFIX = config_handler.get("MQTT","PREFIX")
+MQTT_BATCH = config_handler.get("MQTT","BATCH")
+
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
@@ -120,18 +124,18 @@ def lambda_handler(event, context):
                 
                 body = json.dumps(payload)
 
-                serial = payload[config_handler.get("MQTT","ID")]
+                serial = payload[MQTT_ID]
                 while not connected_flag:
                     time.sleep(0.01) # wait until connected
                 client.publish(
-                    topic=f'{config_handler.get("MQTT","PREFIX")}/{serial}',
+                    topic=f'{MQTT_PREFIX}/{serial}',
                     payload=body,
                     qos=0,
                     retain=False
                 )
                 if serial not in cache: # low bandwidth feeds with just the first packet
                     client.publish(
-                        topic=f'{config_handler.get("MQTT","PREFIX")}-new/{serial}',
+                        topic=f'{MQTT_PREFIX}-new/{serial}',
                         payload=body,
                         qos=0,
                         retain=False
@@ -141,7 +145,7 @@ def lambda_handler(event, context):
                     while len(cache) > MAX_CACHE:
                         del cache[next(iter(cache))]
             client.publish(
-                topic=config_handler.get("MQTT","BATCH"),
+                topic=MQTT_BATCH,
                 payload=json.dumps(payloads),
                 qos=0,
                 retain=False

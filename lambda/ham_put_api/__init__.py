@@ -13,6 +13,8 @@ def set_connection_header(request, operation_name, **kwargs):
 sns = boto3.client("sns",region_name="us-east-1")
 sns.meta.events.register('request-created.sns', set_connection_header)
 
+TOPIC = config_handler.get("HAM_SNS","TOPIC")
+
 def check_fields_are_number(field, telemetry):
     if type(telemetry[field]) != float and type(telemetry[field]) != int:
         return (False, f"{field} should not be a float")
@@ -47,7 +49,7 @@ def telemetry_hide_filter(telemetry):
 
 def post(payload):
     sns.publish(
-                TopicArn=config_handler.get("HAM_SNS","TOPIC"),
+                TopicArn=TOPIC,
                 Message=json.dumps(payload)
     )
 

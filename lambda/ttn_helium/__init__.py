@@ -7,6 +7,8 @@ from email.utils import parsedate
 import os
 import config_handler
 
+TOPIC = config_handler.get("HAM_SNS","TOPIC")
+
 HELIUM_GW_VERSION = "2023.10.14"
 
 # Mappings between input (Helium) field names, and field names fed into SondeHub-Amateur
@@ -47,7 +49,7 @@ sns.meta.events.register('request-created.sns', set_connection_header)
 
 def post(payload):
     sns.publish(
-                TopicArn=config_handler.get("HAM_SNS","TOPIC"),
+                TopicArn=TOPIC,
                 Message=json.dumps(payload)
     )
 
