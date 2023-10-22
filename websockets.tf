@@ -67,11 +67,11 @@ resource "aws_ecr_repository" "wsproxy" {
 
 // Subnet that is used to make discovery simple for the main ws server
 resource "aws_subnet" "ws_main" {
-  map_public_ip_on_launch = false
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "172.31.134.0/28"
-  ipv6_cidr_block         = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, 128)
-  assign_ipv6_address_on_creation  = true
+  map_public_ip_on_launch         = false
+  vpc_id                          = aws_vpc.main.id
+  cidr_block                      = local.websocket_subnet
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, 128)
+  assign_ipv6_address_on_creation = true
 
   tags = {
     Name = "wsmain"
@@ -83,6 +83,16 @@ resource "aws_route_table_association" "ws_main" {
   route_table_id = aws_route_table.main.id
 }
 
+locals {
+  websocket_subnet            = "172.31.134.0/28"
+  websocket_network_addresses = cidrsubnets(local.websocket_subnet, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4)
+  websocket_host_addresses = setsubtract( # calculates what the "remaining" IP addresses are in the VPC subnet after padding
+    [for x in slice(local.websocket_network_addresses, 4, 15) : replace(x, "/32", "")],
+    [for x in aws_network_interface.ws_pad : tolist(x.private_ips)[0]]
+  )
+}
+
+
 // so we need to ensure there is only as handful of IP addresses avaliable in the subnet, so we assign all the IPs to ENIs
 resource "aws_network_interface" "ws_pad" {
   count     = 9
@@ -90,144 +100,6 @@ resource "aws_network_interface" "ws_pad" {
 
   description = "Do not delete. Padding to limit addresses"
 }
-
-# resource "aws_ecs_task_definition" "ws_reader" {
-#   family = "ws-reader"
-#   container_definitions = jsonencode(
-#     [
-#       {
-#         command = [
-#           "s3",
-#           "sync",
-#           "s3://sondehub-ws-config/",
-#           "/config/",
-#         ]
-#         cpu         = 0
-#         environment = []
-#         essential   = false
-#         image       = "amazon/aws-cli"
-#         logConfiguration = {
-#           logDriver = "awslogs"
-#           options = {
-#             awslogs-group         = "/ecs/ws"
-#             awslogs-region        = "us-east-1"
-#             awslogs-stream-prefix = "ecs"
-#           }
-#         }
-#         mountPoints = [
-#           {
-#             containerPath = "/config"
-#             sourceVolume  = "config"
-#           },
-#         ]
-#         name         = "config"
-#         portMappings = []
-#         volumesFrom  = []
-#       },
-#       {
-#         command = []
-#         cpu     = 0
-#         dependsOn = [
-#           {
-#             condition     = "SUCCESS"
-#             containerName = "config"
-#           },
-#           {
-#             condition     = "SUCCESS"
-#             containerName = "config-move"
-#           },
-#         ]
-#         environment = []
-#         essential   = true
-#         image       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/wsproxy:latest"
-#         logConfiguration = {
-#           logDriver = "awslogs"
-#           options = {
-#             awslogs-group         = "/ecs/ws"
-#             awslogs-region        = "us-east-1"
-#             awslogs-stream-prefix = "ecs"
-#           }
-#         }
-#         mountPoints = [
-#           {
-#             containerPath = "/mosquitto/config"
-#             sourceVolume  = "config"
-#           },
-#         ]
-#         name = "mqtt"
-#         portMappings = [
-#           {
-#             containerPort = 8080
-#             hostPort      = 8080
-#             protocol      = "tcp"
-#           },
-#           {
-#             containerPort = 8883
-#             hostPort      = 8883
-#             protocol      = "tcp"
-#           },
-#         ]
-#         ulimits = [
-#           {
-#             hardLimit = 50000
-#             name      = "nofile"
-#             softLimit = 30000
-#           },
-#         ]
-#         volumesFrom = []
-#       },
-#       {
-#         command = [
-#           "cp",
-#           "/config/mosquitto-reader.conf",
-#           "/config/mosquitto.conf",
-#         ]
-#         cpu = 0
-#         dependsOn = [
-#           {
-#             condition     = "SUCCESS"
-#             containerName = "config"
-#           },
-#         ]
-#         environment = []
-#         essential   = false
-#         image       = "alpine"
-#         # logConfiguration = {
-#         #   logDriver = "awslogs"
-#         #   options = {
-#         #     awslogs-group         = "/ecs/ws-reader"
-#         #     awslogs-region        = "us-east-1"
-#         #     awslogs-stream-prefix = "ecs"
-#         #   }
-#         # }
-#         mountPoints = [
-#           {
-#             containerPath = "/config"
-#             sourceVolume  = "config"
-#           },
-#         ]
-#         name         = "config-move"
-#         portMappings = []
-#         volumesFrom  = []
-#       },
-#     ]
-#   )
-#   cpu                = "256"
-#   execution_role_arn = aws_iam_role.ecs_execution.arn
-#   memory             = "512"
-#   network_mode       = "awsvpc"
-#   requires_compatibilities = [
-#     "FARGATE",
-#   ]
-
-#   tags          = {}
-#   task_role_arn = "arn:aws:iam::143841941773:role/ws"
-
-
-#   volume {
-#     name = "config"
-#   }
-# }
 
 resource "aws_ecs_task_definition" "ws_reader_ec2" {
   family = "ws_reader_ec2"
@@ -466,8 +338,14 @@ resource "aws_ecs_task_definition" "ws" {
 }
 
 resource "aws_ecs_cluster" "ws" {
-  name               = "ws"
-  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  name = "ws"
+}
+
+resource "aws_ecs_cluster_capacity_providers" "ws" {
+  cluster_name = aws_ecs_cluster.ws.name
+
+  capacity_providers = ["FARGATE"]
+
 }
 
 resource "aws_lb_target_group" "ws" {
@@ -507,35 +385,6 @@ resource "aws_lb_target_group" "ws_reader" {
   }
 }
 
-# resource "aws_ecs_service" "ws_reader" {
-#   name                              = "ws-reader"
-#   cluster                           = aws_ecs_cluster.ws.id
-#   task_definition                   = aws_ecs_task_definition.ws_reader.arn
-#   enable_ecs_managed_tags           = true
-#   health_check_grace_period_seconds = 60
-#   iam_role                          = "aws-service-role"
-#   launch_type                       = "FARGATE"
-#   platform_version                  = "LATEST"
-#   desired_count                     = 0
-
-#   load_balancer {
-#     container_name   = "mqtt"
-#     container_port   = 8080
-#     target_group_arn = aws_lb_target_group.ws_reader.arn
-#   }
-
-#   lifecycle {
-#     ignore_changes = [desired_count]
-#   }
-
-#   network_configuration {
-#     assign_public_ip = true
-#     security_groups = [
-#       aws_security_group.ws_reader.id
-#     ]
-#     subnets = values(aws_subnet.public)[*].id
-#   }
-# }
 
 resource "aws_ecs_service" "ws_reader_ec2" {
   name                    = "ws-reader-ec2"
@@ -555,7 +404,7 @@ resource "aws_ecs_service" "ws_writer" {
   task_definition                   = aws_ecs_task_definition.ws.arn
   enable_ecs_managed_tags           = true
   health_check_grace_period_seconds = 60
-  iam_role                          = "aws-service-role"
+  iam_role                          = "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
   launch_type                       = "FARGATE"
   platform_version                  = "LATEST"
   desired_count                     = 1
@@ -810,6 +659,13 @@ resource "aws_iam_role_policy" "s3_config" {
                 "arn:aws:s3:::sondehub-ws-config",
                 "arn:aws:s3:::sondehub-ws-config/*"
             ]
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }

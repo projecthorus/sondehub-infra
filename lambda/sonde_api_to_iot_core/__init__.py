@@ -17,6 +17,8 @@ import base64
 import gzip
 from io import BytesIO
 
+import config_handler
+
 logs = boto3.client('logs')
 sequenceToken = None
 
@@ -366,7 +368,7 @@ def post(payload):
         f.write(json.dumps(payload).encode('utf-8'))
     payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
     sns.publish(
-                TopicArn=os.getenv("SNS_TOPIC"),
+                TopicArn=config_handler.get("SNS","TOPIC"),
                 Message=payload
     )
 

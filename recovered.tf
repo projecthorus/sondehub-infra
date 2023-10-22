@@ -44,6 +44,13 @@ resource "aws_iam_role_policy" "recovered" {
             "Effect": "Allow",
             "Action": "es:*",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
@@ -209,9 +216,8 @@ resource "aws_lambda_function" "recovery_ingest" {
   tags = {
     Name = "recovered_get"
   }
-
-  lifecycle {
-    ignore_changes = [environment]
+  environment {
+    variables = {}
   }
 }
 

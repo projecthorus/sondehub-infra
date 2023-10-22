@@ -53,6 +53,13 @@ resource "aws_iam_role_policy" "ham_predict_updater" {
             "Effect": "Allow",
             "Action": "s3:*",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
@@ -75,14 +82,13 @@ resource "aws_lambda_function" "ham_predict_updater" {
   reserved_concurrent_executions = 1
   environment {
     variables = {
-      "ES" = aws_route53_record.es.fqdn
+      "ES"      = aws_route53_record.es.fqdn
+      MQTT_HOST = "ws.v2.sondehub.org" # We go via the internet as this function isn't in a VPC
+      MQTT_PORT = "443"
     }
   }
   tags = {
     Name = "ham_predict_updater"
-  }
-  lifecycle {
-    ignore_changes = [environment]
   }
 }
 

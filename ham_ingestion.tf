@@ -69,6 +69,13 @@ resource "aws_iam_role_policy" "ham_sqs_to_elk" {
             "Effect": "Allow",
             "Action": "sqs:*",
             "Resource": "*"
+        },
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
@@ -226,9 +233,15 @@ resource "aws_lambda_function" "ham_sns_to_mqtt" {
   runtime          = "python3.9"
   timeout          = 3
   architectures    = ["arm64"]
-  lifecycle {
-    ignore_changes = [environment]
+
+  environment {
+    variables = {
+      MQTT_BATCH  = "batch-amateur"
+      MQTT_ID     = "payload_callsign"
+      MQTT_PREFIX = "amateur"
+    }
   }
+
   tags = {
     Name = "sns-to-mqtt"
   }
@@ -318,9 +331,15 @@ resource "aws_lambda_function" "ham_sns_to_mqtt_listener" {
   runtime          = "python3.9"
   timeout          = 3
   architectures    = ["arm64"]
-  lifecycle {
-    ignore_changes = [environment]
+
+  environment {
+    variables = {
+      MQTT_BATCH  = "batch-amateur-listener"
+      MQTT_ID     = "uploader_callsign"
+      MQTT_PREFIX = "amateur-listener"
+    }
   }
+
   tags = {
     Name = "sns-to-mqtt"
   }
