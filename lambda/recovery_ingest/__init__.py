@@ -2,6 +2,7 @@ from datetime import datetime
 import urllib.request
 import json
 import config_handler
+import traceback
 
 apiKey = config_handler.get("RADIOSONDY","API_KEY")
 
@@ -69,62 +70,65 @@ def findSonde(recovery, lat, lon):
 # Process each recovery report from Radiosondy.info
 def processReports(data):
     for recovery in data["results"]:
+        try:
 
-        # Get recovery status
-        if recovery["log_info"]["status"] == "FOUND":
-            recovered = True
-        elif recovery["log_info"]["status"] == "NEED ATTENTION":
-            recovered = False
-        elif recovery["log_info"]["status"] == "LOST":
-            recovered = False
-        else:
-            continue
-
-        # Get finder if available
-        if recovery["log_info"]["finder"] is not None:
-            recovered_by = recovery["log_info"]["finder"]
-        elif "[BOT]" not in recovery["log_info"]["added_by"]:
-            recovered_by = recovery["log_info"]["added_by"]
-        else:
-            continue
-
-        # Import time
-        recovered_time = datetime.strptime(recovery["log_info"]["log_added"], "%Y-%m-%d %H:%M:%S")
-
-        # Get comment and add attribution
-        description = recovery["log_info"]["comment"]
-        description += " [via Radiosondy.info]"
-        description = description.lstrip()
-
-        if recovery["log_info"]["found_coordinates"]["latitude"] != "0" and recovery["log_info"]["found_coordinates"]["longitude"] != "0":
-            lat = float(recovery["log_info"]["found_coordinates"]["latitude"])
-            lon = float(recovery["log_info"]["found_coordinates"]["longitude"])
-        else:
-            continue
-
-        # Use the reported serial number for RS41/RS92
-        if "RS41" in recovery["radiosonde"]["type"] or "RS92" in recovery["radiosonde"]["type"]:
-            serial = recovery["radiosonde"]["number"]
-        # Remove D prefix for DFM
-        elif "DFM" in recovery["radiosonde"]["type"]:
-            serial = recovery["radiosonde"]["number"][1:]
-        # Try to find serial in SondeHub database for others
-        else:
-            serial = findSonde(recovery, lat, lon)
-            if serial is None:
-                print("{}: could not match to SondeHub serial".format(recovery["radiosonde"]["number"]))
+            # Get recovery status
+            if recovery["log_info"]["status"] == "FOUND":
+                recovered = True
+            elif recovery["log_info"]["status"] == "NEED ATTENTION":
+                recovered = False
+            elif recovery["log_info"]["status"] == "LOST":
+                recovered = False
+            else:
                 continue
 
-        # Check if a valid recovery already exists
-        if checkExisting(serial, recovered) == False:
-            print("{}: recovery already exists".format(serial))
-            continue
+            # Get finder if available
+            if recovery["log_info"]["finder"] is not None:
+                recovered_by = recovery["log_info"]["finder"]
+            elif "[BOT]" not in recovery["log_info"]["added_by"]:
+                recovered_by = recovery["log_info"]["added_by"]
+            else:
+                continue
 
-        # Format data for upload
-        recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description}
-        recoveryPutData = str(json.dumps(recoveryPutData)).encode('utf-8')
-        print("{}: {}".format(serial, recoveryPutData))
-        
-        # Upload data
-        recoveryPutRequest = urllib.request.Request(recoveryUrl, data=recoveryPutData, method="PUT")
-        print("{}: {}".format(serial, urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8')))
+            # Import time
+            recovered_time = datetime.strptime(recovery["log_info"]["log_added"], "%Y-%m-%d %H:%M:%S")
+
+            # Get comment and add attribution
+            description = recovery["log_info"]["comment"]
+            description += " [via Radiosondy.info]"
+            description = description.lstrip()
+
+            if recovery["log_info"]["found_coordinates"]["latitude"] != "0" and recovery["log_info"]["found_coordinates"]["longitude"] != "0":
+                lat = float(recovery["log_info"]["found_coordinates"]["latitude"])
+                lon = float(recovery["log_info"]["found_coordinates"]["longitude"])
+            else:
+                continue
+
+            # Use the reported serial number for RS41/RS92
+            if "RS41" in recovery["radiosonde"]["type"] or "RS92" in recovery["radiosonde"]["type"]:
+                serial = recovery["radiosonde"]["number"]
+            # Remove D prefix for DFM
+            elif "DFM" in recovery["radiosonde"]["type"]:
+                serial = recovery["radiosonde"]["number"][1:]
+            # Try to find serial in SondeHub database for others
+            else:
+                serial = findSonde(recovery, lat, lon)
+                if serial is None:
+                    print("{}: could not match to SondeHub serial".format(recovery["radiosonde"]["number"]))
+                    continue
+
+            # Check if a valid recovery already exists
+            if checkExisting(serial, recovered) == False:
+                print("{}: recovery already exists".format(serial))
+                continue
+
+            # Format data for upload
+            recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description}
+            recoveryPutData = json.dumps(recoveryPutData, ensure_ascii=True).encode('utf-8')
+            print("{}: {}".format(serial, recoveryPutData))
+            
+            # Upload data
+            recoveryPutRequest = urllib.request.Request(recoveryUrl, data=recoveryPutData, method="PUT")
+            print("{}: {}".format(serial, urllib.request.urlopen(recoveryPutRequest).read().decode('utf-8')))
+        except:
+            traceback.print_exc()

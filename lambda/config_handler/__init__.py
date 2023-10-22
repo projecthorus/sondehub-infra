@@ -33,5 +33,5 @@ def get(topic: str, parameter: str, default=None) -> str:
     
     if default:
         return default
-    raise KeyError("Could not location a value for {topic} {parameter}")
+    raise KeyError(f"Could not location a value for {topic} {parameter}")
     
