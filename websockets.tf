@@ -183,9 +183,9 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
       },
       {
         command = [
-          "cp",
-          "/config/mosquitto-reader.conf",
-          "/config/mosquitto.conf",
+          "sh",
+          "-c",
+          "apk add gettext; envsubst < /config/mosquitto-reader-template.conf > /config/mosquitto.conf",
         ]
         cpu = 0
         dependsOn = [
@@ -214,6 +214,16 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
         name         = "config-move"
         portMappings = []
         volumesFrom  = []
+        secrets = [
+          {
+            name      = "PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.mqtt.arn}:PASSWORD::"
+          },
+          {
+            name      = "HOST_MOS_FORMAT"
+            valueFrom = "${aws_secretsmanager_secret.mqtt.arn}:HOST_MOS_FORMAT::"
+          }
+        ]
       },
     ]
   )
@@ -232,6 +242,7 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
   volume {
     name = "config"
   }
+
 }
 
 resource "aws_ecs_task_definition" "ws" {
@@ -277,7 +288,7 @@ resource "aws_ecs_task_definition" "ws" {
         ]
         environment = []
         essential   = true
-        image       = "eclipse-mosquitto:2-openssl"
+        image       = "eclipse-mosquitto:2.0.15"
         # logConfiguration = {
         #   logDriver = "awslogs"
         #   options = {
@@ -565,6 +576,26 @@ resource "aws_iam_role_policy" "efs" {
             "Effect": "Allow",
             "Action": "elasticfilesystem:*",
             "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "secrets" {
+  name = "secrests"
+  role = aws_iam_role.ecs_execution.id
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+          "Action": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
         }
     ]
 }
