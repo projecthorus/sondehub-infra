@@ -1,7 +1,9 @@
 import os
 import boto3
 import json
+import functools
 
+@functools.lru_cache()
 def get(topic: str, parameter: str, default=None) -> str:
     """
     Get's a configuration parameter.
