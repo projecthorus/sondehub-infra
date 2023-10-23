@@ -3,62 +3,45 @@
 resource "aws_iam_role" "historic" {
   path                 = "/service-role/"
   name                 = "historic"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
+data "aws_iam_policy_document" "historic" {
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["sqs:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["s3:*"]
+  }
+}
 
 resource "aws_iam_role_policy" "historic" {
   name   = "historic"
   role   = aws_iam_role.historic.name
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "*"
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.historic.json
 }
 
 
@@ -157,18 +140,7 @@ resource "aws_lambda_permission" "history_cron" {
 
 resource "aws_iam_role" "history" {
   name                 = "history"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -182,50 +154,45 @@ resource "aws_apigatewayv2_integration" "history" {
   payload_format_version = "2.0"
 }
 
+data "aws_iam_policy_document" "history" {
+  statement {
+    resources = ["arn:aws:s3:::sondehub-open-data/*"]
+    actions   = ["s3:*"]
+  }
+
+  statement {
+    resources = ["arn:aws:s3:::sondehub-open-data"]
+    actions   = ["s3:*"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"]
+    actions   = ["es:*"]
+  }
+}
+
 
 resource "aws_iam_role_policy" "history" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "arn:aws:s3:::sondehub-open-data/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "arn:aws:s3:::sondehub-open-data"
-        },
-          {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        },
-                       {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.history.json
   role   = aws_iam_role.history.name
 }
 

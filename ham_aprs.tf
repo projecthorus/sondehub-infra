@@ -15,7 +15,7 @@ resource "aws_ecs_task_definition" "aprsgw" {
           { "name" : "SNS", "value" : aws_sns_topic.ham_telem.arn }
         ],
         essential = true
-        image     = "143841941773.dkr.ecr.us-east-1.amazonaws.com/aprsgw:latest"
+        image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/aprsgw:latest"
         logConfiguration = {
           logDriver = "awslogs"
           options = {
@@ -33,34 +33,20 @@ resource "aws_ecs_task_definition" "aprsgw" {
     ]
   )
   cpu                = "256"
-  execution_role_arn = "arn:aws:iam::143841941773:role/aprsgw"
+  execution_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aprsgw"
   memory             = "512"
   network_mode       = "awsvpc"
   requires_compatibilities = [
     "FARGATE",
   ]
   tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/aprsgw"
+  task_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aprsgw"
 }
 
 resource "aws_iam_role" "aprsgw" {
   name                 = "aprsgw"
   description          = "Allows EC2 instances to call AWS services on your behalf."
-  assume_role_policy   = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "ecs-tasks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.ecs_task_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -71,29 +57,27 @@ resource "aws_iam_role_policy_attachment" "aprsgw" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+data "aws_iam_policy_document" "aprsgw" {
+  statement {
+    resources = ["*"]
+    actions   = ["sns:Publish"]
+  }
+
+  statement {
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
+}
+
 resource "aws_iam_role_policy" "aprsgw" {
   name = "aprsgw"
   role = aws_iam_role.aprsgw.id
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "sns:Publish",
-            "Resource": "*"
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.aprsgw.json
 }
 
 resource "aws_ecs_cluster" "aprsgw" {

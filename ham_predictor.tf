@@ -1,69 +1,55 @@
 resource "aws_iam_role" "ham_predict_updater" {
   path                 = "/service-role/"
   name                 = "ham-predict-updater"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
+data "aws_iam_policy_document" "ham_predict_updater" {
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["sqs:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["s3:*"]
+  }
+
+  statement {
+
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
+}
 
 resource "aws_iam_role_policy" "ham_predict_updater" {
   name   = "ham_predict_updater"
   role   = aws_iam_role.ham_predict_updater.name
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "*"
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.ham_predict_updater.json
 }
 
 

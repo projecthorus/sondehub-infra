@@ -1,4 +1,14 @@
+data "aws_iam_policy_document" "es_access_policy" {
+  statement {
+    resources = ["arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"]
+    actions   = ["es:*"]
 
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   domain_name           = "sondes-v2-7-9"
@@ -21,24 +31,12 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     enforce_https                   = true
     tls_security_policy             = "Policy-Min-TLS-1-2-2019-07"
     custom_endpoint                 = "es.v2.sondehub.org"
-    custom_endpoint_certificate_arn = "arn:aws:acm:us-east-1:143841941773:certificate/a7da821c-bdbc-404b-aa12-bce28d86cdeb"
+    custom_endpoint_certificate_arn = "arn:aws:acm:us-east-1:${data.aws_caller_identity.current.account_id}:certificate/a7da821c-bdbc-404b-aa12-bce28d86cdeb"
     custom_endpoint_enabled         = true
   }
-  access_policies = <<EOF
-    {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "*"
-            },
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-v2*"
-        }
-    ]
-}
-EOF
+
+  access_policies = data.aws_iam_policy_document.es_access_policy.json
+
   encrypt_at_rest {
     enabled    = true
     kms_key_id = data.aws_kms_key.es.arn
@@ -49,7 +47,7 @@ EOF
   advanced_security_options {
     enabled = true
     master_user_options {
-      master_user_arn = "arn:aws:iam::143841941773:role/es-admin"
+      master_user_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/es-admin"
     }
   }
   advanced_options = {
@@ -63,17 +61,17 @@ EOF
     iops        = 3000
   }
   log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/application-logs"
+    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/aes/domains/sondes-v2/application-logs"
     enabled                  = true
     log_type                 = "ES_APPLICATION_LOGS"
   }
   log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/index-logs"
+    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/aes/domains/sondes-v2/index-logs"
     enabled                  = true
     log_type                 = "INDEX_SLOW_LOGS"
   }
   log_publishing_options {
-    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:143841941773:log-group:/aws/aes/domains/sondes-v2/search-logs"
+    cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/aes/domains/sondes-v2/search-logs"
     enabled                  = true
     log_type                 = "SEARCH_SLOW_LOGS"
   }
@@ -245,7 +243,7 @@ resource "aws_route53_record" "auth" {
   type     = each.key
   alias {
     name                   = "${aws_cognito_user_pool_domain.main.cloudfront_distribution_arn}."
-    zone_id                = "Z2FDTNDATAQYW2"
+    zone_id                = aws_cognito_user_pool_domain.main.cloudfront_distribution_zone_id
     evaluate_target_health = false
   }
   zone_id = aws_route53_zone.Route53HostedZone.zone_id
@@ -261,74 +259,82 @@ resource "aws_route53_record" "es" {
   zone_id = aws_route53_zone.Route53HostedZone.zone_id
 }
 
+data "aws_iam_policy_document" "es_auth_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "cognito-identity.amazonaws.com:aud"
+      values   = [aws_cognito_identity_pool.CognitoIdentityPool.id]
+    }
+
+    condition {
+      test     = "ForAnyValue:StringLike"
+      variable = "cognito-identity.amazonaws.com:amr"
+      values   = ["authenticated"]
+    }
+
+    principals {
+      type        = "Federated"
+      identifiers = ["cognito-identity.amazonaws.com"]
+    }
+  }
+}
 
 resource "aws_iam_role" "auth_role" {
   path                 = "/"
   name                 = "Cognito_sondesAuth_Role"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": "cognito-identity.amazonaws.com"
-        },
-        "Action": "sts:AssumeRoleWithWebIdentity",
-        "Condition": {
-            "StringEquals": {
-                "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.CognitoIdentityPool.id}"
-            },
-            "ForAnyValue:StringLike": {
-                "cognito-identity.amazonaws.com:amr": "authenticated"
-            }
-        }
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.es_auth_role.json
   max_session_duration = 3600
+}
+
+data "aws_iam_policy_document" "es_unauth_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "cognito-identity.amazonaws.com:aud"
+      values   = ["${aws_cognito_identity_pool.CognitoIdentityPool.id}"]
+    }
+
+    condition {
+      test     = "ForAnyValue:StringLike"
+      variable = "cognito-identity.amazonaws.com:amr"
+      values   = ["unauthenticated"]
+    }
+
+    principals {
+      type        = "Federated"
+      identifiers = ["cognito-identity.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_iam_role" "unauth_role" {
   path                 = "/"
   name                 = "Cognito_sondesUnauth_Role"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": "cognito-identity.amazonaws.com"
-        },
-        "Action": "sts:AssumeRoleWithWebIdentity",
-        "Condition": {
-            "StringEquals": {
-                "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.CognitoIdentityPool.id}"
-            },
-            "ForAnyValue:StringLike": {
-                "cognito-identity.amazonaws.com:amr": "unauthenticated"
-            }
-        }
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.es_unauth_role.json
   max_session_duration = 3600
+}
+
+data "aws_iam_policy_document" "es_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["es.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_iam_role" "IAMRole3" {
   path                 = "/service-role/"
   name                 = "CognitoAccessForAmazonES"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "es.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.es_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -337,87 +343,64 @@ resource "aws_iam_service_linked_role" "IAMServiceLinkedRole" {
   aws_service_name = "es.amazonaws.com"
 }
 
+data "aws_iam_policy_document" "es_access" {
+  statement {
+    resources = ["arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"]
+    actions   = ["es:*"]
+  }
+}
 
 resource "aws_iam_role_policy" "IAMPolicy" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-               {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "arn:aws:es:us-east-1:${data.aws_caller_identity.current.account_id}:domain/sondes-*"
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.es_access.json
   role   = aws_iam_role.auth_role.name
+}
+
+data "aws_iam_policy_document" "unauth_cognito_policy" {
+  statement {
+    resources = ["*"]
+
+    actions = [
+      "mobileanalytics:PutEvents",
+      "cognito-sync:*",
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "IAMPolicy2" {
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "mobileanalytics:PutEvents",
-        "cognito-sync:*"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
-}
-EOF
+  policy = data.aws_iam_policy_document.unauth_cognito_policy.json
   role   = aws_iam_role.unauth_role.name
 }
 
-resource "aws_iam_role_policy" "IAMPolicy3" {
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "mobileanalytics:PutEvents",
-        "cognito-sync:*",
-        "cognito-identity:*"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
+data "aws_iam_policy_document" "auth_cognito_policy" {
+  statement {
+    resources = ["*"]
+
+    actions = [
+      "mobileanalytics:PutEvents",
+      "cognito-sync:*",
+      "cognito-identity:*",
+    ]
+  }
 }
-EOF
+
+resource "aws_iam_role_policy" "IAMPolicy3" {
+  policy = data.aws_iam_policy_document.auth_cognito_policy.json
   role   = aws_iam_role.auth_role.name
 }
 
-resource "aws_iam_role_policy" "IAMPolicy4" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "execute-api:*"
-            ],
-            "Resource": [
-                "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/amateur/flightdoc"
-            ]
-        }
-    ]
+data "aws_iam_policy_document" "flight_doc_cognito" {
+  statement {
+    resources = ["arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.main.id}/*/*/amateur/flightdoc"]
+    actions   = ["execute-api:*"]
+  }
 }
-EOF
+
+resource "aws_iam_role_policy" "IAMPolicy4" {
+  policy = data.aws_iam_policy_document.flight_doc_cognito.json
   role   = aws_iam_role.auth_role.name
 }
