@@ -19,6 +19,9 @@ secret_call = {
             }
 
 class TestConfigHandler(unittest.TestCase):
+    def setUp(self) -> None:
+        config_handler.get.cache_clear()
+
     def test_env(self):
         with patch.dict(config_handler.os.environ,{ "MQTT_PASSWORD": "test_password" }, clear=True):
             return_value = config_handler.get("MQTT", "PASSWORD")
@@ -29,6 +32,14 @@ class TestConfigHandler(unittest.TestCase):
         with patch.dict(config_handler.os.environ,{}, clear=True): #ensure that local env variables don't influence the tests
             return_value = config_handler.get("MQTT", "PASSWORD")
         MockApiCall.assert_called()
+        self.assertEqual(return_value, "test_password")
+    
+    @patch('botocore.client.BaseClient._make_api_call', return_value=secret_call)
+    def test_cache(self, MockApiCall):
+        with patch.dict(config_handler.os.environ,{}, clear=True): #ensure that local env variables don't influence the tests
+            return_value = config_handler.get("MQTT", "PASSWORD")
+            return_value = config_handler.get("MQTT", "PASSWORD")
+        MockApiCall.assert_called_once()
         self.assertEqual(return_value, "test_password")
 
     @patch('botocore.client.BaseClient._make_api_call', return_value=secret_call)
