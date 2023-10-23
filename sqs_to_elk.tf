@@ -1,64 +1,49 @@
 resource "aws_iam_role" "sqs_to_elk" {
   path                 = "/service-role/"
   name                 = "sqs-to-elk"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
+data "aws_iam_policy_document" "sqs_to_elk" {
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["sqs:*"]
+  }
+
+  statement {
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
+}
 
 resource "aws_iam_role_policy" "sqs_to_elk" {
   name   = "sqs_to_elk"
   role   = aws_iam_role.sqs_to_elk.name
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:*",
-            "Resource": "*"
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.sqs_to_elk.json
 }
 
 resource "aws_lambda_function" "sqs_to_elk" {
@@ -103,44 +88,44 @@ resource "aws_sqs_queue" "sqs_to_elk" {
 
   redrive_policy = jsonencode(
     {
-      deadLetterTargetArn = "arn:aws:sqs:us-east-1:143841941773:to-elk-dlq"
+      deadLetterTargetArn = "arn:aws:sqs:us-east-1:${data.aws_caller_identity.current.account_id}:to-elk-dlq"
       maxReceiveCount     = 100
     }
   )
   visibility_timeout_seconds = 10
 }
 
+data "aws_iam_policy_document" "sqs_to_elk_queue_policy" {
+  statement {
+    sid       = "__owner_statement"
+    resources = ["${aws_sqs_queue.sqs_to_elk.arn}"]
+    actions   = ["SQS:*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid       = "to-elk"
+    resources = ["${aws_sqs_queue.sqs_to_elk.arn}"]
+    actions   = ["SQS:SendMessage"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["${aws_sns_topic.sonde_telem.arn}"]
+    }
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
+
 resource "aws_sqs_queue_policy" "sqs_to_elk" {
   queue_url = aws_sqs_queue.sqs_to_elk.id
-  policy    = <<EOF
-{
-  "Version": "2008-10-17",
-  "Id": "__default_policy_ID",
-  "Statement": [
-    {
-      "Sid": "__owner_statement",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-      },
-      "Action": "SQS:*",
-      "Resource": "${aws_sqs_queue.sqs_to_elk.arn}"
-    },
-    {
-      "Sid": "to-elk",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "*"
-      },
-      "Action": "SQS:SendMessage",
-      "Resource": "${aws_sqs_queue.sqs_to_elk.arn}",
-      "Condition": {
-        "ArnLike": {
-          "aws:SourceArn": "${aws_sns_topic.sonde_telem.arn}"
-        }
-      }
-    }
-  ]
-}
-EOF
+  policy    = data.aws_iam_policy_document.sqs_to_elk_queue_policy.json
 }

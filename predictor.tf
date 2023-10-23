@@ -1,80 +1,67 @@
 resource "aws_iam_role" "predict_updater" {
   path                 = "/service-role/"
   name                 = "predict-updater"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
+}
+
+data "aws_iam_policy_document" "predict_updater" {
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["es:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["sqs:*"]
+  }
+
+  statement {
+    resources = ["*"]
+    actions   = ["s3:*"]
+  }
+
+  statement {
+    resources = ["*"]
+
+    actions = [
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:CreateNetworkInterface",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeInstances",
+      "ec2:AttachNetworkInterface",
+    ]
+  }
+
+  statement {
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
 }
 
 
 resource "aws_iam_role_policy" "predict_updater" {
   name   = "predict_updater"
   role   = aws_iam_role.predict_updater.name
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "es:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "*"
-        },
-        {
-            "Action": [
-                "ec2:DescribeNetworkInterfaces",
-                "ec2:CreateNetworkInterface",
-                "ec2:DeleteNetworkInterface",
-                "ec2:DescribeInstances",
-                "ec2:AttachNetworkInterface"
-            ],
-            "Effect": "Allow",
-            "Resource": "*"
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.predict_updater.json
 }
 
 
@@ -609,51 +596,33 @@ resource "aws_route53_record" "tawhiri_AAAA" {
 
 resource "aws_iam_role" "predictor_update_trigger_lambda" {
   path                 = "/service-role/"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "lambda.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
-resource "aws_iam_role_policy" "predictor_update_trigger_lambda" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "ecs:UpdateService",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-            ]
-        }
+data "aws_iam_policy_document" "predictor_update_trigger_lambda" {
+  statement {
+    resources = ["*"]
+    actions   = ["ecs:UpdateService"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
     ]
+  }
 }
-EOF
+
+resource "aws_iam_role_policy" "predictor_update_trigger_lambda" {
+  policy = data.aws_iam_policy_document.predictor_update_trigger_lambda.json
   role   = aws_iam_role.predictor_update_trigger_lambda.name
 }
 

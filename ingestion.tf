@@ -2,95 +2,76 @@
 resource "aws_iam_role" "ingestion_lambda_role" { # need a specific role so that we can disable cloudwatch logs
   path                 = "/service-role/"
   name_prefix          = "sonde-ingestion-"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    },
-    {
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "edgelambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
 
+data "aws_iam_policy_document" "ingestion" {
+  statement {
+    resources = ["*"]
+    actions   = ["s3:*"]
+  }
 
+  statement {
+    resources = ["*"]
+    actions   = ["sns:*"]
+  }
+
+  statement {
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+
+  statement {
+    resources = [
+      "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion",
+      "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt",
+    ]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = [
+      "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion*",
+      "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt*",
+    ]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+
+  statement {
+    resources = ["*"]
+
+    actions = [
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:CreateNetworkInterface",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeInstances",
+      "ec2:AttachNetworkInterface",
+    ]
+  }
+
+  statement {
+
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
+}
 
 resource "aws_iam_role_policy" "ingestion_lambda_role" {
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sns:*",
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion",
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/ingestion*",
-                "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/sns_to_mqtt*"
-            ]
-        },
-        {
-            "Action": [
-                "ec2:DescribeNetworkInterfaces",
-                "ec2:CreateNetworkInterface",
-                "ec2:DeleteNetworkInterface",
-                "ec2:DescribeInstances",
-                "ec2:AttachNetworkInterface"
-            ],
-            "Effect": "Allow",
-            "Resource": "*"
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-                    
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.ingestion.json
   role   = aws_iam_role.ingestion_lambda_role.name
 }
 

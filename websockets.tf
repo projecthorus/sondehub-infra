@@ -8,18 +8,7 @@ resource "aws_apigatewayv2_route" "sign_socket" {
 
 resource "aws_iam_role" "sign_socket" {
   name                 = "sign_socket"
-  assume_role_policy   = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-    }]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -236,7 +225,7 @@ resource "aws_ecs_task_definition" "ws_reader_ec2" {
   ]
 
   tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+  task_role_arn = aws_iam_role.ws.arn
 
 
   volume {
@@ -333,14 +322,14 @@ resource "aws_ecs_task_definition" "ws" {
     ]
   )
   cpu                = "256"
-  execution_role_arn = "arn:aws:iam::143841941773:role/ws"
+  execution_role_arn = aws_iam_role.ws.arn
   memory             = "512"
   network_mode       = "awsvpc"
   requires_compatibilities = [
     "FARGATE",
   ]
   tags          = {}
-  task_role_arn = "arn:aws:iam::143841941773:role/ws"
+  task_role_arn = aws_iam_role.ws.arn
 
 
   volume {
@@ -527,34 +516,9 @@ resource "aws_security_group_rule" "ws_writer_lightsail_lb" {
   cidr_blocks       = ["172.26.0.0/16"]
 }
 
-# resource "aws_s3_bucket" "ws" {
-#   bucket = "sondehub-ws-config"
-#   acl    = "private"
-#   versioning {
-#     enabled = true
-#   }
-#   lifecycle {
-#     ignore_changes = [bucket]
-#   }
-# }
-
 resource "aws_iam_role" "ecs_execution" {
   name                 = "ecsTaskExecutionRole"
-  assume_role_policy   = <<EOF
-{
-  "Version": "2008-10-17",
-  "Statement": [
-    {
-      "Sid": "",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "ecs-tasks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.ecs_task_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -563,105 +527,76 @@ resource "aws_iam_role_policy_attachment" "ecs_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+data "aws_iam_policy_document" "efs" {
+  statement {
+    resources = ["*"]
+    actions   = ["elasticfilesystem:*"]
+  }
+}
+
 resource "aws_iam_role_policy" "efs" {
   name = "EFS"
   role = aws_iam_role.ecs_execution.id
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": "elasticfilesystem:*",
-            "Resource": "*"
-        }
-    ]
+  policy = data.aws_iam_policy_document.efs.json
 }
-EOF
+
+data "aws_iam_policy_document" "ws_secrets" {
+  statement {
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
 }
 
 resource "aws_iam_role_policy" "secrets" {
   name = "secrests"
   role = aws_iam_role.ecs_execution.id
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
+  policy = data.aws_iam_policy_document.ws_secrets.json
 }
-EOF
+
+data "aws_iam_policy_document" "websocket_ssm" {
+  statement {
+    resources = ["*"]
+
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "ssm" {
   name = "SSM"
   role = aws_iam_role.ecs_execution.id
 
-  policy = jsonencode(
-    {
-      Statement = [
-        {
-          Action = [
-            "ssmmessages:CreateControlChannel",
-            "ssmmessages:CreateDataChannel",
-            "ssmmessages:OpenControlChannel",
-            "ssmmessages:OpenDataChannel",
-          ]
-          Effect   = "Allow"
-          Resource = "*"
-        }
-      ]
-      Version = "2012-10-17"
-    }
-  )
+  policy = data.aws_iam_policy_document.websocket_ssm.json
+}
+
+data "aws_iam_policy_document" "ws_kms" {
+  statement {
+    resources = ["*"]
+    actions   = ["kms:*"]
+  }
 }
 
 resource "aws_iam_role_policy" "kms" {
   name = "kms"
   role = aws_iam_role.ecs_execution.id
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": "kms:*",
-            "Resource": "*"
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.ws_kms.json
 }
 
 resource "aws_iam_role" "ws" {
   name                 = "ws"
   description          = "Allows EC2 instances to call AWS services on your behalf."
-  assume_role_policy   = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "ecs-tasks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+  assume_role_policy   = data.aws_iam_policy_document.ecs_task_assume_role_policy.json
   max_session_duration = 3600
 }
 
@@ -670,68 +605,36 @@ resource "aws_iam_role_policy_attachment" "ws" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+data "aws_iam_policy_document" "ws_s3_config" {
+  statement {
+    resources = [
+      "arn:aws:s3:::sondehub-ws-config",
+      "arn:aws:s3:::sondehub-ws-config/*",
+    ]
+
+    actions = [
+      "s3:GetObjectAcl",
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+  }
+
+  statement {
+    resources = [
+      aws_secretsmanager_secret.mqtt.arn,
+      aws_secretsmanager_secret.radiosondy.arn,
+    ]
+
+    actions = ["secretsmanager:GetSecretValue"]
+  }
+}
+
 resource "aws_iam_role_policy" "s3_config" {
   name = "s3-config"
   role = aws_iam_role.ws.id
 
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObjectAcl",
-                "s3:GetObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::sondehub-ws-config",
-                "arn:aws:s3:::sondehub-ws-config/*"
-            ]
-        },
-        {
-          "Action": [
-            "secretsmanager:GetSecretValue"
-          ],
-          "Effect": "Allow",
-          "Resource": ["${aws_secretsmanager_secret.mqtt.arn}", "${aws_secretsmanager_secret.radiosondy.arn}"]
-        }
-    ]
+  policy = data.aws_iam_policy_document.ws_s3_config.json
 }
-EOF
-}
-
-# resource "aws_appautoscaling_target" "ws_reader" {
-#   service_namespace  = "ecs"
-#   scalable_dimension = "ecs:service:DesiredCount"
-#   resource_id        = "service/ws/ws-reader"
-#   min_capacity       = 0
-#   max_capacity       = 0
-# }
-
-# resource "aws_appautoscaling_policy" "ws_reader" {
-#   name               = "ws-reader-tt"
-#   service_namespace  = aws_appautoscaling_target.ws_reader.service_namespace
-#   scalable_dimension = aws_appautoscaling_target.ws_reader.scalable_dimension
-#   resource_id        = aws_appautoscaling_target.ws_reader.resource_id
-#   policy_type        = "TargetTrackingScaling"
-
-#   target_tracking_scaling_policy_configuration {
-#     predefined_metric_specification {
-#       predefined_metric_type = "ECSServiceAverageCPUUtilization"
-#     }
-
-#     target_value       = 60
-#     scale_in_cooldown  = 200
-#     scale_out_cooldown = 200
-#   }
-# }
-
-# TODO
-# s3 config bucket
-
 
 
 resource "aws_route53_record" "ws_reader_CNAME" {
