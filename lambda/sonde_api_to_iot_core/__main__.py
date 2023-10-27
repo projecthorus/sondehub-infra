@@ -1,6 +1,7 @@
 from . import *
 
 
+
 import unittest
 from unittest.mock import MagicMock
 
@@ -15,6 +16,9 @@ import gzip
 import uuid
 import datetime
 import copy
+
+config_handler.get = MagicMock(return_value="test")
+config_handler.get("SNS","TOPIC")
 
 example_body = [{
     "software_name": "SondeHubUploader", 
