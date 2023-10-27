@@ -312,8 +312,8 @@ def telemetry_filter(telemetry):
                 return (False, f"dxlAPRS-SHUE versions below 1.1.2 due not send correct serial numbers for M10 radiosondes. Please update to 1.1.2 or later")
     if "DFM" in telemetry["type"]:
         if telemetry["software_name"] == "SondeMonitor":
-            if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,7): 
-                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.7 or later")
+            if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,8): 
+                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.8 or later")
         if telemetry["software_name"] == "rdzTTGOsonde":
             ttgo_branch, ttgo_version = parse_rdz_ttgo_version(telemetry["software_version"])
             if ttgo_branch == "devel":

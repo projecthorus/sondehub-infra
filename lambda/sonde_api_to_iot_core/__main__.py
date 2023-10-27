@@ -181,7 +181,26 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
-
+    def test_good_sondemonitor_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["software_name"] = "SondeMonitor" 
+        payload[0]["software_version"] = "6.2.8.8"
+        payload[0]["type"] = "DFM"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+    def test_bad_sondemonitor_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["software_name"] = "SondeMonitor" 
+        payload[0]["software_version"] = "6.2.8.7"
+        payload[0]["type"] = "DFM"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 
 if __name__ == '__main__':
     unittest.main()
