@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "es_access_policy" {
 
 resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   domain_name           = "sondes-v2-7-9"
-  elasticsearch_version = "OpenSearch_2.9"
+  elasticsearch_version = "OpenSearch_2.11"
   cluster_config {
     dedicated_master_count   = 3
     dedicated_master_enabled = false
