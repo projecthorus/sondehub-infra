@@ -57,7 +57,7 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   ebs_options {
     ebs_enabled = true
     volume_type = "gp3"
-    volume_size = 200
+    volume_size = 230
     iops        = 3000
   }
   log_publishing_options {
