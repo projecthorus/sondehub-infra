@@ -1,4 +1,10 @@
-from . import *
+import unittest
+import station_api_to_iot_core
+from unittest.mock import MagicMock, call, patch
+import datetime
+import copy
+import json
+
 payload = {
     "version": "2.0",
     "routeKey": "PUT /sondes/telemetry",
@@ -36,8 +42,35 @@ payload = {
         "timeEpoch": 1612051825409,
     },
     "body": """
-    {"software_name": "radiosonde_auto_rx", "software_version": "1.5.8-beta2", "uploader_callsign": "CHANGEME_RDZTTGO", "uploader_position": [null,null,null], "uploader_antenna": "Dipole", "uploader_contact_email": "none@none.com", "mobile": false}
+    {"software_name": "radiosonde_auto_rx", "software_version": "1.5.8-beta2", "uploader_callsign": "A", "uploader_position": [null,null,null], "uploader_antenna": "Dipole", "uploader_contact_email": "none@none.com", "mobile": false}
     """,
     "isBase64Encoded": False,
 }
-print(lambda_handler(payload, {}))
+
+class TestStation(unittest.TestCase):
+    def setUp(self):
+        station_api_to_iot_core.es.request = MagicMock()
+        station_api_to_iot_core.sns.publish = MagicMock()
+    
+    @patch('builtins.print')
+    def test_blocked_call(self, mocked_print):
+        blocked_call_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_call_payload["body"])
+        body["uploader_callsign"] = "CHANGEME_RDZTTGO"
+        blocked_call_payload["body"] = json.dumps(body)
+        station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
+        station_api_to_iot_core.es.request.assert_not_called()
+        station_api_to_iot_core.sns.publish.assert_not_called()
+        mocked_print.assert_called()
+        json.loads(mocked_print.call_args.args[0])
+
+    @patch('builtins.print')
+    def test_call(self, mocked_print):
+        blocked_call_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_call_payload["body"])
+        blocked_call_payload["body"] = json.dumps(body)
+        station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
+        station_api_to_iot_core.es.request.assert_called()
+        station_api_to_iot_core.sns.publish.assert_called()
+if __name__ == '__main__':
+    unittest.main()

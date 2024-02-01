@@ -2,6 +2,7 @@ import os
 import boto3
 import json
 import functools
+import logging
 
 @functools.lru_cache()
 def get(topic: str, parameter: str, default=None) -> str:
@@ -26,6 +27,8 @@ def get(topic: str, parameter: str, default=None) -> str:
     try:
         secret_data = json.loads(sm.get_secret_value(SecretId=topic)['SecretString'])
         return secret_data[parameter]
+    except sm.exceptions.ClientError as error:
+        logging.warning(f"Error trying to use secret manager for {topic} {parameter} : {error}")
     except (KeyError, sm.exceptions.ResourceNotFoundException):
         pass
     except:

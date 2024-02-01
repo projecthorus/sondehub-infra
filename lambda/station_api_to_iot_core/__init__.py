@@ -10,7 +10,7 @@ from io import BytesIO
 import boto3
 import config_handler
 
-CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO"]
+CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO", "14FRS119_LE JUDA"]
 
 import es
 
@@ -56,7 +56,7 @@ def lambda_handler(event, context):
         payload = json.loads(event["body"])
     except:
         return {"statusCode": 400, "body": "JSON decode issue"}
-    print(payload)
+    print(json.dumps(event))
     if "user-agent" in event["headers"]:
         event["time_server"] = datetime.datetime.now().isoformat()
         payload["user-agent"] = event["headers"]["user-agent"]
