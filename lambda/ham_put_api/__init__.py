@@ -37,12 +37,12 @@ def telemetry_filter(telemetry):
 
 # Returns true for anything that should be hidden
 def telemetry_hide_filter(telemetry):
-    # Default Horus Binary callsigns
-    if telemetry["payload_callsign"] in ['4FSKTEST','4FSKTEST-V2']:
+    # Default Horus Binary callsigns, and N0CALL
+    if telemetry["payload_callsign"] in ['4FSKTEST','4FSKTEST-V2','N0CALL']:
         return True
 
-    # Default pysondehub uploader callsign
-    if telemetry["uploader_callsign"] in ['MYCALL']:
+    # Default pysondehub uploader callsign, and default 'I haven't changed my config file' callsign.
+    if telemetry["uploader_callsign"] in ['MYCALL', 'N0CALL']:
         return True
 
     return False
@@ -114,6 +114,11 @@ def upload(event, context):
             # Apply hide field for anything that matches our filters
             if telemetry_hide_filter(payload):
                 payload["telemetry_hidden"] = True
+                warnings.append({
+                    "warning_message": f"Payload telemetry flagged as hidden due to a testing or default payload/uploader callsign being used.",
+                    "payload": payload
+                })
+
             if "uploader_position" in payload:
                 if not payload["uploader_position"]:
                     payload.pop("uploader_position")
