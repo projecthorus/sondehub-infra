@@ -324,7 +324,7 @@ def telemetry_filter(telemetry):
             else:
                 return (False,f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
     # block callsigns
-    if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001"]:
+    if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
         return (False, "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
 
     if "dev" in telemetry:
