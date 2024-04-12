@@ -24,6 +24,9 @@ def handler(event, context):
         return redirect('https://www.paypal.com/donate/?hosted_button_id=4V7L43MD5CQ52')
     if uri.startswith('/go/status'):
         return redirect("https://grafana.v2.sondehub.org/d/bhdBI0KVz/infrastructure")
+    if uri.startswith('/go/discord'):
+        # Discord invite URL as of 2024-04-12
+        return redirect('https://discord.gg/DHd9UgenEb')
     if uri.startswith('/go/'):
         tinyurl = uri.replace("/go/", "")
         return redirect('https://tinyurl.com/' + tinyurl)
