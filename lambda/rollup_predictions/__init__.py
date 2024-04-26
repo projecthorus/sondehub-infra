@@ -10,15 +10,14 @@ s3 = boto3.resource('s3')
 
 serials = {}
 
-def fetch_es():
+def fetch_es(index=f"predictions-*,-predictions-{datetime.now().strftime('%Y-%m')},-predictions-{(datetime.now() - timedelta(days=27)).strftime('%Y-%m')},-predictions-*-rollup/_search"):
     payload = {
         "size": 1000
     }
     data = []
     indexes = []
     response = es.request(json.dumps(payload),
-                          #f"predictions-*,-predictions-{datetime.now().strftime('%Y-%m')},-predictions-{(datetime.now() - timedelta(days=27)).strftime('%Y-%m')},-predictions-*-rollup/_search",
-                          "predictions-2021-12/_search",
+                           index,
                            "POST", params={"scroll": "1m"})
     try:
         add_unique([x["_source"] for x in response['hits']['hits']])
@@ -56,7 +55,6 @@ def fetch_es():
     result = es.request(body, f"_bulk", "POST")
     if 'errors' in result and result['errors'] == True:
         error_types = [x['index']['error']['type'] for x in result['items'] if 'error' in x['index']] # get all the error types
-        print(event)
         print(result)
         error_types = [a for a in error_types if a != 'mapper_parsing_exception'] # filter out mapper failures since they will never succeed
         if error_types:
