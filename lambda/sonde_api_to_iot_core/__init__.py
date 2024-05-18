@@ -180,30 +180,30 @@ def telemetry_filter(telemetry):
 
     # First Check: zero lat/lon
     if (telemetry["lat"] == 0.0) and (telemetry["lon"] == 0.0):
-        return (False,f"Zero Lat/Lon. Sonde { telemetry['serial']} does not have GPS lock.")
+        return ("errors",f"Zero Lat/Lon. Sonde { telemetry['serial']} does not have GPS lock.")
 
     max_altitude = 50000
     # Second check: Altitude cap.
     if telemetry["alt"] > max_altitude:
         _altitude_breach = telemetry["alt"] - max_altitude
-        return (False,f"Sonde {telemetry['serial']} position breached altitude cap by {_altitude_breach}m.")
+        return ("errors",f"Sonde {telemetry['serial']} position breached altitude cap by {_altitude_breach}m.")
 
     if telemetry["alt"] == 0:
-        return (False,f"Sonde {telemetry['serial']} altitude is exactly 0m. Position is likely incorrect")
+        return ("errors",f"Sonde {telemetry['serial']} altitude is exactly 0m. Position is likely incorrect")
 
     if "subtype" in telemetry and telemetry["subtype"] == "DL0UJ-12":
-        return (False,f"sondehub.org is not for use with amateur balloons. Use amateur.sondehub.org instead.")
+        return ("errors",f"sondehub.org is not for use with amateur balloons. Use amateur.sondehub.org instead.")
 
     if "humidity" in telemetry and telemetry["humidity"] < 0:
-        return (False,f"Humidity {telemetry['humidity']} is below 0")
+        return ("errors",f"Humidity {telemetry['humidity']} is below 0")
 
     if "pressure" in telemetry and telemetry["pressure"] < 0:
-        return (False,f"Pressure {telemetry['pressure']} is below 0")
+        return ("errors",f"Pressure {telemetry['pressure']} is below 0")
 
     # Third check: Number of satellites visible.
     if "sats" in telemetry:
         if telemetry["sats"] < 4: 
-            return (False, f"Sonde {telemetry['serial']} can only see {telemetry['sats']} SVs - discarding position as bad.")
+            return ("errors", f"Sonde {telemetry['serial']} can only see {telemetry['sats']} SVs - discarding position as bad.")
 
     max_radius = 1000
     # Fourth check - is the payload more than x km from our listening station.
@@ -224,10 +224,10 @@ def telemetry_filter(telemetry):
                 _info["straight_distance"] / 1000.0 - max_radius
             )
             
-            return (False, f"Sonde {telemetry['serial']} position breached radius cap by {_radius_breach:.1f} km.")
+            return ("errors", f"Sonde {telemetry['serial']} position breached radius cap by {_radius_breach:.1f} km.")
 
     if "heading" in telemetry and telemetry["heading"] > 360:
-            return (False,f"Heading {telemetry['heading']} is above 360")
+            return ("errors",f"Heading {telemetry['heading']} is above 360")
 
     # DateTime Check
     
@@ -236,14 +236,14 @@ def telemetry_filter(telemetry):
             datetime.datetime.now() - datetime.datetime.fromisoformat(telemetry["datetime"].replace("Z",""))
         ).total_seconds()
     except:
-        return (False, f"Unable to parse time")
+        return ("errors", f"Unable to parse time")
 
     sonde_time_threshold = 48
     future_time_threshold_seconds = 60
     if _delta_time < -future_time_threshold_seconds:
-        return (False, f"Sonde reported time too far in the future. Either sonde time or system time is invalid. (Threshold: {future_time_threshold_seconds} seconds)")
+        return ("errors", f"Sonde reported time too far in the future. Either sonde time or system time is invalid. (Threshold: {future_time_threshold_seconds} seconds)")
     if abs(_delta_time) > (3600 * sonde_time_threshold):
-        return (False, f"Sonde reported time too far from current UTC time. Either sonde time or system time is invalid. (Threshold: {sonde_time_threshold} hours)")
+        return ("errors", f"Sonde reported time too far from current UTC time. Either sonde time or system time is invalid. (Threshold: {sonde_time_threshold} hours)")
 
     # Payload Serial Number Checks
     _serial = telemetry["serial"]
@@ -299,38 +299,49 @@ def telemetry_filter(telemetry):
         if "MRZ" in telemetry["serial"]:
             _id_msg += " Note: MRZ sondes may take a while to get an ID."
 
-        return (False, _id_msg)
+        return ("errors", _id_msg)
     # https://github.com/projecthorus/sondehub-infra/issues/56
     if "iMet-4" ==  telemetry["type"] or "iMet-1" ==  telemetry["type"]:
         if telemetry["software_name"] == "radiosonde_auto_rx":
             if parse_autorx_version(telemetry["software_version"]) < (1,5,9): 
-                return (False,f"Autorx version is out of date and doesn't handle iMet-1 and iMet-4 radiosondes correctly. Please update to 1.5.9 or later")
+                return ("errors",f"Autorx version is out of date and doesn't handle iMet-1 and iMet-4 radiosondes correctly. Please update to 1.5.9 or later")
     if "M10" in telemetry["type"]:
         if telemetry["software_name"] == "dxlAPRS-SHUE":
             if parse_dxlaprs_shue_version(telemetry["software_version"]) < (1,1,2):
-                return (False, f"dxlAPRS-SHUE versions below 1.1.2 due not send correct serial numbers for M10 radiosondes. Please update to 1.1.2 or later")
+                return ("errors", f"dxlAPRS-SHUE versions below 1.1.2 due not send correct serial numbers for M10 radiosondes. Please update to 1.1.2 or later")
     if "DFM" in telemetry["type"]:
         if telemetry["software_name"] == "SondeMonitor":
             if parse_sondemonitor_version(telemetry["software_version"]) < (6,2,8,8): 
-                return (False,f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.8 or later")
+                return ("errors",f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.8 or later")
         if telemetry["software_name"] == "rdzTTGOsonde":
             ttgo_branch, ttgo_version = parse_rdz_ttgo_version(telemetry["software_version"])
             if ttgo_branch == "devel":
                 if ttgo_version < (20230427,0,0):
-                    return (False,f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
+                    return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
             elif ttgo_branch == "master":
                 if ttgo_version < (0,9,3):
-                    return (False,f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
+                    return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
             else:
-                return (False,f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
+                return ("errors",f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
+        # Check if DFM17->DFM09 misid - https://github.com/projecthorus/sondehub-infra/issues/141
+        if "subtype" in telemetry and telemetry["subtype"] == "DFM09":
+            try:
+                dfm_serial_int = int(telemetry['serial'])
+            except:
+                return ("errors",f"DFM serial not a number")
+            if dfm_serial_int > 22033000:
+                telemetry['subtype'] = "DFM17"
+                if 'temp' in telemetry:
+                    telemetry['invalid_temp'] = telemetry.pop('temp')
+                return ("warnings", f"This software likely misidentified this radiosonde as a DFM09 when it was likely a DFM17. Sondehub has rewritten the subtype to DFM17 and marked the temperature value as invalid")
     # block callsigns
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
-        return (False, "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
+        return ("errors", "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
 
     if "dev" in telemetry:
-        return (False, "All checks passed however payload contained dev flag so will not be uploaded to the database")
+        return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
-    return (True, "")
+    return (False, "")
 
 def parse_sondemonitor_version(version):
     try:
@@ -398,6 +409,7 @@ def upload(event, context, orig_event):
     to_sns = []
     first = False
     errors = []
+    warnings = []
 
     # perform z check
     payload_serials = defaultdict(list)
@@ -432,7 +444,6 @@ def upload(event, context, orig_event):
                 [x.update(dfm_failure=True) for x in payload_serials[serial]]
 
 
-
         #generate error messages and regenerate payload list of bad data removed
         for payload in payload_serials[serial]:
             if "alt_outliers" in payload or "lon_outliers" in payload or "lat_outlier" in payload:
@@ -449,16 +460,20 @@ def upload(event, context, orig_event):
                 payloads.append(payload)
 
 
-
     for payload in payloads:
         if "user-agent" in event["headers"]:
             event["time_server"] = datetime.datetime.now().isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
-        valid, error_message = telemetry_filter(payload)
-        if not valid:
+        status, message = telemetry_filter(payload)
+        if status == "warnings":
+            warnings.append({
+                "warning_message": message,
+                "payload": payload
+            })
+        if status == "errors":
             errors.append({
-                "error_message": error_message,
+                "error_message": message,
                 "payload": payload
             })
         else:
@@ -483,12 +498,12 @@ def upload(event, context, orig_event):
     #     to_sns.append(last)
     if len(to_sns) > 0:
         post(to_sns)
-    return errors
+    return errors, warnings
 def lambda_handler(event, context):
     orig_event = event.copy()
     try:
         try:
-            errors = upload(event, context, orig_event)
+            errors, warnings = upload(event, context, orig_event)
         except zlib.error:
             response = {"statusCode": 400, "body": "Could not decompress"}
             handle_error(json.dumps(response), orig_event, context.log_stream_name)
@@ -503,9 +518,10 @@ def lambda_handler(event, context):
             return response            
         error_message = {
             "message": "some or all payloads could not be processed",
-            "errors": errors
+            "errors": errors,
+            "warnings": warnings
         }
-        if errors:
+        if errors or warnings:
             output = {
                 "statusCode": 202, 
                 "body": json.dumps(error_message),

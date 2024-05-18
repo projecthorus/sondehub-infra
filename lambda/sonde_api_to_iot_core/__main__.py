@@ -41,7 +41,8 @@ example_body = [{
     "sats": 10, 
     "batt": 2.9, 
     "frequency": 404.1, 
-    "rssi": 70.9
+    "rssi": 70.9,
+    "temp": 10
 }]
 
 def compress_payload(payload):
@@ -205,6 +206,21 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+    def test_dfm_misid_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "DFM"
+        payload[0]["subtype"] = "DFM09"
+        payload[0]["serial"] = "23068595"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(output["statusCode"], 202)
+        self.assertEqual(body_decode["warnings"][0]["warning_message"], "This software likely misidentified this radiosonde as a DFM09 when it was likely a DFM17. Sondehub has rewritten the subtype to DFM17 and marked the temperature value as invalid")
+        sns_call = json.loads(zlib.decompress(base64.b64decode(sns.publish.call_args_list[0][1]['Message']), 16 + zlib.MAX_WBITS))
+        self.assertEqual("DFM17", sns_call[0]["subtype"])
+        self.assertNotIn("temp", sns_call[0])
+        self.assertIn("invalid_temp", sns_call[0])
 
 if __name__ == '__main__':
     unittest.main()
