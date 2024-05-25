@@ -228,6 +228,13 @@ def upload_ttn(event, context):
 
                 hotspot_telem['uploader_callsign'] = hotspot['gateway_ids']['gateway_id']
 
+                # Handle telemetry arriving via a packetbroker, and try and get the real gateway ID
+                if hotspot_telem['uploader_callsign'] == "packetbroker":
+                    try:
+                        hotspot_telem['uploader_callsign'] = hotspot['packet_broker']['forwarder_gateway_id']
+                    except:
+                        pass
+
                 # Frequency and modulation metadata is common to all packets
                 # Frequency is in Hz
                 hotspot_telem['frequency'] = float(payload['uplink_message']['settings']['frequency'])/1e6
