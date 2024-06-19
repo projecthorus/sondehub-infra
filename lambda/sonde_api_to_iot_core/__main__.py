@@ -233,5 +233,16 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
 
+    def test_ps15_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "PS-15"
+        payload[0]["subtype"] = "PS-15"
+        payload[0]["serial"] = "21068595"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
 if __name__ == '__main__':
     unittest.main()
