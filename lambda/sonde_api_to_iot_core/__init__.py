@@ -260,8 +260,8 @@ def telemetry_filter(telemetry):
     else:
         vaisala_callsign_valid = False
 
-    # Just make sure we're not getting the 'xxxxxxxx' unknown serial from the DFM decoder.
-    if "DFM" in telemetry["type"]:
+    # Just make sure we're not getting the 'xxxxxxxx' unknown serial from the DFM decoder (Which also includes PS-15 pilotsondes)
+    if "DFM" in telemetry["type"] or telemetry["type"] == "PS-15":
         dfm_callsign_valid = "x" not in _serial
     else:
         dfm_callsign_valid = False
@@ -292,14 +292,9 @@ def telemetry_filter(telemetry):
         or ("WxR" in telemetry["type"])
     ):
         _id_msg = "Payload ID %s from Sonde type %s is invalid." % (telemetry["serial"], telemetry["type"])
-        # Add in a note about DFM sondes and their oddness...
-        if "DFM" in telemetry["serial"]:
-            _id_msg += " Note: DFM sondes may take a while to get an ID."
-
-        if "MRZ" in telemetry["serial"]:
-            _id_msg += " Note: MRZ sondes may take a while to get an ID."
 
         return ("errors", _id_msg)
+    
     # https://github.com/projecthorus/sondehub-infra/issues/56
     if "iMet-4" ==  telemetry["type"] or "iMet-1" ==  telemetry["type"]:
         if telemetry["software_name"] == "radiosonde_auto_rx":
