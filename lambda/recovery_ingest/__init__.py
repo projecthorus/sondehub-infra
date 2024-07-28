@@ -62,7 +62,9 @@ def findSonde(recovery, lat, lon):
         timeDifference = receivedTime - launchTime
         if timeDifference.total_seconds() < 10800: # 3 Hours or less
             if value["type"] in sondeType: # Type matches
-                if abs(float(sondeFrequency) - float(value["frequency"])) < 0.05: # 0.05 MHz or less
+                if "frequency" in value and abs(float(sondeFrequency) - float(value["frequency"])) < 0.05: # 0.05 MHz or less
+                    serial = key
+                elif "frequency" not in value: # if frequency not in sondehub db assume its right anyway. 
                     serial = key
 
     return serial
