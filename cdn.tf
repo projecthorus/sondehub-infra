@@ -79,6 +79,28 @@ resource "aws_route53_record" "amateur_AAAA" {
   zone_id = "Z0756308IVLVF48G6G1S"
 }
 
+resource "aws_route53_record" "amateur_testing_A" {
+  name = "amateur-testing"
+  type = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur_testing.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur_testing.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
+resource "aws_route53_record" "amateur_testing_AAAA" {
+  name = "amateur-testing"
+  type = "AAAA"
+  alias {
+    name                   = aws_cloudfront_distribution.amateur_testing.domain_name
+    zone_id                = aws_cloudfront_distribution.amateur_testing.hosted_zone_id
+    evaluate_target_health = false
+  }
+  zone_id = "Z0756308IVLVF48G6G1S"
+}
+
 resource "aws_route53_record" "ham_A" {
   name = "ham"
   type = "A"
@@ -558,6 +580,78 @@ resource "aws_cloudfront_distribution" "amateur" {
     path_pattern           = "*.*"
     smooth_streaming       = false
     target_origin_id       = "S3-${local.domain_name}/amateur"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  comment     = ""
+  price_class = "PriceClass_All"
+  enabled     = true
+  viewer_certificate {
+    acm_certificate_arn      = aws_acm_certificate.CertificateManagerCertificate_root.arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  http_version    = "http2"
+  is_ipv6_enabled = true
+}
+
+resource "aws_cloudfront_distribution" "amateur_testing" {
+  aliases = [
+    "amateur-testing.sondehub.org"
+  ]
+  default_root_object = "index.html"
+  origin {
+    domain_name = aws_s3_bucket.v2.bucket_regional_domain_name
+    origin_id   = "S3-${local.domain_name}/amateur-testing"
+    origin_path = "/amateur-testing"
+  }
+  default_cache_behavior {
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 5
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 5
+    min_ttl                = 0
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/amateur-testing"
+    viewer_protocol_policy = "redirect-to-https"
+    # lambda_function_association {
+    #   event_type = "viewer-request"
+    #   lambda_arn = aws_lambda_function.ham_redirect.qualified_arn
+    # }
+  }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 120
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 120
+    min_ttl                = 120
+    path_pattern           = "*.*"
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/amateur-testing"
     viewer_protocol_policy = "redirect-to-https"
   }
   comment     = ""
