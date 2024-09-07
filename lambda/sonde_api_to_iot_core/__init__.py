@@ -310,14 +310,15 @@ def telemetry_filter(telemetry):
                 return ("errors",f"SondeMonitor version is out of date and doesn't handle DFM radiosondes correctly. Please update to 6.2.8.8 or later")
         if telemetry["software_name"] == "rdzTTGOsonde":
             ttgo_branch, ttgo_version = parse_rdz_ttgo_version(telemetry["software_version"])
-            if ttgo_branch == "devel":
-                if ttgo_version < (20230427,0,0):
-                    return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
-            elif ttgo_branch == "master":
-                if ttgo_version < (0,9,3):
-                    return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
-            else:
-                return ("errors",f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
+            if ttgo_branch not in ["main", "dev"]: # presume that this is fixed in the new named branch releases
+                if ttgo_branch == "devel":
+                    if ttgo_version < (20230427,0,0):
+                        return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
+                elif ttgo_branch == "master":
+                    if ttgo_version < (0,9,3):
+                        return ("errors",f"rdzTTGOsonde version is out of date and doesn't handle DFM radiosondes correctly. Please update to master 0.9.3, devel20230427 or later")
+                else:
+                    return ("errors",f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
         # Check if DFM17->DFM09 misid - https://github.com/projecthorus/sondehub-infra/issues/141
         if "subtype" in telemetry and telemetry["subtype"] == "DFM09":
             try:
@@ -357,7 +358,7 @@ def parse_rdz_ttgo_version(version):
         # RDZ TTGO has two branches, master and devel, however there are also a bunch of other custom versions
         # devel20230829, master_v0.9.3, master_v0.9.2, devel20230427, devLZ20230812, devel20230829.NE, Alex_ver_2.7_M, multich_v3
         # in the cases that don't match develxxxx or master_vxxxx format we'll give a 0,0,0 version here
-        m = re.search(r'([a-zA-Z_]+?)_?v?(\d+)(?:\.(\d+))?(?:\.(\d+))?', version)
+        m = re.search(r'([a-zA-Z_]+?)(?:_v)?(\d+)(?:\.(\d+))?(?:\.(\d+))?', version)
         return (m.groups()[0],tuple([int(x if x != None else 0) for x in m.groups()[1:]]))
     except:
         return ("unknown", (0,0,0))
