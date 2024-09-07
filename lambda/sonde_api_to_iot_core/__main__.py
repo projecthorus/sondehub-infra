@@ -135,6 +135,27 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
+    def test_good_ttgo_devel_payload_new_name(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["software_name"] = "rdzTTGOsonde" 
+        payload[0]["software_version"] = "dev20230829"
+        payload[0]["type"] = "DFM"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+    def test_good_ttgo_main_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["software_name"] = "rdzTTGOsonde" 
+        payload[0]["software_version"] = "main1234"
+        payload[0]["type"] = "DFM"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
     def test_bad_ttgo_devel_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now().isoformat()
