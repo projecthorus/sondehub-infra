@@ -596,22 +596,53 @@ async def predict_async(event, context):
                 },
                 "query": {
                     "bool": {
-                    "must": [],
-                    "filter": [
-                        {
-                        "match_all": {}
-                        },
-                        {
-                        "range": {
-                            "datetime": {
-                                    "gte": "now-10m",
-                                    "lte": "now",
-                            "format": "strict_date_optional_time"
+                        "must_not":[
+                            {
+                                "match": {
+                                    "lat": 0,
+                                }
+                            },
+                            {
+                                "match": {
+                                    "lon": 0,
+                                }
+                            },
+                            {
+                                "match": {
+                                    "sats": 0,
+                                }
                             }
-                        }
-                        }
-                    ],
-                    "should": []
+                        ],
+                        # "must": [
+                        #     {
+                        #         "exists": {
+                        #         "field": "sats"
+                        #         }
+                        #     },
+                        #     {
+                        #     "range": {
+                        #             "sats": {
+                        #                 "gte": 1,
+                        #                 "lt": None
+                        #             }
+                        #         }
+                        #     }
+                        # ],
+                        "filter": [
+                            {
+                            "match_all": {}
+                            },
+                            {
+                            "range": {
+                                "datetime": {
+                                        "gte": "now-10m",
+                                        "lte": "now",
+                                "format": "strict_date_optional_time"
+                                }
+                            }
+                            }
+                        ],
+                        "should": []
                     }
                 },
                 "size": 0
