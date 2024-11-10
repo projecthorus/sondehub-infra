@@ -140,7 +140,7 @@ def upload_helium(event, context):
                     hotspot_telem = telem.copy()
 
                     hotspot_telem['uploader_callsign'] = hotspot["metadata"]["gateway_name"]
-                    hotspot_telem['modulation'] = f"Helium ({_modulation})"
+                    hotspot_telem['modulation'] = _modulation
                     hotspot_telem['snr'] = hotspot['snr']
                     hotspot_telem['rssi'] = hotspot['rssi']
                     hotspot_telem['frequency'] = _frequency
