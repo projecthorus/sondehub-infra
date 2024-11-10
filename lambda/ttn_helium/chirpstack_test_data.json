@@ -1,0 +1,93 @@
+{
+  "deduplicationId": "6358527e-cbc4-480b-9a12-604b4d2d09c6",
+  "time": "2024-10-27T21:19:12.136+00:00",
+  "deviceInfo": {
+    "tenantId": "84c71351-e922-44c4-84bb-3a3952db451a",
+    "tenantName": "Sean",
+    "applicationId": "2b8a8dbf-0052-411c-9d1b-6e4972d2d11c",
+    "applicationName": "light_tracker_app",
+    "deviceProfileId": "bedd60ae-1a98-4a79-847d-826b3110f466",
+    "deviceProfileName": "light_tracker",
+    "deviceName": "light_tracker_1",
+    "devEui": "a5cee980b0352837",
+    "deviceClassEnabled": "CLASS_A",
+    "tags": {}
+  },
+  "devAddr": "48000948",
+  "adr": false,
+  "dr": 1,
+  "fCnt": 2,
+  "fPort": 1,
+  "confirmed": false,
+  "data": "AYgFsZ/tYSgAGoYCZwDwAwIB0QQACAUCAIMGAEIHcydVCAIABg==",
+  "object": {
+    "decoded": {
+      "battery": 4.65,
+      "sats": 8,
+      "speed": 1.31,
+      "heading": 66,
+      "ext_pressure": 1006.9,
+      "name": "SeanLightTracker",
+      "reported": "2024-10-27T21:19:12.650Z",
+      "longitude": -122.0312,
+      "altitude": 67.9,
+      "latitude": 37.3151,
+      "DigitalInput": 0.06,
+      "temp": 24
+    }
+  },
+  "rxInfo": [
+    {
+      "gatewayId": "e361363759320d4f",
+      "uplinkId": 1627,
+      "gwTime": "2024-10-27T21:19:12.136+00:00",
+      "nsTime": "2024-10-27T21:19:12.259136249+00:00",
+      "rssi": -91,
+      "snr": 8.5,
+      "context": "n+T3/g==",
+      "metadata": {
+        "gateway_lat": "37.315497288089851",
+        "gateway_id": "112vRiQYi58AeUte2SSSPfB7fYGnpjBFxfkyxC8yXckKwc9mzZcg",
+        "gateway_name": "slow-lipstick-haddock",
+        "network": "helium_iot",
+        "gateway_long": "-122.030305798970986",
+        "region_common_name": "US915",
+        "region_config_id": "us915_1",
+        "regi": "US915",
+        "gateway_h3index": "8c283472ebb11ff"
+      },
+      "crcStatus": "CRC_OK"
+    },
+    {
+      "gatewayId": "b15933c7aa2d9302",
+      "uplinkId": 46462,
+      "gwTime": "2024-10-27T21:19:12.132+00:00",
+      "nsTime": "2024-10-27T21:19:12.256818304+00:00",
+      "rssi": -117,
+      "snr": -7.5,
+      "context": "c5+8HQ==",
+      "metadata": {
+        "gateway_long": "-122.022560871991189",
+        "gateway_id": "112JTU8j35Kuu2MbcWKZuBQW4g7Frfd1AANKhHCqNzPvDosinSbw",
+        "gateway_name": "digital-cobalt-anteater",
+        "gateway_h3index": "8c283472165a3ff",
+        "regi": "US915",
+        "network": "helium_iot",
+        "region_config_id": "us915_1",
+        "gateway_lat": "37.308606042909773",
+        "region_common_name": "US915"
+      },
+      "crcStatus": "CRC_OK"
+    }
+  ],
+  "txInfo": {
+    "frequency": 904300000,
+    "modulation": {
+      "lora": {
+        "bandwidth": 125000,
+        "spreadingFactor": 9,
+        "codeRate": "CR_4_5"
+      }
+    }
+  }
+}
