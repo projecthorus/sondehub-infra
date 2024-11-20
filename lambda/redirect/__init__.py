@@ -34,4 +34,10 @@ def handler(event, context):
         uri = re.sub(r"^\/","", uri)
         sonde = re.sub(r'^(DFM|M10|M20|IMET|IMET54|MRZ|LMS6)-',"", uri)
         return redirect('https://sondehub.org/?sondehub=1#!f=' + sonde + '&mz=9&qm=All&q=' + sonde)
+    request['headers']['cache-control'] = [
+        {
+            "key": "Cache-Control",
+            "value": "no-cache"
+        }
+    ]
     return request
