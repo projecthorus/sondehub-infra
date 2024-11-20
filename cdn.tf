@@ -364,6 +364,52 @@ resource "aws_cloudfront_distribution" "sondehub" {
     target_origin_id       = "S3-${local.domain_name}"
     viewer_protocol_policy = "redirect-to-https"
   }
+  ordered_cache_behavior {
+    path_pattern    = "index.html"
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.no_cache.id
+    compress                   = true
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+
+    max_ttl                = 0
+    min_ttl                = 0
+    default_ttl            = 0
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  ordered_cache_behavior {
+    path_pattern    = "/"
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.no_cache.id
+    compress                   = true
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+
+    max_ttl                = 0
+    min_ttl                = 0
+    default_ttl            = 0
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}"
+    viewer_protocol_policy = "redirect-to-https"
+  }
 
   ordered_cache_behavior {
 
@@ -597,6 +643,18 @@ resource "aws_cloudfront_distribution" "amateur" {
   }
   http_version    = "http2"
   is_ipv6_enabled = true
+}
+
+resource "aws_cloudfront_response_headers_policy" "no_cache" {
+  name = "nocache"
+
+  custom_headers_config {
+    items {
+      header   = "cache-control"
+      override = true
+      value    = "no-cache"
+    }
+  }
 }
 
 resource "aws_cloudfront_distribution" "amateur_testing" {
