@@ -147,14 +147,14 @@ def get_sondes_site(event, context):
 def get_telem(event, context):
 
     durations = {  # ideally we shouldn't need to predefine these, but it's a shit load of data and we don't need want to overload ES
-        "3d": (259200, 1200),  
-        "1d": (86400, 600), 
-        "12h": (43200, 600),  
-        "6h": (21600, 240),  
-        "3h": (10800, 120), 
-        "1h": (3600, 60),
-        "30m": (1800, 30),
-        "1m": (60, 5),
+        "3d": (259200, 1440),
+        "1d": (86400, 720),
+        "12h": (43200, 600),
+        "6h": (21600, 420),
+        "3h": (10800, 240),
+        "1h": (3600, 120),
+        "30m": (1800, 60),
+        "1m": (60, 10),
         "15s": (15, 1),
         "0": (0, 1) # for getting a single time point
     }
