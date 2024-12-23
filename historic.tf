@@ -52,7 +52,7 @@ resource "aws_lambda_function" "historic_to_s3" {
   s3_key                         = aws_s3_bucket_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
-  memory_size                    = 4096
+  memory_size                    = 8192
   role                           = aws_iam_role.historic.arn
   runtime                        = "python3.9"
   timeout                        = 300
