@@ -103,7 +103,9 @@ resource "aws_lambda_function" "recovered_put" {
   reserved_concurrent_executions = 100
   environment {
     variables = {
-      "ES" = aws_route53_record.es.fqdn
+      "ES"      = aws_route53_record.es.fqdn
+      MQTT_HOST = "ws.v2.sondehub.org"
+      MQTT_PORT = "443"
     }
   }
   tags = {

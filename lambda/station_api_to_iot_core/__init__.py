@@ -69,7 +69,13 @@ def lambda_handler(event, context):
 
     if "uploader_position" in payload and None == payload["uploader_position"] or None in payload["uploader_position"]:
         payload.pop("uploader_position", None)
-    
+    if (
+        "software_name" in payload and 
+        payload["software_name"] == "SDRangel" and 
+        "software_version" in payload and 
+        payload["software_version"] == "7.22.5"
+        ):
+        return {"statusCode": 403, "body": "This version is blocked"}
     if "uploader_position" in payload:
         (payload["uploader_alt"], payload["uploader_position_elk"]) = (
                 payload["uploader_position"][2],

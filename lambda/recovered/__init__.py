@@ -6,6 +6,14 @@ from datetime import datetime, timedelta
 import es
 import boto3
 import botocore.exceptions
+import time
+from email.utils import parsedate
+
+import sys
+sys.path.append("sns_to_mqtt/vendor")
+
+import config_handler
+import random
 
 def sondeExists(serial):
     query = {
@@ -104,8 +112,62 @@ def getRecovered(serial):
     results = es.request(json.dumps(query), "recovered*/_search", "POST")
     return results["aggregations"]["1"]["hits"]["hits"]
 
+client = None
+
+
+connected_flag = False
+setup = False
+
+import socket
+socket.setdefaulttimeout(1)
+
+
+## MQTT functions
+def connect():
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_publish = on_publish
+    #client.tls_set()
+    client.username_pw_set(config_handler.get("MQTT","USERNAME"), password=config_handler.get("MQTT","PASSWORD"))
+    HOSTS = config_handler.get("MQTT","HOST").split(",")
+    PORT = int(config_handler.get("MQTT","PORT", default="8080"))
+    if PORT == 443:
+        client.tls_set()
+    HOST = random.choice(HOSTS)
+    print(f"Connecting to {HOST}")
+    client.connect(HOST, PORT, 5)
+    client.loop_start()
+    print("loop started")
+
+def on_disconnect(client, userdata, rc):
+    global connected_flag
+    print("disconnected")
+    connected_flag=False #set flag
+
+def on_connect(client, userdata, flags, rc):
+    global connected_flag
+    if rc==0:
+        print("connected")
+        connected_flag=True #set flag
+    else:
+        print("Bad connection Returned code")
+
+def on_publish(client, userdata, mid):
+    pass
 
 def put(event, context):
+    global client, setup
+    import paho.mqtt.client as mqtt
+
+    # Setup MQTT
+    if not client:
+        client = mqtt.Client(transport="websockets")
+
+    # Connect to MQTT
+    if not setup:
+        connect()
+        setup = True
+
     if "isBase64Encoded" in event and event["isBase64Encoded"] == True:
         event["body"] = base64.b64decode(event["body"])
     if (
@@ -136,8 +198,21 @@ def put(event, context):
         return {"statusCode": 400, "body":  json.dumps({"message": "serial not found in db"})}
 
     recovered['position'] = [float(recovered['lon']), float(recovered['lat'])]
+    
+    while not connected_flag:
+        time.sleep(0.01) # wait until connected
+
+    client.publish(
+        topic=f'recovery/{recovered["serial"]}',
+        payload=json.dumps(recovered),
+        qos=0,
+        retain=False
+    )
 
     result = es.request(json.dumps(recovered), "recovered/_doc", "POST")
+
+
+    time.sleep(0.3) # give paho mqtt 300ms to send messages this could be improved on but paho mqtt is a pain to interface with
 
     # add in elasticsearch extra position field
     return {"statusCode": 200, "body": json.dumps({"message": "Recovery logged. Have a good day ^_^"})}
