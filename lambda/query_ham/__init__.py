@@ -426,35 +426,35 @@ def get_telem_full(event, context):
         # Generate the output KML. 
         # This is probably the simplest way of handling this without bringing in
         # any other libraries.
-        kml_out = f"""
-        <kml:Document xmlns:kml="http://www.opengis.net/kml/2.2">
-        <kml:visibility>1</kml:visibility>
-        <kml:Folder id="{callsign}">
-            <kml:name>{start_datetime} {callsign}</kml:name>
-            <kml:description>Flight Path</kml:description>
-            <kml:visibility>1</kml:visibility>
-            <kml:Placemark id="Flight Path ID">
-                <kml:name>{start_datetime} {callsign}</kml:name>
-                <kml:visibility>1</kml:visibility>
-                <kml:Style><kml:LineStyle>
-                <kml:color>aaffffff</kml:color>
-                <kml:width>2.0</kml:width>
-                </kml:LineStyle>
-                <kml:PolyStyle>
-                <kml:color>20000000</kml:color>
-                <kml:fill>1</kml:fill>
-                <kml:outline>1</kml:outline>
-                </kml:PolyStyle></kml:Style>
-                <kml:LineString>
-                    <kml:extrude>1</kml:extrude>
-                    <kml:altitudeMode>absolute</kml:altitudeMode>
-                    <kml:coordinates>
+        kml_out = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <kml xmlns:kml="http://www.opengis.net/kml/2.2">
+        <Document>
+        <Folder id="sonde">
+            <name>{start_datetime} {callsign}</name>
+            <description>Flight Path</description>
+            <Placemark id="FlightPath">
+                <name>{start_datetime} {callsign}</name>
+                <visibility>1</visibility>
+                <Style><LineStyle>
+                <color>aaffffff</color>
+                <width>2.0</width>
+                </LineStyle>
+                <PolyStyle>
+                <color>20000000</color>
+                <fill>1</fill>
+                <outline>1</outline>
+                </PolyStyle></Style>
+                <LineString>
+                    <extrude>1</extrude>
+                    <altitudeMode>absolute</altitudeMode>
+                    <coordinates>
         {kml_coords}
-                    </kml:coordinates>
-                </kml:LineString>
-        </kml:Placemark>
-        </kml:Folder>
-        </kml:Document>
+                    </coordinates>
+                </LineString>
+        </Placemark>
+        </Folder>
+        </Document>
+        </kml> 
         """
 
         # Finally replace the data with the kml data
