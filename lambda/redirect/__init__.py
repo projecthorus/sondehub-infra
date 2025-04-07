@@ -25,8 +25,8 @@ def handler(event, context):
     if uri.startswith('/go/status'):
         return redirect("https://grafana.v2.sondehub.org/d/bhdBI0KVz/infrastructure")
     if uri.startswith('/go/discord'):
-        # Discord invite URL as of 2024-04-12
-        return redirect('https://discord.gg/DHd9UgenEb')
+        # Discord invite URL as of 2025-04-07
+        return redirect('https://discord.gg/G6QMVM3mCd')
     if uri.startswith('/go/'):
         tinyurl = uri.replace("/go/", "")
         return redirect('https://tinyurl.com/' + tinyurl)

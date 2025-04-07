@@ -25,7 +25,7 @@ from . import *
 def find_indexes():
 
     response = es.request("",
-                           "_cat/indices/predictions-*,-predictions-*-rollup?format=json",
+                           "_cat/indices/predictions-2024*,-predictions-*-rollup?format=json",
                            "GET")
     return [x['index'] for x in response]
     print(response)
