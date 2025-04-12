@@ -303,11 +303,6 @@ def get(event, context):
                             "size": 1,
                             "sort": [
                                 {
-                                    "recovered": {
-                                        "order": "desc"
-                                    }
-                                },
-                                {
                                     "datetime": {
                                         "order": "desc"
                                     }
