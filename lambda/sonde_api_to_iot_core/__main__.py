@@ -283,10 +283,10 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
-    def test_rd94_payload_no_serial(self):
+    def test_rd41_payload_no_serial(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now().isoformat()
-        payload[0]["type"] = "RD94"
+        payload[0]["type"] = "RD41"
         payload[0]["serial"] = "000000000"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_not_called()
