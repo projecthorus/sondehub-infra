@@ -257,6 +257,8 @@ def telemetry_filter(telemetry):
     # Still needs a letter at the start, but the numbers don't need to match the format exactly.
     if ("RS41" in telemetry["type"]) or ("RS92" in telemetry["type"]):
         vaisala_callsign_valid = re.match(r"^[C-Z]\d{7}$", _serial)
+    elif telemetry["type"] in ["RD41", "RD94"] and _serial:
+        vaisala_callsign_valid = _serial != "000000000"
     else:
         vaisala_callsign_valid = False
 

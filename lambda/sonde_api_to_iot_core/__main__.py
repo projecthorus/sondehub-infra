@@ -265,5 +265,41 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
 
+    def test_rd41_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "RD41"
+        payload[0]["serial"] = "21068595"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+    def test_rd94_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "RD94"
+        payload[0]["serial"] = "21068595"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+    def test_rd94_payload_no_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "RD94"
+        payload[0]["serial"] = "000000000"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+    def test_rd94_payload_no_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["type"] = "RD94"
+        payload[0]["serial"] = "000000000"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 if __name__ == '__main__':
     unittest.main()
