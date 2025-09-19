@@ -321,9 +321,9 @@ resource "aws_ecs_task_definition" "ws" {
       },
     ]
   )
-  cpu                = "256"
+  cpu                = "512"
   execution_role_arn = aws_iam_role.ws.arn
-  memory             = "512"
+  memory             = "1024"
   network_mode       = "awsvpc"
   requires_compatibilities = [
     "FARGATE",
