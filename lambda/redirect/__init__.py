@@ -27,13 +27,13 @@ def handler(event, context):
     if uri.startswith('/go/discord'):
         # Discord invite URL as of 2025-04-07
         return redirect('https://discord.gg/G6QMVM3mCd')
-    if uri.startswith('/go/'):
-        tinyurl = uri.replace("/go/", "")
-        return redirect('https://tinyurl.com/' + tinyurl)
     if uri.startswith('/go/areglaunch'):
         return redirect('https://amateur.sondehub.org/#!mt=Mapnik&mz=10&qm=6h&mc=-35.312,139.35174&q=HORUS-V2,VK5ARG,VK5ARG-Wenet')
     if uri.startswith('/go/aregimages'):
         return redirect('https://ssdv.habhub.org/VK5ARG')
+    if uri.startswith('/go/'):
+        tinyurl = uri.replace("/go/", "")
+        return redirect('https://tinyurl.com/' + tinyurl)
     if uri != '/':
         uri = re.sub(r"^\/","", uri)
         sonde = re.sub(r'^(DFM|M10|M20|IMET|IMET54|MRZ|LMS6)-',"", uri)
