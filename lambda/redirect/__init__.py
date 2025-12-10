@@ -28,7 +28,7 @@ def handler(event, context):
         # Discord invite URL as of 2025-04-07
         return redirect('https://discord.gg/G6QMVM3mCd')
     if uri.startswith('/go/areglaunch'):
-        return redirect('https://amateur.sondehub.org/#!mt=Mapnik&mz=10&qm=6h&mc=-35.312,139.35174&q=HORUS-V2,VK5ARG,VK5ARG-Wenet')
+        return redirect('https://amateur.sondehub.org/#!mt=Mapnik&mz=9&qm=6h&mc=-34.83385,139.5003&q=HORUS-V2,VK5ARG,VK5ARG-Wenet')
     if uri.startswith('/go/aregimages'):
         return redirect('https://ssdv.habhub.org/VK5ARG')
     if uri.startswith('/go/'):
