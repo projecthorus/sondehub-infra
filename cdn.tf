@@ -340,6 +340,23 @@ resource "aws_cloudfront_distribution" "sondehub" {
       ]
     }
   }
+  origin {
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_keepalive_timeout = 5
+      origin_protocol_policy   = "https-only"
+      origin_read_timeout      = 30
+      origin_ssl_protocols = [
+        "TLSv1",
+        "TLSv1.1",
+        "TLSv1.2"
+      ]
+    }
+    domain_name = aws_cloudfront_distribution.skewt.domain_name
+    origin_id   = "skewt"
+    origin_path = ""
+  }
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods = [
@@ -476,6 +493,28 @@ resource "aws_cloudfront_distribution" "sondehub" {
     viewer_protocol_policy = "redirect-to-https"
   }
   ordered_cache_behavior {
+
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 120
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 120
+    min_ttl                = 120
+    path_pattern           = "skewt/*"
+    smooth_streaming       = false
+    target_origin_id       = "skewt"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  ordered_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods = [
       "HEAD",
@@ -496,6 +535,8 @@ resource "aws_cloudfront_distribution" "sondehub" {
     target_origin_id       = "S3-${local.domain_name}"
     viewer_protocol_policy = "redirect-to-https"
   }
+
+
   custom_error_response {
     error_caching_min_ttl = 10
     error_code            = 403
@@ -767,6 +808,71 @@ resource "aws_cloudfront_distribution" "card" {
     geo_restriction {
       restriction_type = "none"
     }
+  }
+  http_version    = "http2"
+  is_ipv6_enabled = true
+}
+
+resource "aws_cloudfront_distribution" "skewt" {
+  origin {
+    domain_name = aws_s3_bucket_website_configuration.skewt.website_endpoint
+    origin_id   = aws_s3_bucket_website_configuration.skewt.website_endpoint
+    origin_path = ""
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_keepalive_timeout = 5
+      origin_protocol_policy   = "http-only"
+      origin_read_timeout      = 30
+      origin_ssl_protocols = [
+        "TLSv1.2",
+      ]
+    }
+  }
+  default_cache_behavior {
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = false
+    default_ttl = 120
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 120
+    min_ttl                = 120
+    smooth_streaming       = false
+    target_origin_id       = aws_s3_bucket_website_configuration.skewt.website_endpoint
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  comment             = ""
+  default_root_object = "index.html"
+  price_class         = "PriceClass_100"
+  enabled             = true
+  viewer_certificate {
+    cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  custom_error_response {
+    error_caching_min_ttl = 10
+    error_code            = 403
+    response_code         = "200"
+    response_page_path    = "/skewt/index.html"
+  }
+  custom_error_response {
+    error_caching_min_ttl = 10
+    error_code            = 404
+    response_code         = "200"
+    response_page_path    = "/skewt/index.html"
   }
   http_version    = "http2"
   is_ipv6_enabled = true
@@ -1104,6 +1210,53 @@ resource "aws_s3_bucket" "card" {
   bucket = "sondehub-v2-card"
 }
 
+resource "aws_s3_bucket" "skewt" {
+  bucket = "sondehub-v2-skewt"
+}
+// technically we should use cloudfront oic but other buckets currently aren't doing this and its not a big deal if people access the bucket directly
+resource "aws_s3_bucket_public_access_block" "skewt" {
+  bucket = aws_s3_bucket.skewt.id
+
+  block_public_acls       = true
+  block_public_policy     = false
+  ignore_public_acls      = true
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "skewt" {
+  depends_on = [ aws_s3_bucket_public_access_block.skewt ]
+  bucket = aws_s3_bucket.skewt.id
+  policy = data.aws_iam_policy_document.skewt_public.json
+}
+
+data "aws_iam_policy_document" "skewt_public" {
+  statement {
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions = [
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.skewt.arn}/*",
+    ]
+  }
+}
+
+resource "aws_s3_bucket_website_configuration" "skewt" {
+  bucket = aws_s3_bucket.skewt.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "error.html"
+  }
+}
 
 resource "aws_s3_bucket_policy" "S3BucketPolicy" {
   bucket = aws_s3_bucket.v2.bucket
