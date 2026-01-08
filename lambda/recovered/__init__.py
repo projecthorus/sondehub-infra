@@ -188,6 +188,8 @@ def put(event, context):
 
     recovered = json.loads(event["body"])
 
+    print(json.dumps(event))
+
     if "datetime" not in recovered:
         recovered["datetime"] = datetime.now().isoformat()
 
@@ -199,6 +201,9 @@ def put(event, context):
 
     recovered['position'] = [float(recovered['lon']), float(recovered['lat'])]
     
+    # Remove contact email
+    recovered.pop("contact_email", None)
+
     while not connected_flag:
         time.sleep(0.01) # wait until connected
 
