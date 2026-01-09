@@ -188,7 +188,7 @@ def put(event, context):
 
     recovered = json.loads(event["body"])
 
-    print(json.dumps(event))
+    print(event["body"])
 
     if "datetime" not in recovered:
         recovered["datetime"] = datetime.now().isoformat()
