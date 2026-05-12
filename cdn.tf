@@ -1421,9 +1421,9 @@ resource "aws_s3_bucket_public_access_block" "found" {
 }
 
 resource "aws_s3_bucket_policy" "found" {
-  depends_on = [ aws_s3_bucket_public_access_block.found ]
-  bucket = aws_s3_bucket.found.id
-  policy = data.aws_iam_policy_document.found_public.json
+  depends_on = [aws_s3_bucket_public_access_block.found]
+  bucket     = aws_s3_bucket.found.id
+  policy     = data.aws_iam_policy_document.found_public.json
 }
 
 data "aws_iam_policy_document" "found_public" {
