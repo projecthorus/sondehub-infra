@@ -39,7 +39,12 @@ def checkExisting(serial, recovered):
 # Attempt to find SondeHub serial for a Radiosony.info serial
 def findSonde(recovery, lat, lon):
     # Get facts to compare against
-    launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%d %H:%M:%S")
+    if 'Z' in recovery["start_time"]:
+        # Radiosondy.info API update 2026-05
+        # This could be replaced by datetime.fromisoformat in Python >3.11
+        launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%dT%H:%M:%SZ")
+    else:
+        launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%d %H:%M:%S")
     sondeType = recovery["radiosonde"]["type"]
     sondeFrequency = recovery["radiosonde"]["qrg"]
 
@@ -93,7 +98,11 @@ def processReports(data):
                 continue
 
             # Import time
-            recovered_time = datetime.strptime(recovery["log_info"]["log_added"], "%Y-%m-%d %H:%M:%S")
+            if 'Z' in recovery["log_info"]["log_added"]:
+                # Radiosondy.info API update 2026-05
+                recovered_time = datetime.strptime(recovery["log_info"]["log_added"], "%Y-%m-%dT%H:%M:%SZ")
+            else:
+                recovered_time = datetime.strptime(recovery["log_info"]["log_added"], "%Y-%m-%d %H:%M:%S")
 
             # Get comment and add attribution
             description = recovery["log_info"]["comment"]
