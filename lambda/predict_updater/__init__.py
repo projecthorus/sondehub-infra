@@ -18,6 +18,7 @@ import config_handler
 client = mqtt.Client(transport="websockets")
 
 connected_flag = False
+first_execution = True
 
 import socket
 socket.setdefaulttimeout(1)
@@ -57,7 +58,7 @@ def on_publish(client, userdata, mid):
     pass
 
 # setup MQTT
-connect()
+
 
 #   FLIGHT PROFILE DEFAULTS
 #
@@ -479,6 +480,11 @@ def bulk_upload_es(index_prefix,payloads):
             raise RuntimeError
 
 def predict(event, context):
+    global first_execution
+    if first_execution:
+        connect()
+        first_execution = False
+        
     client.loop(timeout=0.05, max_packets=1) # make sure MQTT reconnects
     # Use asyncio.run to synchronously "await" an async function
     result = asyncio.run(predict_async(event, context))

@@ -396,7 +396,7 @@ def upload(event, context, orig_event):
             time_delta_header = event["headers"]["date"]
             time_delta = (
                 datetime.datetime(*parsedate(time_delta_header)[:7])
-                - datetime.datetime.utcfromtimestamp(event["requestContext"]["timeEpoch"]/1000)
+                - datetime.datetime.fromtimestamp(event["requestContext"]["timeEpoch"]/1000, datetime.UTC)
             ).total_seconds()
         except:
             pass

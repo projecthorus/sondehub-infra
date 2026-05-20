@@ -54,7 +54,7 @@ resource "aws_lambda_function" "historic_to_s3" {
   publish                        = true
   memory_size                    = 8192
   role                           = aws_iam_role.historic.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 300
   reserved_concurrent_executions = 2
   environment {
@@ -75,7 +75,7 @@ resource "aws_lambda_function" "queue_data_update" {
   publish                        = true
   memory_size                    = 256
   role                           = aws_iam_role.historic.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   reserved_concurrent_executions = 1
   environment {
@@ -206,7 +206,7 @@ resource "aws_lambda_function" "history" {
   publish                        = true
   memory_size                    = 512
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   reserved_concurrent_executions = 4
   architectures                  = ["arm64"]

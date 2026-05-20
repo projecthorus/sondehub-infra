@@ -1,4 +1,7 @@
+
 import config_handler
+
+
 
 import unittest
 from unittest.mock import MagicMock, call, patch
@@ -20,6 +23,9 @@ secret_call = {
 
 class TestConfigHandler(unittest.TestCase):
     def setUp(self) -> None:
+        from importlib import reload
+        # fixes up other unitests patching stuff
+        reload(config_handler)
         config_handler.get.cache_clear()
 
     def test_env(self):
@@ -47,7 +53,8 @@ class TestConfigHandler(unittest.TestCase):
         with patch.dict(config_handler.os.environ,{}, clear=True):
             self.assertRaises(KeyError, config_handler.get, "MQTT", "NOTPASSWORD")
     
-    def test_default(self):
+    @patch('botocore.client.BaseClient._make_api_call', return_value=None)
+    def test_default(self, MockApiCall):
         with patch.dict(config_handler.os.environ,{}, clear=True):
             return_value = config_handler.get("MQTT", "PASSWORD", "test_password_abc")
         self.assertEqual(return_value, "test_password_abc")

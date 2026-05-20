@@ -1,18 +1,17 @@
-from datetime import datetime
+from datetime import datetime, UTC
 import urllib.request
 import json
 import config_handler
 import traceback
 
-apiKey = config_handler.get("RADIOSONDY","API_KEY")
 
-params = "?token={}&period=2".format(apiKey)
-url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
 recoveryUrl = "https://api.v2.sondehub.org/recovered"
 searchUrl = "https://api.v2.sondehub.org/sondes"
 
 # Main function
 def handler(event,context):
+    params = "?token={}&period=2".format(config_handler.get("RADIOSONDY","API_KEY"))
+    url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
     response = urllib.request.urlopen(url)
     data = json.load(response)
     processReports(data)
@@ -49,7 +48,7 @@ def findSonde(recovery, lat, lon):
     sondeFrequency = recovery["radiosonde"]["qrg"]
 
     # Determine how far back to query
-    nowTime = datetime.utcnow()
+    nowTime = datetime.now(UTC)
     searchDifference = nowTime - launchTime
     searchSeconds = round(searchDifference.total_seconds()) + 10800 # Search from 3 hours before reported launch
 

@@ -7,7 +7,7 @@ resource "aws_lambda_function" "tile_counts" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 10
   architectures    = ["arm64"]
 }

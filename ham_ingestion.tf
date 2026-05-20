@@ -75,7 +75,7 @@ resource "aws_lambda_function" "ham_sqs_to_elk" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.ham_sqs_to_elk.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 5
   reserved_concurrent_executions = 100
   environment {
@@ -168,7 +168,7 @@ resource "aws_lambda_function" "ham_upload_telem" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -214,7 +214,7 @@ resource "aws_lambda_function" "ham_sns_to_mqtt" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 3
   architectures    = ["arm64"]
 
@@ -263,7 +263,7 @@ resource "aws_lambda_function" "ham_listener_put" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 10
   architectures    = ["arm64"]
   environment {
@@ -312,7 +312,7 @@ resource "aws_lambda_function" "ham_sns_to_mqtt_listener" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 3
   architectures    = ["arm64"]
 

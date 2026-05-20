@@ -62,7 +62,7 @@ resource "aws_lambda_function" "ham_predict_updater" {
   publish                        = true
   memory_size                    = 512
   role                           = aws_iam_role.ham_predict_updater.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   architectures                  = ["arm64"]
   timeout                        = 300
   reserved_concurrent_executions = 1
@@ -130,7 +130,7 @@ resource "aws_lambda_function" "ham_predictions" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   architectures                  = ["arm64"]
   environment {

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 import base64
 import gzip
 from io import BytesIO, StringIO
@@ -101,7 +101,7 @@ def get_telem(event, context):
         "0": (0, 1) # for getting a single time point
     }
     duration_query = "3h"
-    requested_time = datetime.now(timezone.utc)
+    requested_time = datetime.now(UTC)
 
     if (
         "queryStringParameters" in event
@@ -272,9 +272,9 @@ def get_telem_full(event, context):
                 event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
             )
         except: # might be in unix time
-            requested_time = datetime.utcfromtimestamp(float(event["queryStringParameters"]["datetime"]))
+            requested_time = datetime.fromtimestamp(float(event["queryStringParameters"]["datetime"]), UTC)
     else:
-        requested_time = datetime.now(timezone.utc)
+        requested_time = datetime.now(UTC)
 
 
     lt = requested_time + timedelta(0, 1)
@@ -499,7 +499,7 @@ def get_listener_telemetry(event, context):
         "0": (0, 1)
     }
     duration_query = "3h"
-    requested_time = datetime.now(timezone.utc)
+    requested_time = datetime.now(UTC)
 
     if (
         "queryStringParameters" in event

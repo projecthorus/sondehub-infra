@@ -55,7 +55,7 @@ resource "aws_lambda_function" "sqs_to_elk" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.sqs_to_elk.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 5
   reserved_concurrent_executions = 100
   environment {

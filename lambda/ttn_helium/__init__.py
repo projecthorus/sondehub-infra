@@ -7,7 +7,6 @@ from email.utils import parsedate
 import os
 import config_handler
 
-TOPIC = config_handler.get("HAM_SNS","TOPIC")
 
 HELIUM_GW_VERSION = "2023.10.14"
 
@@ -49,7 +48,7 @@ sns.meta.events.register('request-created.sns', set_connection_header)
 
 def post(payload):
     sns.publish(
-                TopicArn=TOPIC,
+                TopicArn=config_handler.get("HAM_SNS","TOPIC"),
                 Message=json.dumps(payload)
     )
 
@@ -89,7 +88,7 @@ def upload_helium(event, context):
             telem['payload_callsign'] = payload['name']
 
             # Time
-            telem['datetime'] = datetime.datetime.utcfromtimestamp(payload["reported_at"]/1000.0).isoformat() + "Z"
+            telem['datetime'] = datetime.datetime.fromtimestamp(payload["reported_at"]/1000.0, datetime.UTC).isoformat() + "Z"
 
             # Positional and other data
             telem_data = payload["decoded"]["payload"]
@@ -131,7 +130,7 @@ def upload_helium(event, context):
                 hotspot_telem['snr'] = hotspot['snr']
                 hotspot_telem['rssi'] = hotspot['rssi']
                 hotspot_telem['frequency'] = hotspot['frequency']
-                hotspot_telem['time_received'] = datetime.datetime.utcfromtimestamp(hotspot["reported_at"]/1000.0).isoformat() + "Z"
+                hotspot_telem['time_received'] = datetime.datetime.fromtimestamp(hotspot["reported_at"]/1000.0, datetime.UTC).isoformat() + "Z"
 
                 try:
                     hotspot_telem['uploader_position'] = f'{hotspot["lat"]},{hotspot["long"]}'

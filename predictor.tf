@@ -74,7 +74,7 @@ resource "aws_lambda_function" "predict_updater" {
   publish                        = true
   memory_size                    = 512
   role                           = aws_iam_role.predict_updater.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   architectures                  = ["arm64"]
   timeout                        = 300
   reserved_concurrent_executions = 1
@@ -157,7 +157,7 @@ resource "aws_lambda_function" "predictions" {
   publish                        = true
   memory_size                    = 128
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   architectures                  = ["arm64"]
   environment {
@@ -187,7 +187,7 @@ resource "aws_lambda_function" "reverse_predictions" {
   memory_size                    = 128
   reserved_concurrent_executions = 10
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   architectures                  = ["arm64"]
   environment {
@@ -635,7 +635,7 @@ resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.predictor_update_trigger_lambda.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 3
   tags = {
     Name = "tawhiri-updater"

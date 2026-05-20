@@ -1,6 +1,7 @@
 from . import *
 import uuid
 
+
 class fakeContext:
     def __init__(self):
         self.log_stream_name = str(uuid.uuid4())

@@ -13,9 +13,7 @@ import sys
 import uuid
 import config_handler
 
-MQTT_ID = config_handler.get("MQTT","ID")
-MQTT_PREFIX = config_handler.get("MQTT","PREFIX")
-MQTT_BATCH = config_handler.get("MQTT","BATCH")
+first_execution = True
 
 client = mqtt.Client(transport="websockets")
 
@@ -98,13 +96,17 @@ def on_connect(client, userdata, flags, rc):
 def on_publish(client, userdata, mid):
     pass
 
-try:
-    connect()
-except:
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    handle_error("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), None, log_stream_name)
 
 def lambda_handler(event, context):
+    global first_execution
+    try:
+        if first_execution:
+            connect()
+            first_execution = False
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        handle_error("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), None, log_stream_name)
+
     try:
         client.loop(timeout=0.05, max_packets=1) # make sure it reconnects
         for record in event['Records']:
@@ -124,18 +126,18 @@ def lambda_handler(event, context):
                 
                 body = json.dumps(payload)
 
-                serial = payload[MQTT_ID]
+                serial = payload[config_handler.get("MQTT","ID")]
                 while not connected_flag:
                     time.sleep(0.01) # wait until connected
                 client.publish(
-                    topic=f'{MQTT_PREFIX}/{serial}',
+                    topic=f'{config_handler.get("MQTT","PREFIX")}/{serial}',
                     payload=body,
                     qos=0,
                     retain=False
                 )
                 if serial not in cache: # low bandwidth feeds with just the first packet
                     client.publish(
-                        topic=f'{MQTT_PREFIX}-new/{serial}',
+                        topic=f'{config_handler.get("MQTT","PREFIX")}-new/{serial}',
                         payload=body,
                         qos=0,
                         retain=False
@@ -145,7 +147,7 @@ def lambda_handler(event, context):
                     while len(cache) > MAX_CACHE:
                         del cache[next(iter(cache))]
             client.publish(
-                topic=MQTT_BATCH,
+                topic=config_handler.get("MQTT","BATCH"),
                 payload=json.dumps(payloads),
                 qos=0,
                 retain=False

@@ -9,7 +9,7 @@ resource "aws_lambda_function" "get_sondes" {
   memory_size                    = 256
   reserved_concurrent_executions = 10
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   architectures                  = ["arm64"]
   environment {
@@ -36,7 +36,7 @@ resource "aws_lambda_function" "get_telem" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -58,7 +58,7 @@ resource "aws_lambda_function" "get_sites" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -80,7 +80,7 @@ resource "aws_lambda_function" "get_sondes_site" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -102,7 +102,7 @@ resource "aws_lambda_function" "get_listener_telemetry" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {

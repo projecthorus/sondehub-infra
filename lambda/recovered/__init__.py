@@ -2,7 +2,7 @@ import json
 
 import zlib
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import es
 import boto3
 import botocore.exceptions
@@ -181,7 +181,7 @@ def put(event, context):
             time_delta_header = event["headers"]["date"]
             time_delta = (
                 datetime(*parsedate(time_delta_header)[:7])
-                - datetime.utcnow()
+                - datetime.now(UTC)
             ).total_seconds()
         except:
             pass

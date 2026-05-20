@@ -41,6 +41,10 @@ logging.basicConfig(
 
 class TestAmateurPrediction(unittest.TestCase):
     def setUp(self):
+        def mock_config(a,b,default=""):
+            return "1"
+        ham_predict_updater.config_handler.get = mock_config
+
         ham_predict_updater.es.request = MagicMock(side_effect=mock_es_request)
         ham_predict_updater.client.connect = MagicMock()
         ham_predict_updater.client.loop_start = MagicMock()

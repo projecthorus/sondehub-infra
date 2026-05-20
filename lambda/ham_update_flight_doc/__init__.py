@@ -18,7 +18,7 @@ def lambda_handler(event, context):
         payload = json.loads(event["body"])
     except:
         return {"statusCode": 400, "body": "JSON decode issue"}
-    payload["datetime"] = datetime.datetime.utcnow().isoformat()
+    payload["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
     if type(payload['ascent_rate']) not in [float, int]:
         return {"statusCode": 400, "body": "ascent_rate must be a number"}
     if type(payload['descent_rate']) not in [float, int]:

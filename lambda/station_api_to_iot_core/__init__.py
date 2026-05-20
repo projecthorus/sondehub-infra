@@ -14,7 +14,6 @@ CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO", "14FRS119_LE JUDA"]
 
 import es
 
-TOPIC = config_handler.get("SNS","TOPIC")
 
 # Setup SNS
 
@@ -30,7 +29,7 @@ def post(payload):
         f.write(json.dumps(payload).encode('utf-8'))
     payload = base64.b64encode(compressed.getvalue()).decode("utf-8")
     sns.publish(
-                TopicArn=TOPIC,
+                TopicArn=config_handler.get("SNS","TOPIC"),
                 Message=payload
     )
 
@@ -48,7 +47,7 @@ def lambda_handler(event, context):
             time_delta_header = event["headers"]["date"]
             time_delta = (
                 datetime.datetime(*parsedate(time_delta_header)[:7])
-                - datetime.datetime.utcfromtimestamp(event["requestContext"]["timeEpoch"]/1000)
+                - datetime.datetime.fromtimestamp(event["requestContext"]["timeEpoch"]/1000, datetime.UTC)
             ).total_seconds()
         except:
             pass
@@ -83,8 +82,8 @@ def lambda_handler(event, context):
             )
     if payload["uploader_callsign"] in CALLSIGN_BLOCK_LIST:
         return  {"statusCode": 403, "body": "callsign blocked or invalid"}
-    index = datetime.datetime.utcnow().strftime("listeners-%Y-%m")
-    payload["ts"] = datetime.datetime.utcnow().isoformat()
+    index = datetime.datetime.now(datetime.UTC).strftime("listeners-%Y-%m")
+    payload["ts"] = datetime.datetime.now(datetime.UTC).isoformat()
 
     post([payload])
     es.request(json.dumps(payload),f"{index}/_doc","POST")

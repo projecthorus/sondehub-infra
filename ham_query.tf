@@ -8,7 +8,7 @@ resource "aws_lambda_function" "ham_get" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -36,7 +36,7 @@ resource "aws_lambda_function" "ham_telem" {
   publish                        = true
   memory_size                    = 1024
   role                           = aws_iam_role.basic_lambda_role.arn
-  runtime                        = "python3.9"
+  runtime                        = "python3.14"
   timeout                        = 30
   architectures                  = ["arm64"]
   environment {
@@ -58,7 +58,7 @@ resource "aws_lambda_function" "ham_telem_full" {
   publish          = true
   memory_size      = 1024
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
@@ -156,7 +156,7 @@ resource "aws_lambda_function" "ham_get_listener_telemetry" {
   publish          = true
   memory_size      = 256
   role             = aws_iam_role.basic_lambda_role.arn
-  runtime          = "python3.9"
+  runtime          = "python3.14"
   timeout          = 30
   architectures    = ["arm64"]
   environment {
