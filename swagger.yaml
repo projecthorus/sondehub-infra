@@ -410,6 +410,18 @@ paths:
           name: vehicles
           type: string
           description: If provided, filters predictions to a single provided serial number. Should be provided, but left blank if no filtering is required.
+        - in: query
+          name: lat
+          type: number
+          description: "Latitude - if specified, lon and distance are required. Eg: -34.9285. Note this is filtered by the last known sonde position, not the landing location. Location search is not applied to serial based search."
+        - in: query
+          name: lon
+          description: "Longitude - if specified, lat and distance are required Eg:  138.6007. Note this is filtered by the last known sonde position, not the landing location. Location search is not applied to serial based search."
+          type: number
+        - in: query
+          name: distance
+          description: "Distance in meters - if specified, lat and lon are required. Max 100km.  Location search is not applied to serial based search."
+          type: number
       responses:
         200:
           description: Prediction results

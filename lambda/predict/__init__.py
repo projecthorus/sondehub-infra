@@ -18,7 +18,7 @@ def predict(event, context):
                     "order": {
                         "_key": "desc"
                     },
-                    "size": 1000
+                    "size": 10000
                 },
                 "aggs": {
                     "1": {
@@ -85,6 +85,31 @@ def predict(event, context):
                 )
             # for single sonde allow longer predictions
             payload['query']['bool']['filter'].pop(0)
+        elif "lat" in event["queryStringParameters"] and "lon" in event["queryStringParameters"] and "distance" in event["queryStringParameters"]:
+            try:
+                lat = float(event["queryStringParameters"]['lat'])
+                lon = float(event["queryStringParameters"]['lon'])
+                distance = int(event["queryStringParameters"]['distance'])
+            except:
+                return {"statusCode": 400, "body": "Could not parse lat, long and distance"}
+            
+            if distance > 100_000:
+                return {"statusCode": 400, "body": "Distance limit reached"}
+            
+            payload['query']['bool']['filter'].pop(0)
+
+            payload["query"]["bool"]["filter"].append(
+                {
+                    "geo_distance": {
+                        "distance": f"{distance}m",
+                        "position": {
+                            "lat": lat,
+                            "lon": lon,
+                        },
+                    }
+                }
+            )
+
     logging.debug("Start ES Request")
     results = es.request(json.dumps(payload), path, "GET")
     logging.debug("Finished ES Request")

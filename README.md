@@ -10,5 +10,4 @@ Sondehub is based around Amazon-Web-Services (AWS), and this repository serves a
 * [Mark Jessop](https://github.com/darksidelemm) - vk5qi@rfhead.net
 * [Michaela Wheeler](https://github.com/TheSkorm) - radiosonde@michaela.lgbt
 
-You can often find us in the #highaltitude IRC Channel on
-[Freenode](https://webchat.freenode.net/).
+You can often find us in the sondehub discord - sondehub.org/go/discord
