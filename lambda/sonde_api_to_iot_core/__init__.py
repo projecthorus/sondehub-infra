@@ -339,6 +339,11 @@ def telemetry_filter(telemetry):
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
+    # Get a message to users of very old auto_rx versions (>1 year old as of 2026-02-01)
+    if telemetry["software_name"] == "radiosonde_auto_rx":
+        if parse_autorx_version(telemetry["software_version"]) < (1,8,1):
+             return ("warnings", f"Your version of auto_rx is very old and may be blocked in future, please update to a more recent release - https://github.com/projecthorus/radiosonde_auto_rx/releases")
+
     return (False, "")
 
 def parse_sondemonitor_version(version):
