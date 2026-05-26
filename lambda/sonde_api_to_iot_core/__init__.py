@@ -336,6 +336,10 @@ def telemetry_filter(telemetry):
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
         return ("errors", "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
 
+    # Block OpenWXSDR until critical issues are fixed - https://github.com/DL2MF/OpenWXSDR/issues/1
+    if 'OpenWXSDR' in telemetry["software_name"]:
+        return ("errors", "OpenWXSDR currently uploads data with incorrect timestamps, along with various other issues. We are awaiting fixes before we allow this software to upload to SondeHub. Refer https://github.com/DL2MF/OpenWXSDR/issues/1")
+
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
