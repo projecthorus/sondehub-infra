@@ -133,7 +133,7 @@ def processReports(data):
                 continue
 
             # Format data for upload
-            recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description}
+            recoveryPutData = {"datetime": recovered_time.isoformat(), "serial": serial, "lat": lat, "lon": lon, "recovered": recovered, "recovered_by": recovered_by, "description": description, "recovery_software": "SondeHub radiosondy.info Importer"}
             recoveryPutData = json.dumps(recoveryPutData, ensure_ascii=True).encode('utf-8')
             print("{}: {}".format(serial, recoveryPutData))
             
