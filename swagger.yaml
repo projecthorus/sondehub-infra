@@ -661,11 +661,9 @@ definitions:
       - alt
       - recovered_by
       - recovered
+      - description
+      - recovery_software
     properties:
-      datetime:
-        type: "string"
-        format: "date-time"
-        description: Time that the radiosonde was recovered
       serial:
         description: Serial number of the radiosonde
         type: string
@@ -682,13 +680,19 @@ definitions:
         type: "number"
         format: "double"
       recovered:
-        description: was this recovery attempt was successful
+        description: Was this recovery attempt successful
+        type: boolean
+      planned:
+        description: Is this sonde planned to be recovered later
         type: boolean
       recovered_by:
         description: callsign or name of the person who recovered the sonde
         type: string
       description:
         description: Description of the recovery effort
+        type: string
+      recovery_software:
+        description: Software used to report the recovery (e.g. chasemapper)
         type: string
   recovery_stats:
     type: object
