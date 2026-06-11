@@ -340,6 +340,11 @@ def telemetry_filter(telemetry):
     if 'OpenWXSDR' in telemetry["software_name"]:
         return ("errors", "OpenWXSDR currently uploads data with incorrect timestamps, along with various other issues. We are awaiting fixes before we allow this software to upload to SondeHub. Refer https://github.com/DL2MF/OpenWXSDR/issues/1")
 
+    # 2026-06-11 - Block Non-RS41 data from OpenWebRX until we have proof of data quality.
+    if 'OpenWebRX' in telemetry["software_name"]:
+        if 'RS41' not in telemetry['type']:
+            return ('errors', "Non-RS41 uploads from OpenWebRX are currently blocked until data quality analysis has been conducted.")
+
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
