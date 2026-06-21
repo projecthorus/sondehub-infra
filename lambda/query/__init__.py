@@ -409,7 +409,7 @@ def get_sites(event, context):
                 "terms": {
                     "field": "station.keyword",
                     "order": {"_key": "desc"},
-                    "size": 10000,
+                    "size": 5000,
                 },
 
                 "aggs": {
