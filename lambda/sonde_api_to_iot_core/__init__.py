@@ -280,7 +280,8 @@ def telemetry_filter(telemetry):
     else:
         mrz_callsign_valid = False
 
-    # If Vaisala or DFMs, check the callsigns are valid. If M10, iMet or LMS6, just pass it through - we get callsigns immediately and reliably from these.
+    # If Vaisala or DFMs, check the callsigns are valid. If M10, iMet, LMS6, or a bunch of other types 
+    # just pass it through - we get callsigns immediately and reliably from these.
     if not (
         vaisala_callsign_valid
         or dfm_callsign_valid
@@ -292,6 +293,8 @@ def telemetry_filter(telemetry):
         or ("iMet" in telemetry["type"])
         or ("MTS01" in telemetry["type"])
         or ("WxR" in telemetry["type"])
+        or ("CF-06" in telemetry["type"])
+        or ("GTH6" in telemetry["type"])
     ):
         _id_msg = "Payload ID %s from Sonde type %s is invalid." % (telemetry["serial"], telemetry["type"])
 

@@ -459,7 +459,7 @@ paths:
         - in: header
           name: User-Agent
           type: string
-          description: "The software and version performing the telemetry upload, eg:  `autorx-1.4.1-beta5`"
+          description: "The software and version performing the telemetry upload, eg:  `chasemapper`"
         - in: body
           required: true
           name: body
@@ -686,7 +686,7 @@ definitions:
         description: Is this sonde planned to be recovered later
         type: boolean
       recovered_by:
-        description: callsign or name of the person who recovered the sonde
+        description: Callsign or name of the person who recovered the sonde
         type: string
       description:
         description: Description of the recovery effort
@@ -694,6 +694,10 @@ definitions:
       recovery_software:
         description: Software used to report the recovery (e.g. chasemapper)
         type: string
+      datetime:
+        type: "string"
+        format: "date-time"
+        description: Datetime when the report was submitted. This field is added server-side and does not need to be included by the client.
   recovery_stats:
     type: object
     required:
