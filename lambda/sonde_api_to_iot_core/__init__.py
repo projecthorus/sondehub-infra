@@ -348,6 +348,10 @@ def telemetry_filter(telemetry):
         if 'RS41' not in telemetry['type']:
             return ('errors', "Non-RS41 uploads from OpenWebRX are currently blocked until data quality analysis has been conducted.")
 
+    # Unknown software uploading data with incorrect callsigns and other malformed fields.
+    if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
+        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
+
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
