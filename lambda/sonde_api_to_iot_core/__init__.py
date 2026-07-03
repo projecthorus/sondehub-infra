@@ -19,6 +19,8 @@ from io import BytesIO
 
 import config_handler
 
+DROP_RATIO = 2
+
 logs = boto3.client('logs')
 sequenceToken = None
 
@@ -457,6 +459,10 @@ def upload(event, context, orig_event):
             if fail_dfm == True:
                 [x.update(dfm_failure=True) for x in payload_serials[serial]]
 
+
+        # Perform dropping of data to save $$$
+        sorted(payload_serials[serial], key=lambda d: d['datetime'])
+        del payload_serials[serial][1:-1:DROP_RATIO]
 
         #generate error messages and regenerate payload list of bad data removed
         for payload in payload_serials[serial]:
