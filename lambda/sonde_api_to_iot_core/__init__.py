@@ -282,13 +282,19 @@ def telemetry_filter(telemetry):
     else:
         mrz_callsign_valid = False
 
-    # If Vaisala or DFMs, check the callsigns are valid. If M10, iMet, LMS6, or a bunch of other types 
+    if "C50" in telemetry["type"]:
+        c50_callsign_valid = "x" not in _serial
+    else:
+        c50_callsign_valid = False
+
+    # If Vaisala, DFMs, or a few other types, check the callsigns are valid. If M10, iMet, LMS6, or a bunch of other types 
     # just pass it through - we get callsigns immediately and reliably from these.
     if not (
         vaisala_callsign_valid
         or dfm_callsign_valid
         or meisei_callsign_valid
         or mrz_callsign_valid
+        or c50_callsign_valid
         or ("M10" in telemetry["type"])
         or ("M20" in telemetry["type"])
         or ("LMS" in telemetry["type"])
