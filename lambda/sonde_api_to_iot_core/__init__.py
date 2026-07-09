@@ -457,7 +457,7 @@ def upload(event, context, orig_event):
                 payload_serials[serial][index]["lon_outliers"] = True
             for index in alt_outliers:
                 payload_serials[serial][index]["alt_outliers"] = True
-        elif "DFM" in check_data[0]["type"]: # if the sonde is a DFM and there's not enough payloads to perform z check then bail out
+        elif "DFM" in check_data[0]["type"] or "iMS-100" in check_data[0]["type"]: # if the sonde is a DFM/iMS-100 and there's not enough payloads to perform z check then bail out
             fail_dfm = False
             for data in check_data:
                 if data['alt'] > 2500:
@@ -479,7 +479,7 @@ def upload(event, context, orig_event):
                 })
             elif "dfm_failure" in payload:
                 errors.append({
-                    "error_message": f"DFM radiosonde above 1000 and not enough data to perform z-check. Not adding DB to protect against double frequency usage.",
+                    "error_message": f"DFM/iMS-100 radiosonde above 1000 and not enough data to perform z-check. Not adding DB to protect against double frequency usage.",
                     "payload": payload
                 })
             else:
