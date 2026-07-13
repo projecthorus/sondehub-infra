@@ -1460,7 +1460,126 @@ resource "aws_s3_bucket_policy" "S3BucketPolicy" {
   policy = "{\"Version\":\"2012-10-17\",\"Id\":\"Policy1615627853229\",\"Statement\":[{\"Sid\":\"Stmt1615627852247\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::${local.domain_name}/*\"}]}"
 }
 
+data "aws_iam_policy_document" "sondehub_history_policy" {
+  statement {
+    sid    = "PublicRead"
+    effect = "Allow"
+
+    resources = [
+      "${aws_s3_bucket.history.arn}/*",
+      aws_s3_bucket.history.arn,
+    ]
+
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTorrent",
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "launchsites"
+    effect    = "Allow"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:ListBucket"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["launchsites/*"]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "date"
+    effect    = "Allow"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:ListBucket"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["date/2*"]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "datebroken"
+    effect    = "Allow"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:ListBucket"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["date/1*"]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "delimiter"
+    effect    = "Allow"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:ListBucket"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:delimiter"
+      values   = ["/"]
+    }
+
+    condition {
+      test     = "StringNotLike"
+      variable = "s3:prefix"
+      values   = ["serial/*"]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "pysondehub"
+    effect    = "Allow"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:ListBucket"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["serial/*.json.gz"]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+}
+
 resource "aws_s3_bucket_policy" "S3BucketPolicy2" {
   bucket = aws_s3_bucket.history.bucket
-  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"PublicRead\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":[\"s3:GetObject\",\"s3:GetObjectVersion\",\"s3:ListBucket\",\"s3:GetObjectTorrent\"],\"Resource\":[\"arn:aws:s3:::sondehub-history/*\",\"arn:aws:s3:::sondehub-history\"]}]}"
+  policy = data.aws_iam_policy_document.sondehub_history_policy.json
 }
