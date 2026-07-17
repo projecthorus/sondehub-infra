@@ -363,6 +363,9 @@ def telemetry_filter(telemetry):
     if 'DsRS41Tracker' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
+    if 'rtlsdr_multisonde_go' in telemetry["software_name"]:
+        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
+
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
