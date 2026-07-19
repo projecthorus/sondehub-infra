@@ -359,9 +359,6 @@ def telemetry_filter(telemetry):
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
     if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
-    
-    if 'DsRS41Tracker' in telemetry["software_name"]:
-        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
     if 'rtlsdr_multisonde_go' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
