@@ -25,6 +25,9 @@ jobs:
         continue-on-error: true  
       - name: Test with pytest  
         working-directory: lambda
+        env:
+          AWS_REGION: us-east-1
+          AWS_DEFAULT_REGION: us-east-1
         run: |  
           coverage run -m pytest  -v -s --junit-xml=tests.xml
       - name: Publish Test Results
