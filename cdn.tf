@@ -1345,6 +1345,19 @@ resource "aws_s3_bucket" "history" {
   website {
     index_document = "index.html"
   }
+
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "history" {
+  bucket = aws_s3_bucket.history.id
+  rule {
+    id = "remove-old-versions"
+    noncurrent_version_expiration {
+          noncurrent_days   = 90
+    }
+    status = "Enabled"
+  }
+  
 }
 
 resource "aws_s3_bucket" "predict" {
@@ -1584,7 +1597,7 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
   statement {
     sid       = "DenyBots"
     effect    = "Deny"
-    resources = [aws_s3_bucket.history.arn]
+    resources = ["${aws_s3_bucket.history.arn}/*"]
     actions   = ["s3:*"]
 
     condition {

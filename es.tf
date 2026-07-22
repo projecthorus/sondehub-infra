@@ -210,6 +210,10 @@ resource "aws_cognito_user_pool" "CognitoUserPool" {
       priority = 1
     }
   }
+
+  lifecycle {
+    ignore_changes = [ estimated_number_of_users ]
+  }
 }
 
 resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
