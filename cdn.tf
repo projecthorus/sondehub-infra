@@ -779,6 +779,9 @@ resource "aws_cloudfront_response_headers_policy" "no_cache" {
       value    = "no-cache"
     }
   }
+  lifecycle {
+    ignore_changes = [ comment ]
+  }
 }
 
 resource "aws_cloudfront_distribution" "amateur_testing" {

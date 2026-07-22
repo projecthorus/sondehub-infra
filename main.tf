@@ -109,6 +109,9 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
     "*.${local.domain_name}"
   ]
   validation_method = "DNS"
+  lifecycle {
+    ignore_changes = [ certificate_authority_arn, early_renewal_duration ]
+  }
 }
 
 
@@ -120,6 +123,9 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
     "*.sondehub.org"
   ]
   validation_method = "DNS"
+  lifecycle {
+    ignore_changes = [ certificate_authority_arn, early_renewal_duration ]
+  }
 }
 
 data "archive_file" "lambda" {
