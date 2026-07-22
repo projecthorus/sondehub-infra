@@ -3,7 +3,7 @@ sys.path.append("sns_to_mqtt/vendor")
 
 import paho.mqtt.client as mqtt
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from datetime import timedelta
 import http.client
 import math
@@ -303,7 +303,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
         longitude += 360.0
 
     # Generate the prediction URL
-    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now() + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
+    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now(UTC) + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
     logging.debug(url)
     conn = http.client.HTTPSConnection(TAWHIRI_SERVER)
     conn.request("GET", url)
@@ -327,7 +327,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
             else:
                 for item in stage['trajectory']:
                     path.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                        "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
@@ -384,7 +384,7 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
             else:
                 for item in stage['trajectory']:
                     path.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                        "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
@@ -435,7 +435,7 @@ def bulk_upload_es(index_prefix,payloads):
     for payload in payloads:
         body += "{\"index\":{}}\n" + json.dumps(payload) + "\n"
     body += "\n"
-    date_prefix = datetime.now().strftime("%Y-%m")
+    date_prefix = datetime.now(UTC).strftime("%Y-%m")
     result = es.request(body, f"{index_prefix}-{date_prefix}/_bulk", "POST")
 
     if 'errors' in result and result['errors'] == True:

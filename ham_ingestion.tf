@@ -69,8 +69,8 @@ resource "aws_iam_role_policy" "ham_sqs_to_elk" {
 resource "aws_lambda_function" "ham_sqs_to_elk" {
   function_name                  = "ham-sqs-to-elk"
   handler                        = "ham_sqs_to_elk.lambda_handler"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
@@ -162,8 +162,8 @@ resource "aws_sqs_queue_policy" "ham_sqs_to_elk" {
 resource "aws_lambda_function" "ham_upload_telem" {
   function_name    = "ham-put-api"
   handler          = "ham_put_api.lambda_handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -208,8 +208,8 @@ resource "aws_apigatewayv2_integration" "ham_upload_telem" {
 resource "aws_lambda_function" "ham_sns_to_mqtt" {
   function_name    = "ham-sns-to-mqtt"
   handler          = "sns_to_mqtt.lambda_handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -257,8 +257,8 @@ resource "aws_sns_topic_subscription" "ham_sns_to_mqtt" {
 resource "aws_lambda_function" "ham_listener_put" {
   function_name    = "ham-listener-put"
   handler          = "ham_listener_put.lambda_handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -306,8 +306,8 @@ resource "aws_apigatewayv2_integration" "ham_listener_put" {
 resource "aws_lambda_function" "ham_sns_to_mqtt_listener" {
   function_name    = "ham-sns-to-mqtt-listener"
   handler          = "sns_to_mqtt.lambda_handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128

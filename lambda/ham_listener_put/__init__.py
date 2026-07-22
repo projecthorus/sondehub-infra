@@ -57,7 +57,7 @@ def lambda_handler(event, context):
         return {"statusCode": 400, "body": "JSON decode issue"}
     print(payload)
     if "user-agent" in event["headers"]:
-        event["time_server"] = datetime.datetime.now().isoformat()
+        event["time_server"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload["user-agent"] = event["headers"]["user-agent"]
     if time_delta:
         payload["upload_time_delta"] = time_delta

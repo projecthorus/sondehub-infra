@@ -77,6 +77,9 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   }
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [
+      advanced_security_options,
+    ]
   }
 }
 data "aws_kms_key" "es" {
@@ -207,6 +210,7 @@ resource "aws_cognito_user_pool" "CognitoUserPool" {
       priority = 1
     }
   }
+
 }
 
 resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {

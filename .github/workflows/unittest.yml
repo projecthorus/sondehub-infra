@@ -1,0 +1,39 @@
+name: SondeHub Lambda Tests
+run-name: SondeHub Lambda Tests
+on: 
+  pull_request:
+  workflow_dispatch:
+  
+jobs:  
+  build:  
+    runs-on: ubuntu-latest  
+    strategy:  
+      matrix:  
+        python-version: ["3.14"]  
+  
+    steps:  
+      - uses: actions/checkout@v3  
+      - name: Set up Python ${{ matrix.python-version }}  
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: ${{ matrix.python-version }}  
+      - name: Install dependencies
+        working-directory: lambda
+        run: |  
+          python -m pip install --upgrade pip  
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+        continue-on-error: true  
+      - name: Test with pytest  
+        working-directory: lambda
+        env:
+          AWS_REGION: us-east-1
+          AWS_DEFAULT_REGION: us-east-1
+        run: |  
+          coverage run -m pytest  -v -s --junit-xml=tests.xml
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          check_name: Lambda Functions
+          files: |
+            lambda/**/*.xml

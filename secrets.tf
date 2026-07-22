@@ -12,6 +12,11 @@ resource "aws_secretsmanager_secret_version" "mqtt" {
       USERNAME        = "write"
     }
   )
+  lifecycle {
+    ignore_changes = [
+      secret_binary
+    ]
+  }
 }
 
 resource "random_password" "mqtt" {
@@ -34,6 +39,6 @@ resource "aws_secretsmanager_secret_version" "radiosondy" {
     }
   )
   lifecycle {
-    ignore_changes = [secret_string]
+    ignore_changes = [secret_string, secret_binary]
   }
 }

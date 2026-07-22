@@ -71,17 +71,17 @@ def upload(event, context):
 
     for payload in payloads:
         if "user-agent" in event["headers"]:
-            event["time_server"] = datetime.datetime.now().isoformat()
+            event["time_server"] = datetime.datetime.now(datetime.UTC).isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
 
-        payload["upload_time"] = datetime.datetime.now().isoformat()
+        payload["upload_time"] = datetime.datetime.now(datetime.UTC).isoformat()
 
         valid, error_message = telemetry_filter(payload)
 
         try:
             _delta_time = (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(payload["datetime"].replace("Z",""))
+                datetime.datetime.now(datetime.UTC) - datetime.datetime.fromisoformat(payload["datetime"])
             ).total_seconds()
         except:
             errors.append({

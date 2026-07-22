@@ -109,6 +109,9 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
     "*.${local.domain_name}"
   ]
   validation_method = "DNS"
+  lifecycle {
+    ignore_changes = [certificate_authority_arn, early_renewal_duration]
+  }
 }
 
 
@@ -120,6 +123,9 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
     "*.sondehub.org"
   ]
   validation_method = "DNS"
+  lifecycle {
+    ignore_changes = [certificate_authority_arn, early_renewal_duration]
+  }
 }
 
 data "archive_file" "lambda" {
@@ -131,8 +137,21 @@ data "archive_file" "lambda" {
 resource "aws_s3_bucket" "lambda_functions" {
 }
 
-resource "aws_s3_bucket_object" "lambda" {
-  bucket = aws_s3_bucket.lambda_functions.bucket
+removed {
+  from = aws_s3_bucket_object.lambda
+  lifecycle {
+    destroy = false
+  }
+}
+import {
+  to = aws_s3_object.lambda
+  identity = {
+    bucket = aws_s3_bucket.lambda_functions.id
+    key    = "lambda.zip"
+  }
+}
+resource "aws_s3_object" "lambda" {
+  bucket = aws_s3_bucket.lambda_functions.id
   key    = "lambda.zip"
   source = data.archive_file.lambda.output_path
   etag   = data.archive_file.lambda.output_md5

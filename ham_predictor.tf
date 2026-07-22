@@ -56,8 +56,8 @@ resource "aws_iam_role_policy" "ham_predict_updater" {
 resource "aws_lambda_function" "ham_predict_updater" {
   function_name                  = "ham_predict_updater"
   handler                        = "ham_predict_updater.predict"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 512
@@ -123,8 +123,8 @@ resource "aws_apigatewayv2_integration" "ham_predictions" {
 resource "aws_lambda_function" "ham_predictions" {
   function_name                  = "ham_predictions"
   handler                        = "ham_predict.predict"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   reserved_concurrent_executions = 10
   publish                        = true

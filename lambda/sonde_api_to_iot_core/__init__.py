@@ -235,7 +235,7 @@ def telemetry_filter(telemetry):
     
     try:
         _delta_time = (
-            datetime.datetime.now() - datetime.datetime.fromisoformat(telemetry["datetime"].replace("Z",""))
+            datetime.datetime.now(datetime.UTC) - datetime.datetime.fromisoformat(telemetry["datetime"])
         ).total_seconds()
     except:
         return ("errors", f"Unable to parse time")
@@ -358,9 +358,6 @@ def telemetry_filter(telemetry):
 
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
     if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
-        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
-    
-    if 'DsRS41Tracker' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
     if 'rtlsdr_multisonde_go' in telemetry["software_name"]:
@@ -494,7 +491,7 @@ def upload(event, context, orig_event):
 
     for payload in payloads:
         if "user-agent" in event["headers"]:
-            event["time_server"] = datetime.datetime.now().isoformat()
+            event["time_server"] = datetime.datetime.now(datetime.UTC).isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
         status, message = telemetry_filter(payload)

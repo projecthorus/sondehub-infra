@@ -2,7 +2,7 @@ import sys
 sys.path.append("sns_to_mqtt/vendor")
 import paho.mqtt.client as mqtt
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 import http.client
 import math
 import logging
@@ -337,7 +337,7 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
                 else:
                     for item in stage['trajectory']:
                         path.append({
-                            "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                            "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                             "lat": item['latitude'],
                             "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                             "alt": item['altitude'],
@@ -397,7 +397,7 @@ def get_launch_estimate(timestamp, latitude, longitude, altitude, ascent_rate=PR
             else:
                 for item in stage['trajectory']:
                     path.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0].replace("Z","")).timestamp()),
+                        "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
@@ -469,7 +469,7 @@ def bulk_upload_es(index_prefix,payloads):
     for payload in payloads:
         body += "{\"index\":{}}\n" + json.dumps(payload) + "\n"
     body += "\n"
-    date_prefix = datetime.now().strftime("%Y-%m")
+    date_prefix = datetime.now(UTC).strftime("%Y-%m")
     result = es.request(body, f"{index_prefix}-{date_prefix}/_bulk", "POST")
 
     if 'errors' in result and result['errors'] == True:
