@@ -2,8 +2,8 @@
 resource "aws_lambda_function" "ham_get" {
   function_name    = "ham_get"
   handler          = "query_ham.get"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -29,8 +29,8 @@ resource "aws_lambda_function" "ham_get" {
 resource "aws_lambda_function" "ham_telem" {
   function_name                  = "ham_get_telem"
   handler                        = "query_ham.get_telem"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   reserved_concurrent_executions = 10
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
@@ -52,8 +52,8 @@ resource "aws_lambda_function" "ham_telem" {
 resource "aws_lambda_function" "ham_telem_full" {
   function_name    = "ham_get_telem_full"
   handler          = "query_ham.get_telem_full"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 1024
@@ -150,8 +150,8 @@ resource "aws_apigatewayv2_integration" "ham_telem_full" {
 resource "aws_lambda_function" "ham_get_listener_telemetry" {
   function_name    = "ham_get_listener_telemetry"
   handler          = "query_ham.get_listener_telemetry"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256

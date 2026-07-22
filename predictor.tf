@@ -68,8 +68,8 @@ resource "aws_iam_role_policy" "predict_updater" {
 resource "aws_lambda_function" "predict_updater" {
   function_name                  = "predict_updater"
   handler                        = "predict_updater.predict"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 512
@@ -150,8 +150,8 @@ resource "aws_apigatewayv2_integration" "reverse_predictions" {
 resource "aws_lambda_function" "predictions" {
   function_name                  = "predictions"
   handler                        = "predict.predict"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   reserved_concurrent_executions = 10
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
@@ -180,8 +180,8 @@ resource "aws_lambda_permission" "predictions" {
 resource "aws_lambda_function" "reverse_predictions" {
   function_name                  = "reverse-predictions"
   handler                        = "reverse_predict.predict"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 128
@@ -219,7 +219,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
           command = [
             "/usr/bin/python3.7",
             "-c",
-            "import urllib.request; import json; import datetime; import sys; sys.exit(0) if len(json.loads(urllib.request.urlopen(f'http://localhost:8000/api/v1/?launch_latitude=51.77542999852449&launch_longitude=15.553199937567115&launch_datetime={datetime.datetime.now(datetime.UTC).strftime(\"%Y-%m-%dT%H:%M:%SZ\")}&launch_altitude=0&ascent_rate=5.00&burst_altitude=14030.77&descent_rate=5.28').read())['prediction'][0]['trajectory']) > 0 else sys.exit(1)"
+            "import urllib.request; import json; import datetime; import sys; sys.exit(0) if len(json.loads(urllib.request.urlopen(f'http://localhost:8000/api/v1/?launch_latitude=51.77542999852449&launch_longitude=15.553199937567115&launch_datetime={datetime.datetime.now().strftime(\"%Y-%m-%dT%H:%M:%SZ\")}&launch_altitude=0&ascent_rate=5.00&burst_altitude=14030.77&descent_rate=5.28').read())['prediction'][0]['trajectory']) > 0 else sys.exit(1)"
           ]
           timeout     = 20
           interval    = 120
@@ -421,7 +421,7 @@ resource "aws_ecs_service" "tawhiri" {
   }
 
   lifecycle {
-    ignore_changes = [desired_count, task_definition]
+    ignore_changes = [desired_count]
   }
 
   network_configuration {
@@ -629,8 +629,8 @@ resource "aws_iam_role_policy" "predictor_update_trigger_lambda" {
 resource "aws_lambda_function" "predictor_update_trigger_lambda" {
   function_name    = "tawhiri-updater"
   handler          = "tawhiri_updater.handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128

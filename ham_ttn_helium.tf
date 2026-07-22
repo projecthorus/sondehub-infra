@@ -2,8 +2,8 @@
 resource "aws_lambda_function" "ham_helium_upload_telem" {
   function_name    = "ham-helium-put-api"
   handler          = "ttn_helium.lambda_handler_helium"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -48,8 +48,8 @@ resource "aws_apigatewayv2_integration" "ham_helium_upload_telem" {
 resource "aws_lambda_function" "ham_ttn_upload_telem" {
   function_name    = "ham-ttn-put-api"
   handler          = "ttn_helium.lambda_handler_ttn"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128

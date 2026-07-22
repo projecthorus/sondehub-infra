@@ -3,8 +3,8 @@
 resource "aws_lambda_function" "ham_flight_doc" {
   function_name    = "ham-put-flight-doc"
   handler          = "ham_update_flight_doc.lambda_handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128
@@ -48,8 +48,8 @@ resource "aws_apigatewayv2_integration" "ham_flight_doc" {
 resource "aws_lambda_function" "ham_flight_doc_get" {
   function_name    = "ham-get-flight-doc"
   handler          = "ham_update_flight_doc.query"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 128

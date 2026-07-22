@@ -23,7 +23,7 @@ resource "random_password" "mqtt" {
   length  = 18
   special = false
   lifecycle {
-    ignore_changes = [special, bcrypt_hash, result]
+    ignore_changes = [special]
   }
 }
 

@@ -2,8 +2,8 @@
 resource "aws_lambda_function" "get_sondes" {
   function_name                  = "query"
   handler                        = "query.get_sondes"
-  s3_bucket                      = aws_s3_bucket_object.lambda.bucket
-  s3_key                         = aws_s3_bucket_object.lambda.key
+  s3_bucket                      = aws_s3_object.lambda.bucket
+  s3_key                         = aws_s3_object.lambda.key
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   publish                        = true
   memory_size                    = 256
@@ -30,8 +30,8 @@ resource "aws_lambda_function" "get_sondes" {
 resource "aws_lambda_function" "get_telem" {
   function_name    = "get_telem"
   handler          = "query.get_telem"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -52,8 +52,8 @@ resource "aws_lambda_function" "get_telem" {
 resource "aws_lambda_function" "get_sites" {
   function_name    = "get_sites"
   handler          = "query.get_sites"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -74,8 +74,8 @@ resource "aws_lambda_function" "get_sites" {
 resource "aws_lambda_function" "get_sondes_site" {
   function_name    = "get_sondes_site"
   handler          = "query.get_sondes_site"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256
@@ -96,8 +96,8 @@ resource "aws_lambda_function" "get_sondes_site" {
 resource "aws_lambda_function" "get_listener_telemetry" {
   function_name    = "get_listener_telemetry"
   handler          = "query.get_listener_telemetry"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
   publish          = true
   memory_size      = 256

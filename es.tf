@@ -211,9 +211,6 @@ resource "aws_cognito_user_pool" "CognitoUserPool" {
     }
   }
 
-  lifecycle {
-    ignore_changes = [ estimated_number_of_users ]
-  }
 }
 
 resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
@@ -234,13 +231,6 @@ resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
     access_token  = "minutes"
     id_token      = "minutes"
     refresh_token = "days"
-  }
-  lifecycle {
-    ignore_changes = [
-      client_secret,
-      default_redirect_uri,
-      prevent_user_existence_errors
-    ]
   }
 }
 

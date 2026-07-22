@@ -4,8 +4,8 @@
 resource "aws_lambda_function" "redirect" {
   function_name    = "sondehub-redirect"
   handler          = "redirect.handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
@@ -17,8 +17,8 @@ resource "aws_lambda_function" "redirect" {
 resource "aws_lambda_function" "ham_redirect" {
   function_name    = "ham-sondehub-redirect"
   handler          = "redirect_ham.handler"
-  s3_bucket        = aws_s3_bucket_object.lambda.bucket
-  s3_key           = aws_s3_bucket_object.lambda.key
+  s3_bucket        = aws_s3_object.lambda.bucket
+  s3_key           = aws_s3_object.lambda.key
   publish          = true
   memory_size      = 128
   role             = aws_iam_role.basic_lambda_role.arn
@@ -1329,6 +1329,19 @@ resource "aws_s3_bucket" "cf_logs" {
 
 resource "aws_s3_bucket" "history" {
   bucket = "sondehub-history"
+}
+
+resource "aws_s3_bucket_website_configuration" "history" {
+  bucket = aws_s3_bucket.history.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+}
+
+resource "aws_s3_bucket_cors_configuration" "history" {
+  bucket = aws_s3_bucket.history.id
   cors_rule {
     allowed_headers = [
       "*",
@@ -1342,10 +1355,6 @@ resource "aws_s3_bucket" "history" {
     expose_headers  = []
     max_age_seconds = 0
   }
-  website {
-    index_document = "index.html"
-  }
-
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "history" {
@@ -1353,11 +1362,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "history" {
   rule {
     id = "remove-old-versions"
     noncurrent_version_expiration {
-          noncurrent_days   = 90
+      noncurrent_days = 90
     }
     status = "Enabled"
   }
-  
+
 }
 
 resource "aws_s3_bucket" "predict" {
@@ -1472,7 +1481,7 @@ resource "aws_s3_bucket_website_configuration" "found" {
 }
 
 resource "aws_s3_bucket_policy" "S3BucketPolicy" {
-  bucket = aws_s3_bucket.v2.bucket
+  bucket = aws_s3_bucket.v2.id
   policy = "{\"Version\":\"2012-10-17\",\"Id\":\"Policy1615627853229\",\"Statement\":[{\"Sid\":\"Stmt1615627852247\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::${local.domain_name}/*\"}]}"
 }
 
@@ -1487,9 +1496,9 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
     ]
 
     actions = [
-      "s3:GetObject",
       "s3:GetObjectVersion",
       "s3:GetObjectTorrent",
+      "s3:GetObject",
     ]
 
     principals {
@@ -1619,13 +1628,13 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
     }
 
     principals {
-      type        = "*"
+      type        = "AWS"
       identifiers = ["*"]
     }
   }
 }
 
 resource "aws_s3_bucket_policy" "S3BucketPolicy2" {
-  bucket = aws_s3_bucket.history.bucket
+  bucket = aws_s3_bucket.history.id
   policy = data.aws_iam_policy_document.sondehub_history_policy.json
 }
