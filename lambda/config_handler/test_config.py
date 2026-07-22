@@ -29,20 +29,20 @@ class TestConfigHandler(unittest.TestCase):
         config_handler.get.cache_clear()
 
     def test_env(self):
-        with patch.dict(config_handler.os.environ,{ "MQTT_PASSWORD": "test_password" }, clear=True):
+        with patch.dict(config_handler.os.environ,{"AWS_REGION":"us-east-1","AWS_DEFAULT_REGION":"us-east-1", "MQTT_PASSWORD": "test_password" }, clear=True):
             return_value = config_handler.get("MQTT", "PASSWORD")
         self.assertEqual(return_value, "test_password")
 
     @patch('botocore.client.BaseClient._make_api_call', return_value=secret_call)
     def test_sm(self, MockApiCall):
-        with patch.dict(config_handler.os.environ,{}, clear=True): #ensure that local env variables don't influence the tests
+        with patch.dict(config_handler.os.environ,{"AWS_REGION":"us-east-1","AWS_DEFAULT_REGION":"us-east-1"}, clear=True): #ensure that local env variables don't influence the tests
             return_value = config_handler.get("MQTT", "PASSWORD")
         MockApiCall.assert_called()
         self.assertEqual(return_value, "test_password")
     
     @patch('botocore.client.BaseClient._make_api_call', return_value=secret_call)
     def test_cache(self, MockApiCall):
-        with patch.dict(config_handler.os.environ,{}, clear=True): #ensure that local env variables don't influence the tests
+        with patch.dict(config_handler.os.environ,{"AWS_REGION":"us-east-1","AWS_DEFAULT_REGION":"us-east-1"}, clear=True): #ensure that local env variables don't influence the tests
             return_value = config_handler.get("MQTT", "PASSWORD")
             return_value = config_handler.get("MQTT", "PASSWORD")
         MockApiCall.assert_called_once()
@@ -50,12 +50,12 @@ class TestConfigHandler(unittest.TestCase):
 
     @patch('botocore.client.BaseClient._make_api_call', return_value=secret_call)
     def test_not_found(self, MockApiCall):
-        with patch.dict(config_handler.os.environ,{}, clear=True):
+        with patch.dict(config_handler.os.environ,{"AWS_REGION":"us-east-1","AWS_DEFAULT_REGION":"us-east-1"}, clear=True):
             self.assertRaises(KeyError, config_handler.get, "MQTT", "NOTPASSWORD")
     
     @patch('botocore.client.BaseClient._make_api_call', return_value=None)
     def test_default(self, MockApiCall):
-        with patch.dict(config_handler.os.environ,{}, clear=True):
+        with patch.dict(config_handler.os.environ,{"AWS_REGION":"us-east-1","AWS_DEFAULT_REGION":"us-east-1"}, clear=True):
             return_value = config_handler.get("MQTT", "PASSWORD", "test_password_abc")
         self.assertEqual(return_value, "test_password_abc")
       
