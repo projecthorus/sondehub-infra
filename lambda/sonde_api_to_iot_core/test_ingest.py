@@ -108,7 +108,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["errors"][0]["error_message"],"Sonde reported time too far from current UTC time. Either sonde time or system time is invalid. (Threshold: 48 hours)")
     def test_good_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
@@ -116,7 +116,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_good_ttgo_devel_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "devel20230829"
         payload[0]["type"] = "DFM"
@@ -127,7 +127,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_good_ttgo_master_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "master_v0.9.3"
         payload[0]["type"] = "DFM"
@@ -137,7 +137,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_good_ttgo_devel_payload_new_name(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "dev20230829"
         payload[0]["type"] = "DFM"
@@ -147,7 +147,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_good_ttgo_main_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "main1234"
         payload[0]["type"] = "DFM"
@@ -158,7 +158,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_bad_ttgo_devel_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "devel20230104"
         payload[0]["type"] = "DFM"
@@ -169,7 +169,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_bad_ttgo_master_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "master_v0.9.2"
         payload[0]["type"] = "DFM"
@@ -179,7 +179,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_weird_ttgo_branch_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "rdzTTGOsonde" 
         payload[0]["software_version"] = "multich_v3"
         payload[0]["type"] = "DFM"
@@ -189,7 +189,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_good_dxlaprsshue_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "dxlAPRS-SHUE" 
         payload[0]["software_version"] = "1.1.2"
         payload[0]["type"] = "M10"
@@ -199,7 +199,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_bad_dxlaprsshue_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "dxlAPRS-SHUE" 
         payload[0]["software_version"] = "1.0.2"
         payload[0]["type"] = "M10"
@@ -209,7 +209,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_good_sondemonitor_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "SondeMonitor" 
         payload[0]["software_version"] = "6.2.8.8"
         payload[0]["type"] = "DFM"
@@ -219,7 +219,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_bad_sondemonitor_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "SondeMonitor" 
         payload[0]["software_version"] = "6.2.8.7"
         payload[0]["type"] = "DFM"
@@ -229,7 +229,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_dfm_misid_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "DFM"
         payload[0]["subtype"] = "DFM09"
         payload[0]["serial"] = "23068595"
@@ -245,7 +245,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_dfm_09id_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "DFM"
         payload[0]["subtype"] = "DFM09"
         payload[0]["serial"] = "21068595"
@@ -256,7 +256,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_ps15_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "PS-15"
         payload[0]["subtype"] = "PS-15"
         payload[0]["serial"] = "21068595"
@@ -267,7 +267,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_rd41_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "RD41"
         payload[0]["serial"] = "21068595"
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -276,7 +276,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_rd94_payload(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "RD94"
         payload[0]["serial"] = "21068595"
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -285,7 +285,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["statusCode"], 200)
     def test_rd41_payload_no_serial(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "RD41"
         payload[0]["serial"] = "000000000"
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -294,7 +294,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_rd94_payload_no_serial(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "RD94"
         payload[0]["serial"] = "000000000"
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -303,7 +303,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
     def test_c50_payload_invalid_serial(self):
         payload = copy.deepcopy(example_body)
-        payload[0]["datetime"] = datetime.datetime.now().isoformat()
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["type"] = "C50"
         payload[0]["serial"] = "C50-xxxx"
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -314,7 +314,7 @@ class TestIngestion(unittest.TestCase):
 
     def test_dropping_2_payload(self):
         payload = copy.deepcopy(example_body) 
-        ref_time = datetime.datetime.now()
+        ref_time = datetime.datetime.now(datetime.UTC)
         payload[0]["datetime"] = ref_time.isoformat()
         payload.append(dict(payload[0])) 
         payload[1]["datetime"] = (ref_time-datetime.timedelta(seconds=1)).isoformat()

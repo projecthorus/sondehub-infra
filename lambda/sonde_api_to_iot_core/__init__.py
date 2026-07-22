@@ -235,7 +235,7 @@ def telemetry_filter(telemetry):
     
     try:
         _delta_time = (
-            datetime.datetime.now() - datetime.datetime.fromisoformat(telemetry["datetime"].replace("Z",""))
+            datetime.datetime.now(datetime.UTC) - datetime.datetime.fromisoformat(telemetry["datetime"])
         ).total_seconds()
     except:
         return ("errors", f"Unable to parse time")
@@ -491,7 +491,7 @@ def upload(event, context, orig_event):
 
     for payload in payloads:
         if "user-agent" in event["headers"]:
-            event["time_server"] = datetime.datetime.now().isoformat()
+            event["time_server"] = datetime.datetime.now(datetime.UTC).isoformat()
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
         status, message = telemetry_filter(payload)

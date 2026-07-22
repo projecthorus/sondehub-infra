@@ -3,14 +3,14 @@ import boto3
 import gzip
 from botocore.exceptions import ClientError
 import es
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 
 s3 = boto3.resource('s3')
 
 serials = {}
 
-def fetch_es(index=f"predictions-*,-predictions-{datetime.now().strftime('%Y-%m')},-predictions-{(datetime.now() - timedelta(days=27)).strftime('%Y-%m')},-predictions-*-rollup/_search"):
+def fetch_es(index=f"predictions-*,-predictions-{datetime.now(UTC).strftime('%Y-%m')},-predictions-{(datetime.now(UTC) - timedelta(days=27)).strftime('%Y-%m')},-predictions-*-rollup/_search"):
     payload = {
         "size": 1000
     }

@@ -219,7 +219,7 @@ resource "aws_ecs_task_definition" "tawhiri" {
           command = [
             "/usr/bin/python3.7",
             "-c",
-            "import urllib.request; import json; import datetime; import sys; sys.exit(0) if len(json.loads(urllib.request.urlopen(f'http://localhost:8000/api/v1/?launch_latitude=51.77542999852449&launch_longitude=15.553199937567115&launch_datetime={datetime.datetime.now().strftime(\"%Y-%m-%dT%H:%M:%SZ\")}&launch_altitude=0&ascent_rate=5.00&burst_altitude=14030.77&descent_rate=5.28').read())['prediction'][0]['trajectory']) > 0 else sys.exit(1)"
+            "import urllib.request; import json; import datetime; import sys; sys.exit(0) if len(json.loads(urllib.request.urlopen(f'http://localhost:8000/api/v1/?launch_latitude=51.77542999852449&launch_longitude=15.553199937567115&launch_datetime={datetime.datetime.now(datetime.UTC).strftime(\"%Y-%m-%dT%H:%M:%SZ\")}&launch_altitude=0&ascent_rate=5.00&burst_altitude=14030.77&descent_rate=5.28').read())['prediction'][0]['trajectory']) > 0 else sys.exit(1)"
           ]
           timeout     = 20
           interval    = 120

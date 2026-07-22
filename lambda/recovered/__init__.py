@@ -191,7 +191,7 @@ def put(event, context):
     print(event["body"])
 
     if "datetime" not in recovered:
-        recovered["datetime"] = datetime.now().isoformat()
+        recovered["datetime"] = datetime.now(UTC).isoformat()
 
     if recovered["serial"] == "":
         return {"statusCode": 400, "body":  json.dumps({"message": "serial cannot be empty"})}
@@ -363,8 +363,8 @@ def stats(event, context):
                 }
             )
         else:
-            lt = datetime.now() + timedelta(0, 1)
-            gte = datetime.now() - timedelta(0, duration)           
+            lt = datetime.now(UTC) + timedelta(0, 1)
+            gte = datetime.now(UTC) - timedelta(0, duration)           
             filters.append(
                 {
                     "range": {

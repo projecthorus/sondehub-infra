@@ -16,7 +16,7 @@ def lambda_handler(event, context):
             incoming_payloads = [decoded]
         else:
             incoming_payloads = decoded
-        year, week = datetime.datetime.now().isocalendar()[:2]
+        year, week = datetime.datetime.now(datetime.UTC).isocalendar()[:2]
         index = f"{year}-{week}"
         payloads += incoming_payloads
 

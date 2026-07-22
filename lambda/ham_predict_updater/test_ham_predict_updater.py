@@ -1,7 +1,7 @@
 import ham_predict_updater
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 import time
 from . import mock_values, test_values
 import unittest
@@ -61,7 +61,7 @@ class TestAmateurPrediction(unittest.TestCase):
     @patch("time.sleep")
     def test_float_prediction(self, MockSleep):
         ham_predict_updater.predict({},{})
-        date_prefix = datetime.now().strftime("%Y-%m")
+        date_prefix = datetime.now(UTC).strftime("%Y-%m")
         ham_predict_updater.es.request.assert_has_calls(
             [
                 call(json.dumps(test_values.flight_doc_search),"flight-doc/_search", "POST"),
