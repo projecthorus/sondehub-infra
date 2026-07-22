@@ -327,7 +327,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
             else:
                 for item in stage['trajectory']:
                     path.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0]).timestamp()),
+                        "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
@@ -384,7 +384,7 @@ def get_standard_prediction(timestamp, latitude, longitude, altitude, current_ra
             else:
                 for item in stage['trajectory']:
                     path.append({
-                        "time": int(datetime.fromisoformat(item['datetime'].split(".")[0]).timestamp()),
+                        "time": int(datetime.fromisoformat(item['datetime']).timestamp()),
                         "lat": item['latitude'],
                         "lon": item['longitude'] - 360 if item['longitude'] > 180 else item['longitude'],
                         "alt": item['altitude'],
