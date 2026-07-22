@@ -1577,6 +1577,36 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
       identifiers = ["*"]
     }
   }
+
+  statement {
+    sid       = "DenyBots"
+    effect    = "Deny"
+    resources = [aws_s3_bucket.history.arn]
+    actions   = ["s3:*"]
+
+    condition {
+      test     = "StringLike"
+      variable = "aws:UserAgent"
+      values = [
+        "*searchbot*",
+        "*Search*",
+        "*search*",
+        "*crawl*",
+        "*Crawl*",
+        "*bot)*",
+        "*bot/*",
+        "*bot.*",
+        "*Bot)*",
+        "*Bot/*",
+        "*Bot.*"
+      ]
+    }
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "S3BucketPolicy2" {
