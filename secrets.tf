@@ -13,9 +13,9 @@ resource "aws_secretsmanager_secret_version" "mqtt" {
     }
   )
   lifecycle {
-    ignore_changes = [ 
+    ignore_changes = [
       secret_binary
-     ]
+    ]
   }
 }
 

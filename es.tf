@@ -77,12 +77,12 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
   }
   lifecycle {
     prevent_destroy = true
-    ignore_changes = [ 
+    ignore_changes = [
       advanced_security_options,
       advanced_security_options.master_user_options,
       advanced_security_options.master_user_options.master_user_name,
       advanced_security_options.master_user_options.master_user_password
-     ]
+    ]
   }
 }
 data "aws_kms_key" "es" {
@@ -235,11 +235,11 @@ resource "aws_cognito_user_pool_client" "CognitoUserPoolClient" {
     refresh_token = "days"
   }
   lifecycle {
-    ignore_changes = [ 
+    ignore_changes = [
       client_secret,
       default_redirect_uri,
       prevent_user_existence_errors
-     ]
+    ]
   }
 }
 

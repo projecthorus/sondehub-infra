@@ -110,7 +110,7 @@ resource "aws_acm_certificate" "CertificateManagerCertificate" {
   ]
   validation_method = "DNS"
   lifecycle {
-    ignore_changes = [ certificate_authority_arn, early_renewal_duration ]
+    ignore_changes = [certificate_authority_arn, early_renewal_duration]
   }
 }
 
@@ -124,7 +124,7 @@ resource "aws_acm_certificate" "CertificateManagerCertificate_root" {
   ]
   validation_method = "DNS"
   lifecycle {
-    ignore_changes = [ certificate_authority_arn, early_renewal_duration ]
+    ignore_changes = [certificate_authority_arn, early_renewal_duration]
   }
 }
 

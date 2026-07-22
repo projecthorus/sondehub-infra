@@ -780,7 +780,7 @@ resource "aws_cloudfront_response_headers_policy" "no_cache" {
     }
   }
   lifecycle {
-    ignore_changes = [ comment ]
+    ignore_changes = [comment]
   }
 }
 
