@@ -79,9 +79,6 @@ resource "aws_elasticsearch_domain" "ElasticsearchDomain" {
     prevent_destroy = true
     ignore_changes = [
       advanced_security_options,
-      advanced_security_options.master_user_options,
-      advanced_security_options.master_user_options.master_user_name,
-      advanced_security_options.master_user_options.master_user_password
     ]
   }
 }
