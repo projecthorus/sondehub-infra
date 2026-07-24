@@ -10,7 +10,7 @@ searchUrl = "https://api.v2.sondehub.org/sondes"
 
 # Main function
 def handler(event,context):
-    params = "?token={}&period=2".format(config_handler.get("RADIOSONDY","API_KEY"))
+    params = "?token={}&period=2&type=last".format(config_handler.get("RADIOSONDY","API_KEY"))
     url = "https://radiosondy.info/api/v1/sonde-logs{}".format(params)
     response = urllib.request.urlopen(url)
     data = json.load(response)
