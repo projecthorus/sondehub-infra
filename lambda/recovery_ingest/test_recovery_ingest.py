@@ -57,6 +57,7 @@ class TestRecoveryIngest(unittest.TestCase):
         with unittest.mock.patch('sys.stdout', new = StringIO()): # hide stdout
             recovery_ingest.handler({},{})
 
+        self.assertIn("&type=last",urlopen.call_args_list[0][0][0])
         self.assertEqual(urlopen.call_count, 3)
 
     @patch('traceback.print_exc')
