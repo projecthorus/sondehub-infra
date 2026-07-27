@@ -310,7 +310,14 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
-
+    def test_changeme_uploader_callsign(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["uploader_callsign"] = "CHANGEME"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 
     def test_dropping_2_payload(self):
         payload = copy.deepcopy(example_body) 

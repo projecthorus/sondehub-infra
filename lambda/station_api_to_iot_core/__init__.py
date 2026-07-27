@@ -10,7 +10,7 @@ from io import BytesIO
 import boto3
 import config_handler
 
-CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO", "14FRS119_LE JUDA"]
+CALLSIGN_BLOCK_LIST = ["CHANGEME_RDZTTGO", "14FRS119_LE JUDA", "CHANGEME"]
 
 import es
 
@@ -81,7 +81,7 @@ def lambda_handler(event, context):
                 f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
             )
     if payload["uploader_callsign"] in CALLSIGN_BLOCK_LIST:
-        return  {"statusCode": 403, "body": "callsign blocked or invalid"}
+        return  {"statusCode": 403, "body": "callsign blocked or invalid - please use a unique callsign!"}
     index = datetime.datetime.now(datetime.UTC).strftime("listeners-%Y-%m")
     payload["ts"] = datetime.datetime.now(datetime.UTC).isoformat()
 
