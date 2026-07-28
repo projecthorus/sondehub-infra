@@ -347,9 +347,13 @@ def telemetry_filter(telemetry):
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
         return ("errors", "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
 
-    # Block OpenWXSDR until critical issues are fixed - https://github.com/DL2MF/OpenWXSDR/issues/1
+    # OpenWXSDR - Allow RS41, DFM and M20 uploads, as these have been verified. Block everything else.
     if 'OpenWXSDR' in telemetry["software_name"]:
-        return ("errors", "OpenWXSDR currently uploads data with incorrect timestamps, along with various other issues. We are awaiting fixes before we allow this software to upload to SondeHub. Refer https://github.com/DL2MF/OpenWXSDR/issues/1")
+        if parse_autorx_version(telemetry["software_version"]) < (1,0,60):
+            return ("errors", "OpenWXSDR versions <1.0.60 are blocked - please update!") 
+
+        if not telemetry["type"] in ["RS41", "DFM", "M20"]:
+            return ("errors", "OpenWXSDR uploads for some sonde types are blocked until data validation has been performed.")
 
     # 2026-06-11 - Block Non-RS41 data from OpenWebRX until we have proof of data quality.
     if 'OpenWebRX' in telemetry["software_name"]:

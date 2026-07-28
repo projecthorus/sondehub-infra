@@ -99,6 +99,8 @@ logs.create_log_stream = MagicMock(return_value={'nextSequenceToken':1})
 class TestIngestion(unittest.TestCase):
     def setUp(self):
         sns.publish = MagicMock() # we reset the mock for every time so we can assert correctly if its called - this won't work when doing parallel testing
+
+    # Upload with a time out of our allowed range
     def test_report_time_too_late(self):
         payload = copy.deepcopy(example_body)
         output = lambda_handler(compress_payload(payload), fakeContext())
@@ -106,6 +108,8 @@ class TestIngestion(unittest.TestCase):
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
         self.assertEqual(body_decode["errors"][0]["error_message"],"Sonde reported time too far from current UTC time. Either sonde time or system time is invalid. (Threshold: 48 hours)")
+
+    # Control test
     def test_good_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -114,6 +118,7 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
 
+    # rdz_ttgo_sonde version checks (lots of these!)
     def test_good_ttgo_devel_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -135,6 +140,7 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
+
     def test_good_ttgo_devel_payload_new_name(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -145,6 +151,7 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
+
     def test_good_ttgo_main_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -177,6 +184,7 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
     def test_weird_ttgo_branch_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -187,6 +195,8 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # dxlAPRS-SHUE version checks
     def test_good_dxlaprsshue_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -197,6 +207,7 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
+
     def test_bad_dxlaprsshue_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -207,6 +218,8 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # SondeMonitor version checks
     def test_good_sondemonitor_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -217,6 +230,7 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
+
     def test_bad_sondemonitor_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -227,6 +241,42 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # OpenWXSDR version / type checks
+    def test_good_openwxsdr_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "OpenWXSDR" 
+        payload[0]["software_version"] = "1.0.60"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_openwxsdr_version(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "OpenWXSDR" 
+        payload[0]["software_version"] = "1.0.52"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    def test_bad_openwxsdr_type(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "OpenWXSDR" 
+        payload[0]["software_version"] = "1.0.60"
+        payload[0]["type"] = "M10"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # DFM09/DFM17/PS-15 Mis-Identification
     def test_dfm_misid_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -265,6 +315,8 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
 
+
+    # DropSonde tests
     def test_rd41_payload(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
@@ -301,6 +353,8 @@ class TestIngestion(unittest.TestCase):
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # C50 serial checks
     def test_c50_payload_invalid_serial(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
