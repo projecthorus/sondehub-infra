@@ -368,6 +368,11 @@ def telemetry_filter(telemetry):
         if not telemetry["type"] in ["RS41"]:
             return ("errors", "rtlsdr_multisonde_go uploads for some sonde types are blocked until data validation has been performed.")
 
+    # 2026-07-31 - SondeFox
+    if 'SondeFox' in telemetry["software_name"]:
+        if not telemetry["type"] in ["DFM"]:
+            return ("errors", "SondeFox uploads for some sonde types are blocked until data validation has been performed.")
+
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
     if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
