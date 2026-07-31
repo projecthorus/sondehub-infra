@@ -360,11 +360,16 @@ def telemetry_filter(telemetry):
         if 'RS41' not in telemetry['type']:
             return ('errors', "Non-RS41 uploads from OpenWebRX are currently blocked until data quality analysis has been conducted.")
 
+    # 2026-07-31 - rtlsdr_multisonde_go now allowed to upload RS41 data
+    if 'rtlsdr_multisonde_go' in telemetry["software_name"]:
+        if parse_autorx_version(telemetry["software_version"]) < (0,2,0):
+            return ("errors", "rtlsdr_multisonde_go versions <0.2.0 are blocked - please update!") 
+
+        if not telemetry["type"] in ["RS41"]:
+            return ("errors", "rtlsdr_multisonde_go uploads for some sonde types are blocked until data validation has been performed.")
+
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
     if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
-        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
-
-    if 'rtlsdr_multisonde_go' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
     if "dev" in telemetry:

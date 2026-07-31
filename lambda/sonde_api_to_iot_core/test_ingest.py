@@ -276,6 +276,40 @@ class TestIngestion(unittest.TestCase):
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 
+    # rtlsdr_multisonde_go version / type checks
+    def test_good_rtlsdr_multisonde_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "rtlsdr_multisonde_go" 
+        payload[0]["software_version"] = "0.2.0"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_rtlsdr_multisonde_version(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "rtlsdr_multisonde_go"
+        payload[0]["software_version"] = "0.1.0"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    def test_bad_rtlsdr_multisondetype(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "rtlsdr_multisonde_go" 
+        payload[0]["software_version"] = "0.2.0"
+        payload[0]["type"] = "DFM"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
     # DFM09/DFM17/PS-15 Mis-Identification
     def test_dfm_misid_payload(self):
         payload = copy.deepcopy(example_body)
