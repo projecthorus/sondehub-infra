@@ -1604,6 +1604,26 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
   }
 
   statement {
+    sid       = "DenyBadIP"
+    effect    = "Deny"
+    resources = ["${aws_s3_bucket.history.arn}/*"]
+    actions   = ["s3:*"]
+
+    condition {
+      test     = "IpAddress"
+      variable = "aws:SourceIp"
+      values = [
+       "83.175.183.114"
+      ]
+    }
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
     sid       = "DenyBots"
     effect    = "Deny"
     resources = ["${aws_s3_bucket.history.arn}/*"]
@@ -1613,6 +1633,7 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
       test     = "StringLike"
       variable = "aws:UserAgent"
       values = [
+        "aiobotocore/3.8.0 md/Botocore#1.43.46 ua/2.1 os/linux#7.1.5-1-cachyos md/arch#x86_64 lang/python#3.14.6 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy botocore/1.43.46",
         "*searchbot*",
         "*Search*",
         "*search*",
