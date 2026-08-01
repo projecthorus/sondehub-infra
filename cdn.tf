@@ -1613,7 +1613,7 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
       test     = "IpAddress"
       variable = "aws:SourceIp"
       values = [
-       "83.175.183.114"
+        "83.175.183.114"
       ]
     }
 
