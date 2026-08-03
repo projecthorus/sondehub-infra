@@ -242,6 +242,29 @@ class TestIngestion(unittest.TestCase):
         body_decode = json.loads(output["body"])
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 
+    # radiosonde_auto_rx version checks
+    def test_good_autorx_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "radiosonde_auto_rx" 
+        payload[0]["software_version"] = "1.8.2"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_autorx_version(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "radiosonde_auto_rx" 
+        payload[0]["software_version"] = "1.5.8"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
     # OpenWXSDR version / type checks
     def test_good_openwxsdr_payload(self):
         payload = copy.deepcopy(example_body)

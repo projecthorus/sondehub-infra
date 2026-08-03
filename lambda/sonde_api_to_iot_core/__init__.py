@@ -343,9 +343,15 @@ def telemetry_filter(telemetry):
                 if 'temp' in telemetry:
                     telemetry['invalid_temp'] = telemetry.pop('temp')
                 return ("warnings", f"This software likely misidentified this radiosonde as a DFM09 when it was likely a DFM17. Sondehub has rewritten the subtype to DFM17 and marked the temperature value as invalid")
+
     # block callsigns
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
         return ("errors", "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
+
+    # radiosonde_auto_rx - Block very old / bogus versions
+    if telemetry["software_name"] == "radiosonde_auto_rx":
+        if parse_autorx_version(telemetry["software_version"]) < (1,5,10): 
+            return ("errors",f"This radiosonde_auto_rx version is out-of-date, please update!")
 
     # OpenWXSDR - Allow RS41, DFM and M20 uploads, as these have been verified. Block everything else.
     if 'OpenWXSDR' in telemetry["software_name"]:
@@ -374,7 +380,7 @@ def telemetry_filter(telemetry):
             return ("errors", "SondeFox uploads for some sonde types are blocked until data validation has been performed.")
 
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
-    if 'node-radiosonde-auto-rx' in telemetry["software_name"]:
+    if 'node-radiosonde-auto-rx' in telemetry["software_name"] or 'node-auto-rx' in telemetry["software_name"]:
         return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
     if "dev" in telemetry:
