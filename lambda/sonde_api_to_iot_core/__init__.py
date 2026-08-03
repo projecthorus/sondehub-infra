@@ -344,7 +344,6 @@ def telemetry_filter(telemetry):
                     telemetry['invalid_temp'] = telemetry.pop('temp')
                 return ("warnings", f"This software likely misidentified this radiosonde as a DFM09 when it was likely a DFM17. Sondehub has rewritten the subtype to DFM17 and marked the temperature value as invalid")
 
-
     # block callsigns
     if telemetry["uploader_callsign"] in ["M00ON-5", "LEKUKU", "BS144", "Carlo-12", "GAB1", "FEJ-5", "KR001", "KR009", "S56FEJ-5"]:
         return ("errors", "Something is wrong with the data your station is uploading, please contact us so we can resolve what is going on. support@sondehub.org")
