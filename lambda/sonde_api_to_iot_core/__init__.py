@@ -358,7 +358,7 @@ def telemetry_filter(telemetry):
         if parse_autorx_version(telemetry["software_version"]) < (1,0,60):
             return ("errors", "OpenWXSDR versions <1.0.60 are blocked - please update!") 
 
-        if not telemetry["type"] in ["RS41", "DFM", "M20"]:
+        if not telemetry["type"] in ["RS41", "DFM", "M20", "M10"]:
             return ("errors", "OpenWXSDR uploads for some sonde types are blocked until data validation has been performed.")
 
     # 2026-06-11 - Block Non-RS41 data from OpenWebRX until we have proof of data quality.
@@ -376,7 +376,7 @@ def telemetry_filter(telemetry):
 
     # 2026-07-31 - SondeFox
     if 'SondeFox' in telemetry["software_name"]:
-        if not telemetry["type"] in ["DFM"]:
+        if not telemetry["type"] in ["DFM", "RS41"]:
             return ("errors", "SondeFox uploads for some sonde types are blocked until data validation has been performed.")
 
     # Unknown software uploading data with incorrect callsigns and other malformed fields.
