@@ -303,7 +303,7 @@ def get_float_prediction(timestamp, latitude, longitude, altitude, current_rate=
         longitude += 360.0
 
     # Generate the prediction URL
-    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now(UTC) + timedelta(days=1)).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
+    url = f"/api/v1/?launch_altitude={altitude}&launch_latitude={latitude}&launch_longitude={longitude}&launch_datetime={timestamp}&float_altitude={burst_altitude:.2f}&stop_datetime={(datetime.now(UTC) + timedelta(days=1)).replace(tzinfo=None).isoformat()}Z&ascent_rate={ascent_rate:.2f}&profile=float_profile"
     logging.debug(url)
     conn = http.client.HTTPSConnection(TAWHIRI_SERVER)
     conn.request("GET", url)
