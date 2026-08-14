@@ -307,8 +307,32 @@ def telemetry_filter(telemetry):
         _id_msg = "Payload ID %s from Sonde type %s is invalid." % (telemetry["serial"], telemetry["type"])
 
         return ("errors", _id_msg)
+
+
+    # Software allow-list - run this before doing any of the other checks.
+    # Eventually we should expand this to include:
+    #   - Minimum allowed version (and probably a reference to a suitable version parser function)
+    #   - Allowed radiosonde types (or 'all')
+    #   - Any fields we should strip from data (e.g. if we know there are issues with some data fields, like SNR or PTU)
+    allowed_sonde_software = [
+        "radiosonde_auto_rx",       # https://github.com/projecthorus/radiosonde_auto_rx/wiki
+        "rdzTTGOsonde",             # https://github.com/dl9rdz/rdz_ttgo_sonde
+        "dxlAPRS-SHUE",             # https://github.com/Eshco93/dxlAPRS-SHUE
+        "SondeMonitor",             # https://www.coaa.co.uk/sondemonitor.htm
+        "RS41Tracker",              # https://escursioni.altervista.org/Radiosonde/
+        "SDRangel",                 # https://www.sdrangel.org/
+        "OpenWebRX",                # https://github.com/luarvique/openwebrx
+        "DsRS41Tracker",            # https://github.com/novarobot/DsRS41Tracker
+        "OpenWXSDR",                # https://github.com/DL2MF/OpenWXSDR
+        "SondeFox",                 # (no link)
+        "rtlsdr_multisonde_go",     # (no link)
+        "gsnext-rdz"                # (no link)
+    ]
+
+    if telemetry["software_name"] not in allowed_sonde_software:
+        return ("errors", "This software is unknown to us! Please contact us at support@sondehub.org or on sondehub.org/go/discord for data validation.")
     
-    # https://github.com/projecthorus/sondehub-infra/issues/56
+    # Software Version Checks for some software.
     if "iMet-4" ==  telemetry["type"] or "iMet-1" ==  telemetry["type"]:
         if telemetry["software_name"] == "radiosonde_auto_rx":
             if parse_autorx_version(telemetry["software_version"]) < (1,5,9): 
@@ -378,10 +402,6 @@ def telemetry_filter(telemetry):
     if 'SondeFox' in telemetry["software_name"]:
         if not telemetry["type"] in ["DFM", "RS41"]:
             return ("errors", "SondeFox uploads for some sonde types are blocked until data validation has been performed.")
-
-    # Unknown software uploading data with incorrect callsigns and other malformed fields.
-    if 'node-radiosonde-auto-rx' in telemetry["software_name"] or 'node-auto-rx' in telemetry["software_name"]:
-        return ("errors", "This software is uploading malformed data. Please contact us at support@sondehub.org")
 
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")

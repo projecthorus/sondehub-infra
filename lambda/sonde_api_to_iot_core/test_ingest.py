@@ -21,8 +21,8 @@ config_handler.get = MagicMock(return_value="test")
 config_handler.get("SNS","TOPIC")
 
 example_body = [{
-    "software_name": "SondeHubUploader", 
-    "software_version": "1.0.0", 
+    "software_name": "radiosonde_auto_rx", 
+    "software_version": "2.0.0", 
     "uploader_callsign": "a", 
     "uploader_position": [53.23764, 7.74426, 7.0], 
     "uploader_antenna": "5/8-Wave-J-Pole",
@@ -351,6 +351,18 @@ class TestIngestion(unittest.TestCase):
         payload[0]["software_name"] = "SondeFox" 
         payload[0]["software_version"] = "0.8.14"
         payload[0]["type"] = "M20"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # Generic test for software not on our allow list.
+    def test_bad_software_allow_list(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "radioslop_decoder" 
+        payload[0]["software_version"] = "1.3.37"
+        payload[0]["type"] = "RS41"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
