@@ -270,7 +270,7 @@ class TestIngestion(unittest.TestCase):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "OpenWXSDR" 
-        payload[0]["software_version"] = "1.0.60"
+        payload[0]["software_version"] = "1.0.62"
         payload[0]["type"] = "RS41"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_called()
@@ -292,7 +292,7 @@ class TestIngestion(unittest.TestCase):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
         payload[0]["software_name"] = "OpenWXSDR" 
-        payload[0]["software_version"] = "1.0.60"
+        payload[0]["software_version"] = "1.0.62"
         payload[0]["type"] = "MRZ"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_not_called()
