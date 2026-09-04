@@ -377,12 +377,12 @@ def telemetry_filter(telemetry):
         if parse_autorx_version(telemetry["software_version"]) < (1,5,10): 
             return ("errors",f"This radiosonde_auto_rx version is out-of-date, please update!")
 
-    # OpenWXSDR - Allow RS41, DFM and M20 uploads, as these have been verified. Block everything else.
+    # OpenWXSDR - Allow RS41, DFM, M10, M20 and RS92 uploads, as these have been verified. Block everything else.
     if 'OpenWXSDR' in telemetry["software_name"]:
-        if parse_autorx_version(telemetry["software_version"]) < (1,0,60):
-            return ("errors", "OpenWXSDR versions <1.0.60 are blocked - please update!") 
+        if parse_autorx_version(telemetry["software_version"]) < (1,0,62):
+            return ("errors", "OpenWXSDR versions <1.0.62 are blocked - please update!") 
 
-        if not telemetry["type"] in ["RS41", "DFM", "M20", "M10"]:
+        if not telemetry["type"] in ["RS41", "DFM", "M20", "M10", "RS92"]:
             return ("errors", "OpenWXSDR uploads for some sonde types are blocked until data validation has been performed.")
 
     # 2026-06-11 - Block Non-RS41 data from OpenWebRX until we have proof of data quality.
