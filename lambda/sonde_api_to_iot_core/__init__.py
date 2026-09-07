@@ -357,7 +357,8 @@ def telemetry_filter(telemetry):
                 else:
                     return ("errors",f"rdzTTGOsonde branch and version was unable to be determined. We are unsure if this version handles DFM sondes correctly. Please update to master 0.9.3, devel20230427 or later")
         # Check if DFM17->DFM09 misid - https://github.com/projecthorus/sondehub-infra/issues/141
-        if "subtype" in telemetry and telemetry["subtype"] == "DFM09":
+        # Updated this to catch DFM09 and DFM09P
+        if ("subtype" in telemetry) and ("DFM09" in telemetry["subtype"]):
             try:
                 dfm_serial_int = int(telemetry['serial'])
             except:
