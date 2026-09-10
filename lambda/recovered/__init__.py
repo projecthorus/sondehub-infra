@@ -281,14 +281,15 @@ def get(event, context):
         )
 
     query = {
-        "query": {
-            "sort": [
-                {
-                    "datetime": {
-                        "order": "desc"
-                    }
+        "sort": [
+            {
+                "datetime": {
+                    "order": "desc"
                 }
-            ], 
+            }
+        ], 
+        "query": {
+            
             "bool": {
                 "filter": filters,
                 "should": should,
