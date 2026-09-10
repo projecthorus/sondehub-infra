@@ -282,49 +282,34 @@ def get(event, context):
 
     query = {
         "query": {
+            "sort": [
+                {
+                    "datetime": {
+                        "order": "desc"
+                    }
+                }
+            ], 
             "bool": {
                 "filter": filters,
                 "should": should,
             }
         },
-        "aggs": {
-            "2": {
-                "terms": {
-                    "field": "serial.keyword",
-                    "order": {
-                        "2-orderAgg": "desc"
-                    },
-                    "size": 500
-                },
-                "aggs": {
-                    "2-orderAgg": {
-                        "max": {
-                            "field": "datetime"
-                        },
-                    },
-                    "1": {
-                        "top_hits": {
-                            "_source": True,
-                            "size": 1,
-                            "sort": [
-                                {
-                                    "datetime": {
-                                        "order": "desc"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        }
+        "size": 10000
     }
     if serials:
         query["query"]["bool"]["minimum_should_match"] = 1
     results = es.request(json.dumps(query), "recovered*/_search", "POST")
-    output = [x['1']['hits']['hits'][0]["_source"]
-              for x in results['aggregations']['2']['buckets']]
-    return {"statusCode": 200, "body": json.dumps(output)}
+    sondes = [x["_source"]
+              for x in results['hits']['hits']]
+    sorted_sondes = sorted(sondes, key=lambda d: d['datetime'], reverse=True)
+    filtered_sondes = []
+    sondes_in = []
+    for sonde in sorted_sondes:
+        if sonde['serial'] not in sondes_in:
+            sondes_in.append(sonde['serial'])
+            filtered_sondes.append(sonde)
+
+    return {"statusCode": 200, "body": json.dumps(filtered_sondes)}
 
 
 def stats(event, context):

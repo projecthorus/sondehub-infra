@@ -18,7 +18,97 @@ def mock_es_request(body, path, method):
                 }
             }
         }
-    return {}
+    return {
+        "took": 24,
+        "timed_out": False,
+        "_shards": {
+            "total": 1,
+            "successful": 1,
+            "skipped": 0,
+            "failed": 0
+        },
+        "hits": {
+            "total": {
+            "value": 10000,
+            "relation": "gte"
+            },
+            "max_score": None,
+            "hits": [
+            {
+                "_index": "recovered",
+                "_id": "RdGxiqABONgEZ5vsECCz",
+                "_score": None,
+                "_source": {
+                "serial": "X3642102",
+                "lat": 55.79124,
+                "lon": 9.87254,
+                "alt": 0,
+                "recovered": True,
+                "planned": False,
+                "recovered_by": "DanLund",
+                "description": "Fundet i en gruppe træer.",
+                "recovery_software": "Sondehub Tracker",
+                "datetime": "2026-09-10T09:40:54.647694+00:00",
+                "position": [
+                    9.87254,
+                    55.79124
+                ]
+                },
+                "sort": [
+                1789033254647
+                ]
+            },
+            {
+                "_index": "recovered",
+                "_id": "xM-fiqABONgEZ5vsR7Yw",
+                "_score": None,
+                "_source": {
+                "serial": "X3642102",
+                "lat": 55.7889,
+                "lon": 9.8738,
+                "alt": 0,
+                "recovered": True,
+                "planned": False,
+                "recovered_by": "DanLund",
+                "description": "Latest",
+                "recovery_software": "Sondehub Tracker",
+                "datetime": "2027-09-10T09:21:29.023800+00:00",
+                "position": [
+                    9.8738,
+                    55.7889
+                ]
+                },
+                "sort": [
+                1789032089023
+                ]
+            },
+            {
+                "_index": "recovered",
+                "_id": "4s-aiqABONgEZ5vsgFkH",
+                "_score": None,
+                "_source": {
+                "recovery_software": "sondehub.org/found",
+                "serial": "X3642102",
+                "lat": 53.62814,
+                "lon": 27.88079,
+                "alt": 222.8,
+                "recovered": True,
+                "planned": False,
+                "recovered_by": "Владислав",
+                "description": "",
+                "datetime": "2026-09-10T09:16:14.717372+00:00",
+                "position": [
+                    27.88079,
+                    53.62814
+                ]
+                },
+                "sort": [
+                1789031774717
+                ]
+            }
+            ]
+        }
+    }
     # if path.endswith("_bulk"): # handle when the upload happens
     #     return {}
     # elif(path == "flight-doc/_search"): # handle flightdoc queries
@@ -52,7 +142,13 @@ class TestRecovered(unittest.TestCase):
         recovered.setup = False
         recovered.connected_flag = False
 
-
+    def test_get_recovered(self):
+        returned_recovered = recovered.get({},{})
+        body_recovered = json.loads(returned_recovered['body'])
+        self.assertEqual(returned_recovered['statusCode'], 200)
+        self.assertEqual(len(body_recovered),1)
+        self.assertEqual(body_recovered[0]['description'],'Latest')
+        breakpoint()
     @patch("time.sleep")
     def test_recovered(self, MockSleep):
         r_payload = {
