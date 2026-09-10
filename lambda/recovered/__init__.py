@@ -1,6 +1,9 @@
 import json
 
 import zlib
+import gzip
+from io import BytesIO
+
 import base64
 from datetime import datetime, timedelta, UTC
 import es
@@ -309,7 +312,21 @@ def get(event, context):
             sondes_in.append(sonde['serial'])
             filtered_sondes.append(sonde)
 
-    return {"statusCode": 200, "body": json.dumps(filtered_sondes)}
+    compressed = BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='w') as f:
+        json_response = json.dumps(filtered_sondes)
+        f.write(json_response.encode('utf-8'))
+    gzippedResponse = compressed.getvalue()
+    return {
+            "body": base64.b64encode(gzippedResponse).decode(),
+            "isBase64Encoded": True,
+            "statusCode": 200,
+            "headers": {
+                "Content-Encoding": "gzip",
+                "content-type": "application/json"
+            }
+            
+        }
 
 
 def stats(event, context):

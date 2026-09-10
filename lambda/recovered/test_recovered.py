@@ -5,6 +5,8 @@ from datetime import datetime
 import time
 import unittest
 from unittest.mock import MagicMock, call, patch
+import zlib
+import base64
 
 # Mock OpenSearch requests
 def mock_es_request(body, path, method):
@@ -144,10 +146,12 @@ class TestRecovered(unittest.TestCase):
 
     def test_get_recovered(self):
         returned_recovered = recovered.get({},{})
-        body_recovered = json.loads(returned_recovered['body'])
+        body_recovered = base64.b64decode(returned_recovered['body'])
+        body_recovered = json.loads(zlib.decompress(body_recovered, 16 + zlib.MAX_WBITS))
         self.assertEqual(returned_recovered['statusCode'], 200)
         self.assertEqual(len(body_recovered),1)
         self.assertEqual(body_recovered[0]['description'],'Latest')
+
     @patch("time.sleep")
     def test_recovered(self, MockSleep):
         r_payload = {
