@@ -148,7 +148,6 @@ class TestRecovered(unittest.TestCase):
         self.assertEqual(returned_recovered['statusCode'], 200)
         self.assertEqual(len(body_recovered),1)
         self.assertEqual(body_recovered[0]['description'],'Latest')
-        breakpoint()
     @patch("time.sleep")
     def test_recovered(self, MockSleep):
         r_payload = {

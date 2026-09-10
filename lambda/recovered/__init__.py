@@ -299,8 +299,7 @@ def get(event, context):
     if serials:
         query["query"]["bool"]["minimum_should_match"] = 1
     results = es.request(json.dumps(query), "recovered*/_search", "POST")
-    sondes = [x["_source"]
-              for x in results['hits']['hits']]
+    sondes = [ x["_source"] for x in results['hits']['hits'] ]
     sorted_sondes = sorted(sondes, key=lambda d: d['datetime'], reverse=True)
     filtered_sondes = []
     sondes_in = []
