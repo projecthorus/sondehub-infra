@@ -163,6 +163,23 @@ def fetch_launch_sites(time_filter="48h"):
             continue
     return output
 
+def write_summary_es(data):
+    body=""
+    for payload in data:
+        body += "{\"index\":{}}\n" + json.dumps(payload) + "\n"
+    body += "\n"
+    result = es.request(body, f"summary/_bulk", "POST")
+    if 'errors' in result and result['errors'] == True:
+        error_types = [x['index']['error']['type'] for x in result['items'] if 'error' in x['index']] # get all the error types
+        print(data)
+        print(result)
+        error_types = [a for a in error_types if a != 'mapper_parsing_exception'] # filter out mapper failures since they will never succeed
+        if error_types:
+            raise RuntimeError
+
+"""
+Returns summary data
+"""
 def write_s3(serial, data, launch_sites):
     #get max alt
     append_data = ""
@@ -217,6 +234,8 @@ def write_s3(serial, data, launch_sites):
         Metadata=metadata
     )
 
+    return summary
+
 
 def handler(event, context):
     print(json.dumps(event))
@@ -235,6 +254,6 @@ def handler(event, context):
         s3_data=list(s3_data)
         s3_data.sort(key=lambda k: json.loads(k)['datetime'])
         print(f"Writing {serial} to s3")
-        write_s3(serial, s3_data, launch_sites)
+        summary = write_s3(serial, s3_data, launch_sites)
         print(f"{serial} done")
-
+        write_summary_es(summary)
