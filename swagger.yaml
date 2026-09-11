@@ -498,7 +498,11 @@ paths:
           name: last
           description: "How far back to search in seconds. Defaults to 3 days. Set to 0 for all"
           type: number
-
+        - in: query
+          name: datetime
+          description: "End time to query as an ISO-8601 time string. Defaults to now. Example: `2021-02-02T11:27:38.634Z`"
+          type: string
+          format: date-time
       responses:
         200:
           description: Returns a list of recovery objects

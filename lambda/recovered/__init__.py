@@ -235,6 +235,22 @@ def get(event, context):
     lon = None
     distance = None
 
+    if (
+        "queryStringParameters" in event
+        and "datetime" in event["queryStringParameters"]
+    ):
+        try:
+            requested_time = datetime.fromisoformat(
+                event["queryStringParameters"]["datetime"].replace("Z", "+00:00")
+            )
+        except: # might be in unix time
+            requested_time = datetime.fromtimestamp(float(event["queryStringParameters"]["datetime"]), UTC)
+    else:
+        requested_time = datetime.now(UTC)
+
+    lt = requested_time
+    gte = requested_time - timedelta(0, last)
+
     # grab query parameters
     if "queryStringParameters" in event:
         if "last" in event["queryStringParameters"]:
@@ -254,10 +270,7 @@ def get(event, context):
         filters.append(
             {
                 "range": {
-                    "datetime": {
-                        "gte": f"now-{last}s",
-                        "lte": "now",
-                    }
+                    "datetime": {"gte": gte.isoformat(), "lt": lt.isoformat()}
                 }
             }
         )
