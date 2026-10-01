@@ -21,8 +21,13 @@ def checkExisting(serial, recovered):
     # Get SondeHub recoveries for serial
     recoveryCheckParams = "?serial={}".format(serial)
     recoveryCheckUrl = recoveryUrl + recoveryCheckParams
-    recoveryCheckResponse = urllib.request.urlopen(recoveryCheckUrl)
-    recoveryCheckData = json.load(recoveryCheckResponse)
+    with urllib.request.urlopen(recoveryCheckUrl) as f:
+        recoveryCheckResponse = f.read()
+        if f.headers.get('Content-Encoding') == 'gzip':
+            import gzip
+            recoveryCheckResponse = gzip.decompress(recoveryCheckResponse)
+
+    recoveryCheckData = json.loads(recoveryCheckResponse)
 
     # No recovery reports for serial
     if len(recoveryCheckData) == 0:
