@@ -330,7 +330,7 @@ def telemetry_filter(telemetry):
     ]
 
     if telemetry["software_name"] not in allowed_sonde_software:
-        return ("errors", "This software is unknown to us! Please contact us at support@sondehub.org or on sondehub.org/go/discord for data validation.")
+        return ("errors", "This software is unknown to us! Please refer to https://github.com/projecthorus/sondehub-infra/wiki/Sonde-Telemetry-Validation, then contact us at support@sondehub.org or on sondehub.org/go/discord for data validation.")
     
     # Software Version Checks for some software.
     if "iMet-4" ==  telemetry["type"] or "iMet-1" ==  telemetry["type"]:
