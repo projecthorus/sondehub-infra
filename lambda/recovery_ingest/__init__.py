@@ -43,12 +43,9 @@ def checkExisting(serial, recovered):
 # Attempt to find SondeHub serial for a Radiosony.info serial
 def findSonde(recovery, lat, lon):
     # Get facts to compare against
-    if 'Z' in recovery["start_time"]:
-        # Radiosondy.info API update 2026-05
-        # This could be replaced by datetime.fromisoformat in Python >3.11
-        launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%dT%H:%M:%SZ")
-    else:
-        launchTime = datetime.strptime(recovery["start_time"], "%Y-%m-%d %H:%M:%S")
+
+    launchTime = datetime.fromisoformat(recovery["start_time"], "%Y-%m-%dT%H:%M:%SZ")
+
     sondeType = recovery["radiosonde"]["type"]
     sondeFrequency = recovery["radiosonde"]["qrg"]
 
