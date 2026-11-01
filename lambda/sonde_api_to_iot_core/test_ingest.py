@@ -254,6 +254,17 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(output["body"], "^v^ telm logged")
         self.assertEqual(output["statusCode"], 200)
 
+    def test_dropped_autorx_payload(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["software_name"] = "radiosonde_auto_rx" 
+        payload[0]["software_version"] = "1.6.0"
+        payload[0]["type"] = "RS41"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        #sns.publish.assert_called() # This will never get called in this test
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
     def test_bad_autorx_version(self):
         payload = copy.deepcopy(example_body)
         payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
