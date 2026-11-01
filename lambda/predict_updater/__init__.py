@@ -718,7 +718,8 @@ async def predict_async(event, context):
                     "burst_altitude": value['request']['burst_altitude'],
                     "descending": True if serials[serial]['rate'] < 0 else False,
                     "landed": False, # I don't think this gets used anywhere?
-                    "data": value['path']
+                    "data": value['path'],
+                    "last_position": [value['path'][-1]["lon"], value['path'][-1]["lat"]] if value['path'] and len(value['path']) else None
                 }
             )
 
