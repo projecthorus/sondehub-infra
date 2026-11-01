@@ -44,7 +44,7 @@ def checkExisting(serial, recovered):
 def findSonde(recovery, lat, lon):
     # Get facts to compare against
 
-    launchTime = datetime.fromisoformat(recovery["start_time"], "%Y-%m-%dT%H:%M:%SZ")
+    launchTime = datetime.fromisoformat(recovery["start_time"])
 
     sondeType = recovery["radiosonde"]["type"]
     sondeFrequency = recovery["radiosonde"]["qrg"]

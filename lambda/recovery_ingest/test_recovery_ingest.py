@@ -45,11 +45,14 @@ class TestRecoveryIngest(unittest.TestCase):
     @patch('urllib.request.urlopen')
     def test_handler(self, urlopen):
         cm = MagicMock()
-        cm.getcode.return_value = 200
         cm.read.side_effect = [
             json.dumps(radiosondy_response),
-            json.dumps(sondehub_check_non_existing),
             b"uploaded"
+        ]
+        ctx = MagicMock()
+        cm.__enter__.side_effect = [ctx]
+        ctx.read.side_effect = [
+            json.dumps(sondehub_check_non_existing),
         ]
         urlopen.return_value = cm
 
@@ -69,8 +72,12 @@ class TestRecoveryIngest(unittest.TestCase):
         radiosondy_response["results"][0]["log_info"]["log_added"] = "2026-05-19T23:50:20Z"
         cm.read.side_effect = [
             json.dumps(radiosondy_response),
-            json.dumps(sondehub_check_non_existing),
             b"uploaded"
+        ]
+        ctx = MagicMock()
+        cm.__enter__.side_effect = [ctx]
+        ctx.read.side_effect = [
+            json.dumps(sondehub_check_non_existing),
         ]
         urlopen.return_value = cm
 

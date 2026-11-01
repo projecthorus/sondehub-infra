@@ -377,6 +377,8 @@ def telemetry_filter(telemetry):
     if telemetry["software_name"] == "radiosonde_auto_rx":
         if parse_autorx_version(telemetry["software_version"]) < (1,5,10): 
             return ("errors",f"This radiosonde_auto_rx version is out-of-date, please update!")
+        if parse_autorx_version(telemetry["software_version"]) == (1,6,0): 
+            return ("drop", "")
 
     # OpenWXSDR - Allow RS41, DFM, M10, M20 and RS92 uploads, as these have been verified. Block everything else.
     if 'OpenWXSDR' in telemetry["software_name"]:
@@ -536,16 +538,21 @@ def upload(event, context, orig_event):
             payload["user-agent"] = event["headers"]["user-agent"]
         payload["position"] = f'{payload["lat"]},{payload["lon"]}'
         status, message = telemetry_filter(payload)
+
         if status == "warnings":
             warnings.append({
                 "warning_message": message,
                 "payload": payload
             })
+        
         if status == "errors":
             errors.append({
                 "error_message": message,
                 "payload": payload
             })
+        elif status == "drop":
+            # Silently drop these packets
+            continue
         else:
             if time_delta:
                 payload["upload_time_delta"] = time_delta
