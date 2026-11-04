@@ -1126,6 +1126,9 @@ resource "aws_cloudfront_distribution" "api" {
   aliases = [
     "api.${local.domain_name}"
   ]
+  
+  web_acl_id = "arn:aws:wafv2:us-east-1:143841941773:global/webacl/CreatedByCloudFront-b22fc89b/4be8bfcf-560c-4802-b757-2d1072c1ddd7"
+
   origin {
     custom_origin_config {
       http_port                = 80
