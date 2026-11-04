@@ -18,7 +18,7 @@ def history(event, context):
         object.load()
         lastModified = object.meta.data['LastModified']
         if not lastModified + timedelta(hours=12) > datetime.now(timezone.utc):
-            return {"statusCode": 302, "headers": {"Location": f'https://{object.bucket_name}.s3.amazonaws.com/{object.key}'}}
+            return {"statusCode": 302, "headers": {"Location": f'https://history.sondehub.org/{object.key}'}}
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             pass
