@@ -1654,6 +1654,25 @@ data "aws_iam_policy_document" "sondehub_history_policy" {
       identifiers = ["*"]
     }
   }
+
+  // this will get replaced / changed when we lock down the bucket and push people to history.sondehub.org
+  statement {
+    sid       = "AllowCloudFrontServicePrincipal"
+    effect    = "Allow"
+    resources = ["arn:aws:s3:::sondehub-history/*"]
+    actions   = ["s3:GetObject"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "AWS:SourceArn"
+      values   = ["arn:aws:cloudfront::143841941773:distribution/E14TCEB9AE1QL2"]
+    }
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "S3BucketPolicy2" {
