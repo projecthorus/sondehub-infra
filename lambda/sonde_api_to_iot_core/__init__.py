@@ -262,12 +262,12 @@ def telemetry_filter(telemetry):
         # Ref: https://www.vaisala.com/sites/default/files/documents/Vaisala-Radiosonde-RS41-serial-number-9.2024_0.pdf
         # M = 2016 (Unsure if there were RS41's made before this)
         # A = 2028, allowing up to C = 2030 for now.
-        _strict_match = re.match(r"^[M-ZA-C](?:0[1-9]|[1-4][0-9]|5[0-3])[1-7][0-9]{4}$", _serial)
+        _strict_match = re.match(r"^[L-ZA-C](?:0[1-9]|[1-4][0-9]|5[0-3])[1-7][0-9]{4}$", _serial)
 
         if not _strict_match:
             # Match against our preferred 'modified' serial format:
             # https://github.com/projecthorus/sondehub-infra/wiki/Re%E2%80%90use-of-Recovered-Radiosondes#vaisala-rs41
-            _wider_match = re.match(r"^[M-ZA-E](?:0[1-9]|[1-9][0-9])[0-9]{5}$", _serial)
+            _wider_match = re.match(r"^[L-ZA-E](?:0[1-9]|[1-9][0-9])[0-9]{5}$", _serial)
 
             if _wider_match:
                 # Matching this kind of makes the previous check pointless.
