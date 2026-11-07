@@ -111,6 +111,114 @@ paths:
           description: Returns a list of all data received
           schema:
             $ref: "#/definitions/amateur_query_full_results_format"
+  /sondes/summary:
+    get:
+      summary: Get summary sonde data
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: limit
+          description: Max number of radiosondes to return results for
+          required: false
+          type: number
+        - in: query
+          name: lat
+          description: Latitude in decimal format to search (also requires lon and distance set)
+          required: false
+          type: number
+        - in: query
+          name: lon
+          description: Longitude in decimal format to search (also requires lat and distance set)
+          required: false
+          type: number
+        - in: query
+          name: distance
+          description: Number of meters to search. (also requires lat and lon set)
+          required: false
+          type: number
+        - in: query
+          name: serial
+          description: Serial number to search for
+          required: false
+          type: string
+        - in: query
+          name: launchsite
+          description: Launch site ID to filter on
+          required: false
+          type: number
+        - in: query
+          name: from
+          description: ISO-8601 time to search from (also requires `to` to be set)
+          required: false
+          type: string
+        - in: query
+          name: to
+          description: ISO-8601 time to search from (also requires `from` to be set)
+          required: false
+          type: string
+      responses:
+        200:
+          description: Returns summary data for radiosondes
+          schema:
+            type: object
+            properties:
+              _metadata:
+                type: object
+                properties:
+                  limits:
+                    type: object
+                    description: List of which indexes hit their limits while searching for radiosondes
+                    properties:
+                      summary:
+                        type: boolean
+                      reverse-prediction:
+                        type: boolean
+                      predictions:
+                        type: boolean
+                      recovered:
+                        type: boolean
+                      telm:
+                        type: boolean
+                      total:
+                        type: boolean
+              radiosondes:
+                type: object
+                additionalProperties:
+                  type: object
+                  description: Radiosonde
+                  properties:
+                    recovery:
+                      $ref: "#/definitions/recovery_object"
+                    predicted_landing:
+                      properties:
+                        lat:
+                          type: number
+                          format: "double"
+                        lon:
+                          type: number
+                          format: "double"
+                    summary:
+                      description: serial
+                      type: array
+                      items:
+                        $ref: "#/definitions/telemetry_format"
+                    reverse_prediction:
+                      properties:
+                        lat:
+                          type: number
+                          format: "double"
+                        lon:
+                          type: number
+                          format: "double"
+                    launchsite:
+                      description: Launch site ID
+                      type: string
+        400:
+          description: Invalid query parameters
+
   /sondes/telemetry:
     put:
       summary: Upload Radiosonde Telemetry to Sondehub database.
