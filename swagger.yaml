@@ -200,6 +200,9 @@ paths:
                         lon:
                           type: number
                           format: "double"
+                        alt:
+                          type: number
+                          format: "double"     
                     summary:
                       description: serial
                       type: array
@@ -213,6 +216,9 @@ paths:
                         lon:
                           type: number
                           format: "double"
+                        alt:
+                          type: number
+                          format: "double"                        
                     launchsite:
                       description: Launch site ID
                       type: string

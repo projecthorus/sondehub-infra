@@ -254,12 +254,14 @@ def getData(serials, size):
         "recovery": None,
         "predicted_landing": {
             "lat": None,
-            "lon": None
+            "lon": None,
+            "alt": None
         },
         "summary": [],
         "reverse_prediction": {
             "lat": None,
-            "lon": None
+            "lon": None,
+            "alt": None
         },
         "launchsite": None,
     } for serial in serials }
@@ -278,15 +280,19 @@ def getData(serials, size):
 
                 if (hit["_index"].startswith("prediction")):
                     serial = hit["_source"]['serial']
+                    last_pred = hit["_source"]['data'][-1]
 
-                    final_data[serial]["predicted_landing"]["lat"] = hit["_source"]["last_position"][1]
-                    final_data[serial]["predicted_landing"]["lon"] = hit["_source"]["last_position"][0]
+                    if "data" in hit["_source"] and len(hit["_source"]['data']) > 0:
+                        final_data[serial]["predicted_landing"]["lat"] = last_pred["lat"]
+                        final_data[serial]["predicted_landing"]["lon"] = last_pred["lon"]
+                        final_data[serial]["predicted_landing"]["alt"] = last_pred["alt"]
                 if (hit["_index"].startswith("reverse-prediction")):
                     serial = hit["_source"]['serial']
                     if "data" in hit["_source"] and len(hit["_source"]['data']) > 0:
                         last_pred = hit["_source"]['data'][-1]
                         final_data[serial]["reverse_prediction"]["lat"] = last_pred["lat"]
                         final_data[serial]["reverse_prediction"]["lon"] = last_pred["lon"]
+                        final_data[serial]["reverse_prediction"]["alt"] = last_pred["alt"]
                         if 'launch_site' in hit["_source"]:
                             final_data[serial]["launchsite"] = hit["_source"]['launch_site']
             except:
