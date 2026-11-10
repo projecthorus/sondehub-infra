@@ -1489,181 +1489,20 @@ resource "aws_s3_bucket_policy" "S3BucketPolicy" {
 }
 
 data "aws_iam_policy_document" "sondehub_history_policy" {
-  statement {
-    sid    = "PublicRead"
-    effect = "Allow"
-
-    resources = [
-      "${aws_s3_bucket.history.arn}/*",
-      aws_s3_bucket.history.arn,
-    ]
-
-    actions = [
-      "s3:GetObjectVersion",
-      "s3:GetObjectTorrent",
-      "s3:GetObject",
-    ]
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "launchsites"
-    effect    = "Allow"
-    resources = [aws_s3_bucket.history.arn]
-    actions   = ["s3:ListBucket"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["launchsites/*"]
-    }
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "date"
-    effect    = "Allow"
-    resources = [aws_s3_bucket.history.arn]
-    actions   = ["s3:ListBucket"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["date/2*"]
-    }
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "datebroken"
-    effect    = "Allow"
-    resources = [aws_s3_bucket.history.arn]
-    actions   = ["s3:ListBucket"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["date/1*"]
-    }
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "delimiter"
-    effect    = "Allow"
-    resources = [aws_s3_bucket.history.arn]
-    actions   = ["s3:ListBucket"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:delimiter"
-      values   = ["/"]
-    }
-
-    condition {
-      test     = "StringNotLike"
-      variable = "s3:prefix"
-      values   = ["serial/*"]
-    }
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "pysondehub"
-    effect    = "Allow"
-    resources = [aws_s3_bucket.history.arn]
-    actions   = ["s3:ListBucket"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["serial/*.json.gz"]
-    }
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "DenyBadIP"
-    effect    = "Deny"
-    resources = ["${aws_s3_bucket.history.arn}/*"]
-    actions   = ["s3:*"]
-
-    condition {
-      test     = "IpAddress"
-      variable = "aws:SourceIp"
-      values = [
-        "83.175.183.114",
-        "181.214.0.0/15"
-      ]
-    }
-
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-  }
-
-  statement {
-    sid       = "DenyBots"
-    effect    = "Deny"
-    resources = ["${aws_s3_bucket.history.arn}/*"]
-    actions   = ["s3:*"]
-
-    condition {
-      test     = "StringLike"
-      variable = "aws:UserAgent"
-      values = [
-        "aiobotocore/3.8.0 md/Botocore#1.43.46 ua/2.1 os/linux#7.1.5-1-cachyos md/arch#x86_64 lang/python#3.14.6 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy botocore/1.43.46",
-        "*searchbot*",
-        "*Search*",
-        "*search*",
-        "*crawl*",
-        "*Crawl*",
-        "*bot)*",
-        "*bot/*",
-        "*bot.*",
-        "*Bot)*",
-        "*Bot/*",
-        "*Bot.*"
-      ]
-    }
-
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-  }
-
   // this will get replaced / changed when we lock down the bucket and push people to history.sondehub.org
   statement {
     sid       = "AllowCloudFrontServicePrincipal"
     effect    = "Allow"
-    resources = ["arn:aws:s3:::sondehub-history/*"]
-    actions   = ["s3:GetObject"]
+    resources = [
+      "${aws_s3_bucket.history.arn}/*",
+      "${aws_s3_bucket.history.arn}"
+    ]
+    actions   = [
+      "s3:ListBucket",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTorrent",
+      "s3:GetObject"
+    ]
 
     condition {
       test     = "ArnLike"
