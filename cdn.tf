@@ -1491,13 +1491,13 @@ resource "aws_s3_bucket_policy" "S3BucketPolicy" {
 data "aws_iam_policy_document" "sondehub_history_policy" {
   // this will get replaced / changed when we lock down the bucket and push people to history.sondehub.org
   statement {
-    sid       = "AllowCloudFrontServicePrincipal"
-    effect    = "Allow"
+    sid    = "AllowCloudFrontServicePrincipal"
+    effect = "Allow"
     resources = [
       "${aws_s3_bucket.history.arn}/*",
       "${aws_s3_bucket.history.arn}"
     ]
-    actions   = [
+    actions = [
       "s3:ListBucket",
       "s3:GetObjectVersion",
       "s3:GetObjectTorrent",
