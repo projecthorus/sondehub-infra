@@ -159,6 +159,12 @@ paths:
           description: ISO-8601 time to search from (also requires `from` to be set)
           required: false
           type: string
+        - in: query
+          name: predictions_only
+          description: Searches all indexes and not just the landing predictions
+          type: boolean
+          required: false
+          default: true
       responses:
         200:
           description: Returns summary data for radiosondes

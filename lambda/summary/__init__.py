@@ -111,8 +111,11 @@ class FoundSerials:
     serials: set[str] = dataclasses.field(default_factory=list)
     hit_limit: dict[str, bool] = dataclasses.field(default_factory=dict)
 
-def find_serials(qs_filters: QsFilters) -> FoundSerials:
-    indexes = ["summary", "reverse-prediction", "predictions", "recovered", "telm"]
+def find_serials(qs_filters: QsFilters, predictions_only=True) -> FoundSerials:
+    if predictions_only:
+        indexes = ["predictions"]
+    else:
+        indexes = ["summary", "reverse-prediction", "predictions", "recovered", "telm"]
     msearch_body = ""
     for index in indexes:
         msearch_body += json.dumps({"index": index + "*"}) + "\n"
@@ -331,9 +334,15 @@ def get(event, context):
     # 2. get list of serials that match from the various indexes
     # 3. then requery the indexes based on serial number with no other filters
 
+    predictions_only = True
+
     if 'queryStringParameters' in event:
         try:
             qs_filters = querystring_to_filters(event['queryStringParameters'])
+            if ( "predictions_only" in event['queryStringParameters'] and 
+                event['queryStringParameters']["predictions_only"].lower() in ["false","no","0","off"]
+                ):
+                predictions_only = False
         except ValueError as e:
             return {
                 "body": f"{str(e)}",
@@ -345,7 +354,7 @@ def get(event, context):
     logging.info(qs_filters)
 
     # handle when the combined list of serials is to large
-    found_serials = find_serials(qs_filters)
+    found_serials = find_serials(qs_filters, predictions_only)
     if len(found_serials.serials) > qs_filters.size: # we might want to remove this as the max terms limit is 65,536 so we could possibly get away with it.
         found_serials.serials = set(list(found_serials.serials)[:qs_filters.size])
         found_serials.hit_limit["total"] = True
