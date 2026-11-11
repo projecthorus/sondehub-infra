@@ -180,6 +180,11 @@ def telemetry_filter(telemetry):
     This function is defined within this script to avoid passing around large amounts of configuration data.
     """
 
+    # Set these to the default return values here. 
+    # These may be modified before return
+    _telemetry_bad = False
+    _telemetry_bad_desc = ""
+
     # First Check: zero lat/lon
     if (telemetry["lat"] == 0.0) and (telemetry["lon"] == 0.0):
         return ("errors",f"Zero Lat/Lon. Sonde { telemetry['serial']} does not have GPS lock.")
@@ -249,24 +254,64 @@ def telemetry_filter(telemetry):
 
     # Payload Serial Number Checks
     _serial = telemetry["serial"]
-    # Run a Regex to match known Vaisala RS92/RS41 serial numbers (YWWDxxxx)
-    # RS92: https://www.vaisala.com/sites/default/files/documents/Vaisala%20Radiosonde%20RS92%20Serial%20Number.pdf
-    # RS41: https://www.vaisala.com/sites/default/files/documents/Vaisala%20Radiosonde%20RS41%20Serial%20Number.pdf
-    # This will need to be re-evaluated if we're still using this code in 2021!
-    # UPDATE: Had some confirmation that Vaisala will continue to use the alphanumeric numbering up until
-    # ~2025-2030, so have expanded the regex to match (and also support some older RS92s)
-    # Modified 2021-06 to be more flexible and match older sondes, and reprogrammed sondes.
-    # Still needs a letter at the start, but the numbers don't need to match the format exactly.
-    if ("RS41" in telemetry["type"]) or ("RS92" in telemetry["type"]):
-        vaisala_callsign_valid = re.match(r"^[C-Z]\d{7}$", _serial)
-    elif telemetry["type"] in ["RD41", "RD94"] and _serial:
+
+    # Vaisala Serial Number checks
+    vaisala_callsign_valid = False
+    if "RS41" in telemetry["type"]:
+        # Strict serial number match against the known vaisala format
+        # Ref: https://www.vaisala.com/sites/default/files/documents/Vaisala-Radiosonde-RS41-serial-number-9.2024_0.pdf
+        # M = 2016 (Unsure if there were RS41's made before this)
+        # A = 2028, allowing up to C = 2030 for now.
+        _strict_match = re.match(r"^[L-ZA-C](?:0[1-9]|[1-4][0-9]|5[0-3])[1-7][0-9]{4}$", _serial)
+
+        if not _strict_match:
+            # Match against our preferred 'modified' serial format:
+            # https://github.com/projecthorus/sondehub-infra/wiki/Re%E2%80%90use-of-Recovered-Radiosondes#vaisala-rs41
+            _wider_match = re.match(r"^[L-ZA-E](?:0[1-9]|[1-9][0-9])[0-9]{5}$", _serial)
+
+            if _wider_match:
+                # Matching this kind of makes the previous check pointless.
+                # Maybe we should tag the modified serial number telemetry somehow? 
+                vaisala_callsign_valid = True
+        else:
+            vaisala_callsign_valid = True
+
+    elif "RS92" in telemetry["type"]:
+        # Strict match against RS92 serial number format:
+        # Ref: https://www.vaisala.com/sites/default/files/documents/Vaisala%20Radiosonde%20RS92%20Serial%20Number.pdf
+        # Unsure on oldest manufacture year, so using A
+        # N = 2017, year of last RS92 manufacture
+        vaisala_callsign_valid = re.match(r"^[A-N](?:0[1-9]|[1-4][0-9]|5[0-3])[1-7][0-9]{4}$", _serial)
+
+    elif telemetry["type"] in ["RD41", "RD94"]:
+        # Don't know much about these. Accept any non-zero numeric value
         vaisala_callsign_valid = _serial != "000000000"
+
     else:
         vaisala_callsign_valid = False
 
+
+    # M10 and M20 serial numbers follow the format ABB-C-DEEEE
+    # - A: 0 to 9
+    # - BB: 1 to 12
+    # - C: 1 to 4 (mostly 2 or 3)
+    # - D: 1 with M10, 0 with M20
+    # - EEEE: 0000 to 9999
+    if "M10" in telemetry["type"]:
+        m10_callsign_valid = re.match(r"^[0-9](?:0[1-9]|1[0-2])-[1-4]-1[0-9]{4}$", _serial)
+    else:
+        m10_callsign_valid = False
+
+    if "M20" in telemetry["type"]:
+        m20_callsign_valid = re.match(r"^[0-9](?:0[1-9]|1[0-2])-[1-4]-0[0-9]{4}$", _serial)
+    else:
+        m20_callsign_valid = False
+
+
     # Just make sure we're not getting the 'xxxxxxxx' unknown serial from the DFM decoder (Which also includes PS-15 pilotsondes)
+    # Also check for 'APRS-style' callsigns passed through to SondeHub (prefixed with a D)
     if "DFM" in telemetry["type"] or telemetry["type"] == "PS-15":
-        dfm_callsign_valid = "x" not in _serial
+        dfm_callsign_valid = ("x" not in _serial) and ('D' not in _serial)
     else:
         dfm_callsign_valid = False
 
@@ -287,7 +332,7 @@ def telemetry_filter(telemetry):
     else:
         c50_callsign_valid = False
 
-    # If Vaisala, DFMs, or a few other types, check the callsigns are valid. If M10, iMet, LMS6, or a bunch of other types 
+    # If Vaisala, DFMs, or a few other types, check the callsigns are valid. If iMet, LMS6, or a bunch of other types 
     # just pass it through - we get callsigns immediately and reliably from these.
     if not (
         vaisala_callsign_valid
@@ -295,8 +340,8 @@ def telemetry_filter(telemetry):
         or meisei_callsign_valid
         or mrz_callsign_valid
         or c50_callsign_valid
-        or ("M10" in telemetry["type"])
-        or ("M20" in telemetry["type"])
+        or m10_callsign_valid
+        or m20_callsign_valid
         or ("LMS" in telemetry["type"])
         or ("iMet" in telemetry["type"])
         or ("MTS01" in telemetry["type"])
@@ -409,7 +454,7 @@ def telemetry_filter(telemetry):
     if "dev" in telemetry:
         return ("errors", "All checks passed however payload contained dev flag so will not be uploaded to the database")
 
-    return (False, "")
+    return (_telemetry_bad, _telemetry_bad_desc)
 
 def parse_sondemonitor_version(version):
     try:

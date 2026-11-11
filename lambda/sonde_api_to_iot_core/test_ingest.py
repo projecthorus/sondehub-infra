@@ -203,6 +203,7 @@ class TestIngestion(unittest.TestCase):
         payload[0]["software_name"] = "dxlAPRS-SHUE" 
         payload[0]["software_version"] = "1.1.2"
         payload[0]["type"] = "M10"
+        payload[0]["serial"] = "501-2-10443"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_called()
         self.assertEqual(output["body"], "^v^ telm logged")
@@ -214,6 +215,7 @@ class TestIngestion(unittest.TestCase):
         payload[0]["software_name"] = "dxlAPRS-SHUE" 
         payload[0]["software_version"] = "1.0.2"
         payload[0]["type"] = "M10"
+        payload[0]["serial"] = "501-2-10443"
         output = lambda_handler(compress_payload(payload), fakeContext())
         sns.publish.assert_not_called()
         body_decode = json.loads(output["body"])
@@ -485,6 +487,113 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
 
 
+    # RS41 Serial Number Checks
+    # We test a 'good' RS41 serial further up in the good payload test
+    def test_bad_rs41_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "RS41"
+        payload[0]["serial"] = "X0000001"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    def test_bad_rs41_serial2(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "RS41"
+        payload[0]["serial"] = "G1234567"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    def test_modified_rs41_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "RS41"
+        payload[0]["serial"] = "X5310001"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    # RS92 Serial Number Checks
+    def test_good_rs92_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "RS92"
+        payload[0]["serial"] = "M1234567"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_rs92_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "RS92"
+        payload[0]["serial"] = "X1234567"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # M20 Serial Number Checks
+    def test_good_m20_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "M20"
+        payload[0]["serial"] = "607-2-01073"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_m20_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "M20"
+        payload[0]["serial"] = "607-9-01073"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    def test_bad_m20_serial2(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "M20"
+        payload[0]["serial"] = "MEC700195"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+    # M10 Serial Number Checks
+    def test_good_m10_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "M10"
+        payload[0]["serial"] = "501-2-10440"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_called()
+        self.assertEqual(output["body"], "^v^ telm logged")
+        self.assertEqual(output["statusCode"], 200)
+
+    def test_bad_m10_serial(self):
+        payload = copy.deepcopy(example_body)
+        payload[0]["datetime"] = datetime.datetime.now(datetime.UTC).isoformat()
+        payload[0]["type"] = "M10"
+        payload[0]["serial"] = "501-2-00440"
+        output = lambda_handler(compress_payload(payload), fakeContext())
+        sns.publish.assert_not_called()
+        body_decode = json.loads(output["body"])
+        self.assertEqual(body_decode["message"], "some or all payloads could not be processed")
+
+
+    # Dropping payload tests
     def test_dropping_2_payload(self):
         payload = copy.deepcopy(example_body) 
         ref_time = datetime.datetime.now(datetime.UTC)
