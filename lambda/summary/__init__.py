@@ -302,17 +302,27 @@ def getData(serials, size):
 
     # dedup summary frames
     for serial in serials:
-        final_data[serial]["summary"] = [dict(t) for t in {tuple(d.items()) for d in final_data[serial]["summary"]}]
+        try:
+            final_data[serial]["summary"] = [dict(t) for t in {tuple(d.items()) for d in final_data[serial]["summary"]}]
+        except:
+            logging.info("Error deduping summary data")
+            traceback.print_exc()
+            logging.info(final_data[serial]["summary"])
 
     # only keep the first, last and highest alt
     for serial in serials:
-            by_date = sorted(final_data[serial]["summary"], key=lambda d: d['datetime'])
-            alt = sorted(final_data[serial]["summary"], key=lambda d: d['alt'])[-1]
-            final_data[serial]["summary"] = [
-                by_date[0],
-                alt,
-                by_date[-1]
-            ]
+            try:
+                by_date = sorted(final_data[serial]["summary"], key=lambda d: d['datetime'])
+                alt = sorted(final_data[serial]["summary"], key=lambda d: float(d['alt']))[-1]
+                final_data[serial]["summary"] = [
+                    by_date[0],
+                    alt,
+                    by_date[-1]
+                ]
+            except:
+                logging.info("Error making summary data")
+                traceback.print_exc()
+                logging.info(final_data[serial]["summary"])
 
     return final_data
 
