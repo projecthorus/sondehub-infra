@@ -78,6 +78,19 @@ class TestStation(unittest.TestCase):
         json.loads(mocked_print.call_args.args[0])
 
     @patch('builtins.print')
+    def test_blocked_software2(self, mocked_print):
+        blocked_software_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_software_payload["body"])
+        body["software_name"] = "slopityslopslop"
+        body["software_version"] = "1.2.3"
+        blocked_software_payload["body"] = json.dumps(body)
+        station_api_to_iot_core.lambda_handler(blocked_software_payload,{})
+        station_api_to_iot_core.es.request.assert_not_called()
+        station_api_to_iot_core.sns.publish.assert_not_called()
+        mocked_print.assert_called()
+        json.loads(mocked_print.call_args.args[0])
+
+    @patch('builtins.print')
     def test_call(self, mocked_print):
         blocked_call_payload = copy.deepcopy(payload)
         body = json.loads(blocked_call_payload["body"])
@@ -85,5 +98,17 @@ class TestStation(unittest.TestCase):
         station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
         station_api_to_iot_core.es.request.assert_called()
         station_api_to_iot_core.sns.publish.assert_called()
+
+    @patch('builtins.print')
+    def test_good_software(self, mocked_print):
+        blocked_call_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_call_payload["body"])
+        blocked_call_payload["body"] = json.dumps(body)
+        body["software_name"] = "rdzTTGOsonde"
+        body["software_version"] = "0.99"
+        station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
+        station_api_to_iot_core.es.request.assert_called()
+        station_api_to_iot_core.sns.publish.assert_called()
+
 if __name__ == '__main__':
     unittest.main()
