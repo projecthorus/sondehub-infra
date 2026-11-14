@@ -27,6 +27,7 @@ def history(event, context):
             raise
     path = "telm-*/_search"
     payload = {
+        "size": 0,
         "aggs": {
             "3": {
                 "date_histogram": {
@@ -38,7 +39,11 @@ def history(event, context):
                     "1": {
                         "top_hits": {
                             "size": 1,
-                            "sort": [{"datetime": {"order": "desc"}}],
+                            "sort": [
+                                {"datetime": {"order": "desc"}},
+                                "_score"
+                                ],
+                                
                         }
                     }
                 },
@@ -46,6 +51,18 @@ def history(event, context):
         },
         "query": {
             "bool": {
+                "should": [
+                    {
+                        "exists": {
+                            "field": "temp"
+                        }
+                    },
+                    {
+                        "exists": {
+                            "field": "humidity"
+                    }
+                  }
+              ], 
                 "filter": [
                     {"match_all": {}},
                     {
