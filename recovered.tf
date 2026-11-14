@@ -34,6 +34,14 @@ data "aws_iam_policy_document" "recovered" {
 
     actions = ["secretsmanager:GetSecretValue"]
   }
+
+  statement {
+    actions = ["s3:Get*"]
+    resources = [
+      aws_s3_bucket.history.arn,
+      "${aws_s3_bucket.history.arn}/*"
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "recovered" {
