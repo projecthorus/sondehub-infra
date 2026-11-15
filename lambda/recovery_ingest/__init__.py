@@ -126,8 +126,12 @@ def processReports(data):
             else:
                 serial = findSonde(recovery, lat, lon)
                 if serial is None:
-                    print("{}: could not match to SondeHub serial".format(recovery["radiosonde"]["number"]))
-                    continue
+                    if 'alternative_number' in recovery["radiosonde"] and recovery["radiosonde"]['alternative_number']:
+                        print(f"Using alternative_number({recovery["radiosonde"]['alternative_number']}) for {recovery["radiosonde"]['number']}")
+                        serial = recovery["radiosonde"]['alternative_number']
+                    else:
+                        print("{}: could not match to SondeHub serial".format(recovery["radiosonde"]["number"]))
+                        continue
 
             # Check if a valid recovery already exists
             if checkExisting(serial, recovered) == False:
