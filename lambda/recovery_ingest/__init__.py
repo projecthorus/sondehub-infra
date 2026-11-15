@@ -64,7 +64,7 @@ def findSonde(recovery, lat, lon):
 
     # Check all returned sondes
     for key, value in searchData.items():
-        receivedTime = datetime.strptime(value["datetime"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        receivedTime = datetime.fromisoformat(value["datetime"])
         timeDifference = receivedTime - launchTime
         if timeDifference.total_seconds() < 10800: # 3 Hours or less
             if value["type"] in sondeType: # Type matches
