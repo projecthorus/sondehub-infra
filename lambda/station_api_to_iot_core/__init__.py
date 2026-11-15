@@ -64,10 +64,28 @@ def lambda_handler(event, context):
 
     payload.pop("uploader_contact_email", None)
 
-    # clean up None reports
 
-    if "uploader_position" in payload and None == payload["uploader_position"] or None in payload["uploader_position"]:
-        payload.pop("uploader_position", None)
+    # Software allow-list - run this before doing any of the other checks.
+    # This needs to be synced with the list in sonde_api_to_iot_core, so should probably live elsewhere.
+    allowed_sonde_software = [
+        "radiosonde_auto_rx",       # https://github.com/projecthorus/radiosonde_auto_rx/wiki
+        "rdzTTGOsonde",             # https://github.com/dl9rdz/rdz_ttgo_sonde
+        "dxlAPRS-SHUE",             # https://github.com/Eshco93/dxlAPRS-SHUE
+        "SondeMonitor",             # https://www.coaa.co.uk/sondemonitor.htm
+        "RS41Tracker",              # https://escursioni.altervista.org/Radiosonde/
+        "SDRangel",                 # https://www.sdrangel.org/
+        "OpenWebRX",                # https://github.com/luarvique/openwebrx
+        "DsRS41Tracker",            # https://github.com/novarobot/DsRS41Tracker
+        "OpenWXSDR",                # https://github.com/DL2MF/OpenWXSDR
+        "SondeFox",                 # (no link)
+        "rtlsdr_multisonde_go",     # (no link)
+        "gsnext-rdz"                # (no link)
+    ]
+
+    if payload["software_name"] not in allowed_sonde_software:
+        return {"statusCode": 403, "body": "This software is unknown to us! Please ask the software developer to refer to https://github.com/projecthorus/sondehub-infra/wiki/Sonde-Telemetry-Validation, then contact us at support@sondehub.org or on sondehub.org/go/discord for data validation."}
+
+    # Bad SDRangel version uploading lister positions too often.
     if (
         "software_name" in payload and 
         payload["software_name"] == "SDRangel" and 
@@ -75,13 +93,22 @@ def lambda_handler(event, context):
         payload["software_version"] == "7.22.5"
         ):
         return {"statusCode": 403, "body": "This version is blocked"}
+
+
+    # clean up None reports
+    if "uploader_position" in payload and None == payload["uploader_position"] or None in payload["uploader_position"]:
+        payload.pop("uploader_position", None)
+
+
     if "uploader_position" in payload:
         (payload["uploader_alt"], payload["uploader_position_elk"]) = (
                 payload["uploader_position"][2],
                 f"{payload['uploader_position'][0]},{payload['uploader_position'][1]}",
             )
+
     if payload["uploader_callsign"] in CALLSIGN_BLOCK_LIST:
         return  {"statusCode": 403, "body": "callsign blocked or invalid - please use a unique callsign!"}
+    
     index = datetime.datetime.now(datetime.UTC).strftime("listeners-%Y-%m")
     payload["ts"] = datetime.datetime.now(datetime.UTC).isoformat()
 
