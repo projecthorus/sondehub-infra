@@ -42,7 +42,8 @@ def telemetry_hide_filter(telemetry):
     
 
     # Default pysondehub uploader callsign, and default 'I haven't changed my config file' callsign.
-    if telemetry["uploader_callsign"] in ['MYCALL', 'N0CALL']:
+    # Also hide some probably LLM-generated test stuff.
+    if telemetry["uploader_callsign"] in ['MYCALL', 'N0CALL', 'TESTSTATION']:
         return True
 
     return False
