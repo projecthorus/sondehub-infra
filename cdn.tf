@@ -659,6 +659,34 @@ resource "aws_cloudfront_distribution" "testing" {
     origin_id   = "S3-${local.domain_name}/testing"
     origin_path = "/testing"
   }
+  origin {
+    domain_name = aws_s3_bucket.v2.bucket_regional_domain_name
+    origin_id   = "S3-${local.domain_name}/unified-testing"
+    origin_path = "/unified-testing"
+  }
+
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 5
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 5
+    min_ttl                = 0
+    path_pattern           = "unified*"
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/unified-testing"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD"]
     cached_methods = [
@@ -794,6 +822,12 @@ resource "aws_cloudfront_distribution" "amateur_testing" {
     origin_id   = "S3-${local.domain_name}/amateur-testing"
     origin_path = "/amateur-testing"
   }
+  origin {
+    domain_name = aws_s3_bucket.v2.bucket_regional_domain_name
+    origin_id   = "S3-${local.domain_name}/amateur-unified-testing"
+    origin_path = "/amateur-unified-testing"
+  }
+
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD"]
     cached_methods = [
@@ -818,6 +852,28 @@ resource "aws_cloudfront_distribution" "amateur_testing" {
     #   lambda_arn = aws_lambda_function.ham_redirect.qualified_arn
     # }
   }
+  ordered_cache_behavior {
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods = [
+      "HEAD",
+      "GET"
+    ]
+    compress    = true
+    default_ttl = 5
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      query_string = false
+    }
+    max_ttl                = 5
+    min_ttl                = 0
+    path_pattern           = "unified*"
+    smooth_streaming       = false
+    target_origin_id       = "S3-${local.domain_name}/amateur-unified-testing"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
   ordered_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods = [
