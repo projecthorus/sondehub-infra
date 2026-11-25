@@ -70,6 +70,7 @@ class TestStation(unittest.TestCase):
         body = json.loads(blocked_software_payload["body"])
         body["software_name"] = "SDRangel"
         body["software_version"] = "7.22.5"
+        del body["mobile"]
         blocked_software_payload["body"] = json.dumps(body)
         station_api_to_iot_core.lambda_handler(blocked_software_payload,{})
         station_api_to_iot_core.es.request.assert_not_called()
@@ -106,6 +107,18 @@ class TestStation(unittest.TestCase):
         blocked_call_payload["body"] = json.dumps(body)
         body["software_name"] = "rdzTTGOsonde"
         body["software_version"] = "0.99"
+        station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
+        station_api_to_iot_core.es.request.assert_called()
+        station_api_to_iot_core.sns.publish.assert_called()
+
+    @patch('builtins.print')
+    def test_mobile_software(self, mocked_print):
+        blocked_call_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_call_payload["body"])
+        blocked_call_payload["body"] = json.dumps(body)
+        body["software_name"] = "SondeHub Tracker"
+        body["software_version"] = "0.99"
+        body["mobile"] = True
         station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
         station_api_to_iot_core.es.request.assert_called()
         station_api_to_iot_core.sns.publish.assert_called()
