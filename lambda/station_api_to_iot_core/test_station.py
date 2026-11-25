@@ -70,6 +70,7 @@ class TestStation(unittest.TestCase):
         body = json.loads(blocked_software_payload["body"])
         body["software_name"] = "SDRangel"
         body["software_version"] = "7.22.5"
+        del body["mobile"]
         blocked_software_payload["body"] = json.dumps(body)
         station_api_to_iot_core.lambda_handler(blocked_software_payload,{})
         station_api_to_iot_core.es.request.assert_not_called()
