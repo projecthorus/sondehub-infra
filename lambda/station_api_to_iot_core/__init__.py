@@ -83,7 +83,11 @@ def lambda_handler(event, context):
     ]
 
     if payload["software_name"] not in allowed_sonde_software:
-        return {"statusCode": 403, "body": "This software is unknown to us! Please ask the software developer to refer to https://github.com/projecthorus/sondehub-infra/wiki/Sonde-Telemetry-Validation, then contact us at support@sondehub.org or on sondehub.org/go/discord for data validation."}
+        if 'mobile' in payload and payload['mobile']:
+            # Pass through mobile station data (chase cars)
+            pass
+        else:
+            return {"statusCode": 403, "body": "This software is unknown to us! Please ask the software developer to refer to https://github.com/projecthorus/sondehub-infra/wiki/Sonde-Telemetry-Validation, then contact us at support@sondehub.org or on sondehub.org/go/discord for data validation."}
 
     # Bad SDRangel version uploading lister positions too often.
     if (

@@ -110,5 +110,17 @@ class TestStation(unittest.TestCase):
         station_api_to_iot_core.es.request.assert_called()
         station_api_to_iot_core.sns.publish.assert_called()
 
+    @patch('builtins.print')
+    def test_mobile_software(self, mocked_print):
+        blocked_call_payload = copy.deepcopy(payload)
+        body = json.loads(blocked_call_payload["body"])
+        blocked_call_payload["body"] = json.dumps(body)
+        body["software_name"] = "SondeHub Tracker"
+        body["software_version"] = "0.99"
+        body["mobile"] = True
+        station_api_to_iot_core.lambda_handler(blocked_call_payload,{})
+        station_api_to_iot_core.es.request.assert_called()
+        station_api_to_iot_core.sns.publish.assert_called()
+
 if __name__ == '__main__':
     unittest.main()
